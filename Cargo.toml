@@ -14,7 +14,7 @@ ndarray-stats = "0.6.0"
 layout-rs = "0.1.2"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
-bevy = "0.14.2"
+bevy = { version = "0.14.2", features = ["dynamic_linking"] }
 
 [profile.dev]
 opt-level = 1

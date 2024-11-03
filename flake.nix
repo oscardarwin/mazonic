@@ -18,12 +18,19 @@
             pkg-config
             gdb
             openssl
-            libxkbcommon
             libGL
-            graphviz
 
-            # WINIT_UNIX_BACKEND=wayland
             wayland
+            udev
+            vulkan-loader
+            alsa-lib
+            vulkan-loader
+            libxkbcommon
+
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXi
+            xorg.libXrandr
           ];
           shellHook = ''
             exec fish
