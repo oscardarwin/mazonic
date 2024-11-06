@@ -13,6 +13,9 @@ use bevy::{
     window::PrimaryWindow,
 };
 
+mod cube_maze_factory;
+mod model;
+
 fn main() {
     App::new()
         .add_plugins((
