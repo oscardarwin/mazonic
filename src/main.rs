@@ -12,10 +12,10 @@ use bevy::{
     },
     window::PrimaryWindow,
 };
+use model::CubeGenerator;
 
 mod cube_maze_factory;
 mod model;
-
 fn main() {
     App::new()
         .add_plugins((
@@ -50,7 +50,22 @@ fn setup(
         ..default()
     });
 
-    let cuboid = meshes.add(Cuboid::default());
+    let cube_gen = CubeGenerator::new(3, 2.0);
+
+    for node in cube_gen.make_nodes() {
+        let cuboid_mesh = meshes.add(Cuboid::from_length(0.2));
+
+        commands
+            .spawn(PbrBundle {
+                mesh: cuboid_mesh,
+                material: debug_material.clone(),
+                transform: Transform::from_translation(node.position),
+                ..default()
+            })
+            .insert(Shape);
+    }
+
+    let cuboid = meshes.add(Cuboid::from_length(0.1));
 
     commands.spawn((
         PbrBundle {
@@ -64,7 +79,7 @@ fn setup(
     ));
 
     commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 0.0, 3.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
+        transform: Transform::from_xyz(0.0, -3.0, 0.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Z),
         ..default()
     });
 }
@@ -109,7 +124,7 @@ fn toggle_wireframe(
 }
 
 fn do_camera_movement(
-    mut query: Query<&mut Transform, With<Shape>>,
+    mut query: Query<&mut Transform, With<Camera>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut last_pos: Local<Option<Vec2>>,
@@ -134,11 +149,14 @@ fn do_camera_movement(
             Vec2::ZERO
         };
 
-        let axis = -Vec3::new(delta.x, delta.y, 0.0).cross(Vec3::Z);
+        let delta = transform.right() * delta.x + transform.up() * delta.y;
+        let axis = delta.cross(transform.forward().as_vec3()).normalize();
 
         if axis.norm() > 0.01 {
-            println!("rotate_around: {:?} with delta: {:?}", axis, delta);
-            transform.rotate_axis(Dir3::new(axis).unwrap(), delta.norm() / 150.0)
+            // println!("rotate_around: {:?} with delta: {:?}", axis, delta);
+            let rotation = Quat::from_axis_angle(axis, delta.norm() / 150.0);
+
+            transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
         }
     }
     *last_pos = Some(current_pos);
