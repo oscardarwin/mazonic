@@ -1,10 +1,19 @@
+use std::{
+    cmp::Ordering,
+    hash::{Hash, Hasher},
+};
+
 use bevy::math::Vec3;
 use itertools::iproduct;
-use maze_generator::model::{ConnectivityGenerator, Door};
+use maze_generator::{
+    config::Maze,
+    model::{Door, RoomId},
+    traversal_graph_generator::TraversalGraphGenerator,
+};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-#[derive(EnumIter, Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(EnumIter, Debug, Clone, Hash, Eq, PartialEq, Copy, PartialOrd, Ord)]
 pub enum Face {
     Front,
     Left,
@@ -33,6 +42,7 @@ impl Face {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum BorderType {
     SameFace,
     Connected,
@@ -43,8 +53,8 @@ impl BorderType {
     fn get_from_faces(face_1: &Face, face_2: &Face) -> BorderType {
         if face_1 == face_2 {
             BorderType::SameFace
-        } else if BorderType::are_unconnacted(face_1, face_2)
-            || BorderType::are_unconnacted(face_2, face_1)
+        } else if BorderType::are_unconnected(face_1, face_2)
+            || BorderType::are_unconnected(face_2, face_1)
         {
             BorderType::Unconnected
         } else {
@@ -52,7 +62,7 @@ impl BorderType {
         }
     }
 
-    fn are_unconnacted(face_1: &Face, face_2: &Face) -> bool {
+    fn are_unconnected(face_1: &Face, face_2: &Face) -> bool {
         match (face_1, face_2) {
             (Face::Front, Face::Back) => true,
             (Face::Up, Face::Down) => true,
@@ -62,13 +72,50 @@ impl BorderType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct CubeNode {
     pub position: Vec3,
+    pub face_position: (u8, u8),
     face: Face,
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+impl CubeNode {
+    fn compare_same_face(&self, other: &CubeNode) -> Ordering {
+        self.face_position.cmp(&other.face_position)
+    }
+}
+
+impl Ord for CubeNode {
+    fn cmp(&self, other: &CubeNode) -> Ordering {
+        match self.face.cmp(&other.face) {
+            Ordering::Equal => self.compare_same_face(other),
+            ordering => ordering,
+        }
+    }
+}
+
+impl PartialOrd for CubeNode {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Hash for CubeNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.face_position.hash(state);
+        self.face.hash(state);
+    }
+}
+
+impl PartialEq for CubeNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.position.distance(other.position) < 0.01
+    }
+}
+
+impl Eq for CubeNode {}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd)]
 pub struct Edge;
 
 impl Door<CubeNode> for Edge {
@@ -102,7 +149,19 @@ impl CubeGenerator {
         }
     }
 
-    pub fn make_nodes(&self) -> Vec<CubeNode> {
+    pub fn distance_between_nodes(&self) -> f32 {
+        self.distance_between_nodes
+    }
+
+    pub fn make_maze(&self) -> Maze<CubeNode, Edge> {
+        let nodes = self.make_nodes();
+
+        let traversal_graph = self.generate(nodes.clone());
+
+        Maze::build(traversal_graph)
+    }
+
+    fn make_nodes(&self) -> Vec<CubeNode> {
         Face::iter()
             .flat_map(|face| self.make_nodes_from_face(face))
             .collect()
@@ -112,19 +171,23 @@ impl CubeGenerator {
         let (vec_i, vec_j) = face.defining_vectors();
         let normal = face.normal();
 
-        iproduct!(0..self.nodes_per_edge, 0..self.nodes_per_edge)
-            .map(|(i, j)| (i as f32, j as f32))
-            .map(|(i, j)| {
-                let face_coord_i = (2.0 * i - (self.nodes_per_edge as f32 - 1.0)) * vec_i;
-                let face_coord_j = (2.0 * j - (self.nodes_per_edge as f32 - 1.0)) * vec_j;
+        let nodes_per_edge = self.nodes_per_edge as f32;
 
-                let max_distance_between_nodes = 2.0 * (self.nodes_per_edge as f32);
-                let face_coord =
-                    face_coord_i + face_coord_j + (self.nodes_per_edge as f32) * normal;
-                let position = (self.face_size / max_distance_between_nodes) as f32 * face_coord;
+        iproduct!(0..self.nodes_per_edge, 0..self.nodes_per_edge)
+            .map(|(i, j)| {
+                let face_x = i as f32;
+                let face_y = j as f32;
+
+                let abs_max_face_coord = nodes_per_edge - 1.0;
+                let face_coord_x = (2.0 * face_x - abs_max_face_coord) * vec_i;
+                let face_coord_y = (2.0 * face_y - abs_max_face_coord) * vec_j;
+
+                let face_coord = face_coord_x + face_coord_y + nodes_per_edge * normal;
+                let position = face_coord * self.distance_between_nodes / 2.0;
 
                 CubeNode {
                     position,
+                    face_position: (i, j),
                     face: face.clone(),
                 }
             })
@@ -132,11 +195,18 @@ impl CubeGenerator {
     }
 }
 
-impl ConnectivityGenerator<CubeNode, Edge> for CubeGenerator {
+impl TraversalGraphGenerator<CubeNode, Edge> for CubeGenerator {
     fn can_connect(&self, from: &CubeNode, to: &CubeNode, with: &Edge) -> bool {
         let border_type = BorderType::get_from_faces(&from.face, &to.face);
 
         let distance = from.position.distance(to.position);
+
+        if border_type == BorderType::Connected {
+            println!(
+                "distance: {}, type: {:?}, face_coords: {:?}, {:?}",
+                distance, border_type, from.face_position, to.face_position
+            );
+        }
 
         match (border_type, distance) {
             (BorderType::Unconnected, _) => false,
@@ -144,7 +214,7 @@ impl ConnectivityGenerator<CubeNode, Edge> for CubeGenerator {
                 true
             }
             (BorderType::Connected, distance)
-                if distance - 0.1 <= self.distance_between_nodes * 1.5 =>
+                if distance - 0.1 <= self.distance_between_nodes * 0.8 =>
             {
                 true
             }

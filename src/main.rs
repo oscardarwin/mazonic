@@ -51,8 +51,9 @@ fn setup(
     });
 
     let cube_gen = CubeGenerator::new(3, 2.0);
+    let maze = cube_gen.make_maze();
 
-    for node in cube_gen.make_nodes() {
+    for node in maze.graph.nodes() {
         let cuboid_mesh = meshes.add(Cuboid::from_length(0.2));
 
         commands
@@ -65,18 +66,31 @@ fn setup(
             .insert(Shape);
     }
 
-    let cuboid = meshes.add(Cuboid::from_length(0.1));
+    for (source_node, target_node, edge) in maze.graph.all_edges() {
+        let polyline_vertices = vec![source_node.position, target_node.position];
 
-    commands.spawn((
-        PbrBundle {
-            mesh: cuboid,
-            material: debug_material.clone(),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0)
-                .with_rotation(Quat::from_rotation_x(-PI / 4.)),
-            ..default()
-        },
-        Shape,
-    ));
+        let cone = Cone {
+            radius: 0.05,
+            height: cube_gen.distance_between_nodes(),
+        };
+
+        let connecting_mesh = meshes.add(cone);
+
+        let direction_vec = target_node.position - source_node.position;
+        let middle = (source_node.position + target_node.position) / 2.0;
+        let transform = Transform::from_translation(middle)
+            .looking_to(direction_vec.any_orthogonal_vector(), direction_vec);
+        commands
+            .spawn(PbrBundle {
+                mesh: connecting_mesh,
+                material: debug_material.clone(),
+                transform,
+                ..default()
+            })
+            .insert(Shape);
+    }
+
+    let cuboid = meshes.add(Cuboid::from_length(0.1));
 
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(0.0, -3.0, 0.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Z),
