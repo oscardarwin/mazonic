@@ -24,7 +24,7 @@ pub enum Face {
 }
 
 impl Face {
-    fn normal(&self) -> Vec3 {
+    pub fn normal(&self) -> Vec3 {
         let (vec_1, vec_2) = self.defining_vectors();
 
         vec_1.cross(vec_2)
@@ -50,7 +50,7 @@ pub enum BorderType {
 }
 
 impl BorderType {
-    fn get_from_faces(face_1: &Face, face_2: &Face) -> BorderType {
+    pub fn get_from_faces(face_1: &Face, face_2: &Face) -> BorderType {
         if face_1 == face_2 {
             BorderType::SameFace
         } else if BorderType::are_unconnected(face_1, face_2)
@@ -76,7 +76,7 @@ impl BorderType {
 pub struct CubeNode {
     pub position: Vec3,
     pub face_position: (u8, u8),
-    face: Face,
+    pub face: Face,
 }
 
 impl CubeNode {
