@@ -47,7 +47,7 @@ fn setup(
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let white = Color::srgb_u8(247, 247, 247);
+    let white = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);
     let green = Color::srgb_u8(109, 152, 134);
     let charcoal = Color::srgb_u8(57, 62, 70);
