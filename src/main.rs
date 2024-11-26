@@ -13,6 +13,10 @@ use bevy::{
     },
     window::PrimaryWindow,
 };
+use bevy_rapier3d::{
+    geometry::Collider,
+    plugin::{NoUserData, RapierContext, RapierPhysicsPlugin},
+};
 use model::{BorderType, CubeGenerator, CubeNode};
 
 mod cube_maze_factory;
@@ -24,6 +28,7 @@ fn main() {
             #[cfg(not(target_arch = "wasm32"))]
             WireframePlugin,
         ))
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_systems(Startup, setup)
         .add_systems(
             Update,
@@ -90,7 +95,8 @@ fn setup(
                 transform,
                 ..default()
             })
-            .insert(Interactable::Node);
+            .insert(Interactable::Node)
+            .insert(Collider::cylinder(cylinder.half_height, cylinder.radius));
     }
 
     for (source_node, target_node, edge) in maze.graph.all_edges() {
@@ -286,6 +292,7 @@ fn do_input(
         ),
     >,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
+    rapier_context: Res<RapierContext>,
     mut last_pos: Local<Option<Vec2>>,
 ) {
     let Ok(window) = primary_window.get_single() else {

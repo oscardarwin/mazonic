@@ -201,13 +201,6 @@ impl TraversalGraphGenerator<CubeNode, Edge> for CubeGenerator {
 
         let distance = from.position.distance(to.position);
 
-        if border_type == BorderType::Connected {
-            println!(
-                "distance: {}, type: {:?}, face_coords: {:?}, {:?}",
-                distance, border_type, from.face_position, to.face_position
-            );
-        }
-
         match (border_type, distance) {
             (BorderType::Unconnected, _) => false,
             (BorderType::SameFace, distance) if distance - 0.1 <= self.distance_between_nodes => {
