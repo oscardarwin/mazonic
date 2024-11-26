@@ -28,8 +28,7 @@ fn main() {
         .add_systems(
             Update,
             (
-                do_camera_movement,
-                do_light_movement,
+                do_input,
                 #[cfg(not(target_arch = "wasm32"))]
                 toggle_wireframe,
             ),
@@ -39,7 +38,10 @@ fn main() {
 
 /// A marker component for our shapes so we can query them separately from the ground plane
 #[derive(Component)]
-struct Shape;
+enum Interactable {
+    Node,
+    Edge,
+}
 
 fn setup(
     mut commands: Commands,
@@ -88,7 +90,7 @@ fn setup(
                 transform,
                 ..default()
             })
-            .insert(Shape);
+            .insert(Interactable::Node);
     }
 
     for (source_node, target_node, edge) in maze.graph.all_edges() {
@@ -108,18 +110,16 @@ fn setup(
                 transform,
                 ..default()
             })
-            .insert(Shape);
+            .insert(Interactable::Edge);
     }
 
     let cuboid = meshes.add(Cuboid::from_length(1.5));
-    commands
-        .spawn(PbrBundle {
-            mesh: cuboid,
-            material: green_material.clone(),
-            transform: Transform::IDENTITY,
-            ..default()
-        })
-        .insert(Shape);
+    commands.spawn(PbrBundle {
+        mesh: cuboid,
+        material: green_material.clone(),
+        transform: Transform::IDENTITY,
+        ..default()
+    });
 
     commands.spawn(Camera3dBundle {
         camera: Camera {
@@ -266,9 +266,25 @@ fn toggle_wireframe(
     }
 }
 
-fn do_camera_movement(
-    mut camera_query: Query<&mut Transform, With<Camera>>,
+fn do_input(
+    mut camera_query: Query<(&mut Transform, &GlobalTransform, &Camera), Without<Interactable>>,
+    mut light_query: Query<
+        &mut Transform,
+        (
+            With<DirectionalLight>,
+            Without<Interactable>,
+            Without<Camera>,
+        ),
+    >,
     primary_window: Query<&Window, With<PrimaryWindow>>,
+    nodes: Query<
+        (&Transform, &Handle<Mesh>),
+        (
+            With<Interactable>,
+            Without<Camera>,
+            Without<DirectionalLight>,
+        ),
+    >,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut last_pos: Local<Option<Vec2>>,
 ) {
@@ -277,11 +293,21 @@ fn do_camera_movement(
     };
     let window_size = window.size();
 
-    let current_pos = match window.cursor_position() {
-        Some(c) => vec2(c.x, -c.y),
-        None => return,
+    let Some(cursor_position) = window.cursor_position() else {
+        // if the cursor is not inside the window, we can't do anything
+        return;
     };
-    let delta_device_pixels = current_pos - last_pos.unwrap_or(current_pos);
+
+    let cursor_position_vec = vec2(cursor_position.x, cursor_position.y);
+
+    let (mut camera_transform, camera_global_transform, camera) = camera_query.single_mut();
+
+    let Some(ray) = camera.viewport_to_world(camera_global_transform, cursor_position) else {
+        // if it was impossible to compute for whatever reason; we can't do anything
+        return;
+    };
+
+    let delta_device_pixels = cursor_position_vec - last_pos.unwrap_or(cursor_position_vec);
 
     let delta = if mouse_buttons.pressed(MouseButton::Left)
         && !mouse_buttons.just_pressed(MouseButton::Left)
@@ -291,55 +317,19 @@ fn do_camera_movement(
         Vec2::ZERO
     };
 
-    for mut transform in &mut camera_query {
-        let delta = transform.right() * delta.x + transform.up() * delta.y;
-        let axis = delta.cross(transform.forward().as_vec3()).normalize();
+    let delta = camera_transform.right() * delta.x + camera_transform.up() * delta.y;
+    let axis = delta
+        .cross(camera_transform.forward().as_vec3())
+        .normalize();
 
-        if axis.norm() > 0.01 {
-            // println!("rotate_around: {:?} with delta: {:?}", axis, delta);
-            let rotation = Quat::from_axis_angle(axis, delta.norm() / 150.0);
+    if axis.norm() > 0.01 {
+        // println!("rotate_around: {:?} with delta: {:?}", axis, delta);
+        let rotation = Quat::from_axis_angle(axis, delta.norm() / 150.0);
 
-            transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
-        }
+        let mut light_transform = light_query.single_mut();
+
+        light_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
+        camera_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
     }
-    *last_pos = Some(current_pos);
-}
-
-fn do_light_movement(
-    mut light_query: Query<&mut Transform, With<DirectionalLight>>,
-    primary_window: Query<&Window, With<PrimaryWindow>>,
-    mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut last_pos: Local<Option<Vec2>>,
-) {
-    let Ok(window) = primary_window.get_single() else {
-        return;
-    };
-    let window_size = window.size();
-
-    let current_pos = match window.cursor_position() {
-        Some(c) => vec2(c.x, -c.y),
-        None => return,
-    };
-    let delta_device_pixels = current_pos - last_pos.unwrap_or(current_pos);
-
-    let delta = if mouse_buttons.pressed(MouseButton::Left)
-        && !mouse_buttons.just_pressed(MouseButton::Left)
-    {
-        delta_device_pixels
-    } else {
-        Vec2::ZERO
-    };
-
-    for mut transform in &mut light_query {
-        let delta = transform.right() * delta.x + transform.up() * delta.y;
-        let axis = delta.cross(transform.forward().as_vec3()).normalize();
-
-        if axis.norm() > 0.01 {
-            // println!("rotate_around: {:?} with delta: {:?}", axis, delta);
-            let rotation = Quat::from_axis_angle(axis, delta.norm() / 150.0);
-
-            transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
-        }
-    }
-    *last_pos = Some(current_pos);
+    *last_pos = Some(cursor_position_vec);
 }
