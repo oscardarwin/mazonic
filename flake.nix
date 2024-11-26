@@ -26,11 +26,18 @@
             alsa-lib
             vulkan-loader
             libxkbcommon
+            libcxx
 
             xorg.libX11
             xorg.libXcursor
             xorg.libXi
             xorg.libXrandr
+
+            lld_18
+            rustup
+            nodejs_22
+            wasm-bindgen-cli
+            xsel
           ];
           shellHook = ''
             exec fish

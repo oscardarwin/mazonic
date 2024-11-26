@@ -4,13 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-three-d = "0.17.0"
 petgraph = "^0.6.5"
-ndarray = { version = "0.15.0", features = ["blas"] }
 itertools = "0.13.0"
 strum = "0.26.3"
 strum_macros = "0.26.4"
-ndarray-stats = "0.6.0"
 layout-rs = "0.1.2"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
