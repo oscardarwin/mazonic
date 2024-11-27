@@ -1,6 +1,16 @@
 # TODO:
 
-When you press near a maze node, it highlights.
+
+Two modes while clicked:
+
+Node on point:
+Project all neighbour nodes onto the same face. 
+Calculate Direction Vectors to each neighbour node.
+Pick the node with the minimum angle to each neighbour node.
+
+Node now on path:
+
+
 
 # Build for Web:
 

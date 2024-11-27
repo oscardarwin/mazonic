@@ -15,6 +15,7 @@ use bevy::{
 };
 use bevy_rapier3d::{
     geometry::Collider,
+    pipeline::QueryFilter,
     plugin::{NoUserData, RapierContext, RapierPhysicsPlugin},
 };
 use model::{BorderType, CubeGenerator, CubeNode};
@@ -46,6 +47,7 @@ fn main() {
 enum Interactable {
     Node,
     Edge,
+    Player,
 }
 
 fn setup(
@@ -81,6 +83,21 @@ fn setup(
             .with_translation(node.position + 0.5 * connection_height * face_normal);
 
         let material = if *maze.solution.first().unwrap() == node {
+            let player_transform =
+                transform.with_translation(transform.translation + 0.2 * face_normal);
+            let player_shape = Sphere::new(0.1);
+            let player_mesh = meshes.add(player_shape);
+
+            commands
+                .spawn(PbrBundle {
+                    mesh: player_mesh,
+                    material: white_material.clone(),
+                    transform: player_transform,
+                    ..default()
+                })
+                .insert(Interactable::Player)
+                .insert(Collider::ball(player_shape.radius));
+
             white_material.clone()
         } else if *maze.solution.last().unwrap() == node {
             white_material.clone()
@@ -95,8 +112,7 @@ fn setup(
                 transform,
                 ..default()
             })
-            .insert(Interactable::Node)
-            .insert(Collider::cylinder(cylinder.half_height, cylinder.radius));
+            .insert(Interactable::Node);
     }
 
     for (source_node, target_node, edge) in maze.graph.all_edges() {
@@ -314,6 +330,19 @@ fn do_input(
         return;
     };
 
+    let max_toi = 4.0;
+    if let Some((entity, toi)) = rapier_context.cast_ray(
+        ray.origin,
+        ray.direction.into(),
+        max_toi,
+        true,
+        QueryFilter::default(),
+    ) {
+        // The first collider hit has the entity `entity` and it hit after
+        // the ray travelled a distance equal to `ray_dir * toi`.
+        let hit_point = ray.origin + ray.direction * toi;
+        println!("Entity {:?} hit at point {}", entity, hit_point);
+    }
     let delta_device_pixels = cursor_position_vec - last_pos.unwrap_or(cursor_position_vec);
 
     let delta = if mouse_buttons.pressed(MouseButton::Left)
