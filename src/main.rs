@@ -18,10 +18,14 @@ use bevy_rapier3d::{
     pipeline::QueryFilter,
     plugin::{NoUserData, RapierContext, RapierPhysicsPlugin},
 };
-use model::{BorderType, CubeGenerator, CubeNode};
+use shape::cube::{
+    self,
+    maze::{CubeMaze, CubeNode},
+};
 
-mod cube_maze_factory;
 mod model;
+mod shape;
+
 fn main() {
     App::new()
         .add_plugins((
@@ -30,31 +34,32 @@ fn main() {
             WireframePlugin,
         ))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_systems(Startup, setup)
         .add_systems(
-            Update,
+            Startup,
             (
-                do_input,
-                #[cfg(not(target_arch = "wasm32"))]
-                toggle_wireframe,
+                load_maze,
+                setup.after(load_maze),
+                cube::spawn.after(load_maze),
             ),
         )
+        .add_systems(Update, input)
         .run();
 }
 
 /// A marker component for our shapes so we can query them separately from the ground plane
 #[derive(Component)]
-enum Interactable {
-    Node,
-    Edge,
-    Player,
+struct Player;
+
+fn load_maze(mut commands: Commands) {
+    let maze = CubeMaze::build(3, 2.0);
+    commands.insert_resource(maze);
 }
 
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    cube_maze: Res<CubeMaze>,
 ) {
     let white = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);
@@ -66,82 +71,20 @@ fn setup(
     let green_material = materials.add(StandardMaterial::from_color(green));
     let charcoal_material = materials.add(StandardMaterial::from_color(charcoal));
 
-    let cube_gen = CubeGenerator::new(3, 2.0);
-    let maze = cube_gen.make_maze();
+    let player_transform =
+        compute_initial_player_transform(cube_maze.maze.solution.first().unwrap().clone());
+    let player_shape = Sphere::new(0.1);
+    let player_mesh = meshes.add(player_shape);
 
-    let connection_height = 0.04;
-
-    for node in maze.graph.nodes() {
-        let cylinder = Cylinder::new(0.09, connection_height + 0.005);
-
-        let cuboid_mesh = meshes.add(cylinder);
-
-        let face_normal = node.face.normal();
-
-        let transform = Transform::IDENTITY
-            .looking_at(face_normal.any_orthogonal_vector(), face_normal)
-            .with_translation(node.position + 0.5 * connection_height * face_normal);
-
-        let material = if *maze.solution.first().unwrap() == node {
-            let player_transform =
-                transform.with_translation(transform.translation + 0.2 * face_normal);
-            let player_shape = Sphere::new(0.1);
-            let player_mesh = meshes.add(player_shape);
-
-            commands
-                .spawn(PbrBundle {
-                    mesh: player_mesh,
-                    material: white_material.clone(),
-                    transform: player_transform,
-                    ..default()
-                })
-                .insert(Interactable::Player)
-                .insert(Collider::ball(player_shape.radius));
-
-            white_material.clone()
-        } else if *maze.solution.last().unwrap() == node {
-            white_material.clone()
-        } else {
-            beige_material.clone()
-        };
-
-        commands
-            .spawn(PbrBundle {
-                mesh: cuboid_mesh,
-                material,
-                transform,
-                ..default()
-            })
-            .insert(Interactable::Node);
-    }
-
-    for (source_node, target_node, edge) in maze.graph.all_edges() {
-        let mesh = get_connection_mesh(
-            source_node,
-            target_node,
-            cube_gen.distance_between_nodes(),
-            connection_height,
-        );
-        let connecting_mesh = meshes.add(mesh);
-
-        let transform = get_connection_transform(source_node, target_node, connection_height);
-        commands
-            .spawn(PbrBundle {
-                mesh: connecting_mesh,
-                material: beige_material.clone(),
-                transform,
-                ..default()
-            })
-            .insert(Interactable::Edge);
-    }
-
-    let cuboid = meshes.add(Cuboid::from_length(1.5));
-    commands.spawn(PbrBundle {
-        mesh: cuboid,
-        material: green_material.clone(),
-        transform: Transform::IDENTITY,
-        ..default()
-    });
+    commands
+        .spawn(PbrBundle {
+            mesh: player_mesh,
+            material: white_material.clone(),
+            transform: player_transform,
+            ..default()
+        })
+        .insert(Player)
+        .insert(Collider::ball(player_shape.radius));
 
     commands.spawn(Camera3dBundle {
         camera: Camera {
@@ -159,153 +102,24 @@ fn setup(
     });
 }
 
-fn get_connection_mesh(
-    from: CubeNode,
-    to: CubeNode,
-    distance_between_nodes: f32,
-    connection_height: f32,
-) -> Mesh {
-    let border_type = BorderType::get_from_faces(&from.face, &to.face);
+fn compute_initial_player_transform(start_node: CubeNode) -> Transform {
+    let face_normal = start_node.face.normal();
 
-    let width = 0.06;
-    let node_size = 0.1;
-
-    match border_type {
-        BorderType::SameFace => {
-            let length = (distance_between_nodes - node_size);
-            let half_width = width / 2.0;
-            let cube = Cuboid::new(width, connection_height, length).into();
-            cube
-        }
-        BorderType::Connected => {
-            create_edge_piece(width, connection_height, distance_between_nodes, node_size)
-        }
-        _ => panic!["stop"],
-    }
+    Transform::IDENTITY
+        .looking_at(face_normal.any_orthogonal_vector(), face_normal)
+        .with_translation(start_node.position + 0.5 * face_normal)
 }
 
-fn create_edge_piece(width: f32, height: f32, distance_between_nodes: f32, node_size: f32) -> Mesh {
-    let half_width = width / 2.0;
-    let half_distance_to_node = (distance_between_nodes - node_size) / 2.0;
-    let uv_mid_point = height / height + half_distance_to_node;
-
-    let vertices = vec![
-        //L +Z face
-        [0.0, 0.0, half_width],
-        [height, height, half_width],
-        [-half_distance_to_node, 0.0, half_width],
-        [-half_distance_to_node, height, half_width],
-        [0.0, -half_distance_to_node, half_width],
-        [height, -half_distance_to_node, half_width],
-        //L -Z face
-        [0.0, 0.0, -half_width],
-        [height, height, -half_width],
-        [-half_distance_to_node, 0.0, -half_width],
-        [-half_distance_to_node, height, -half_width],
-        [0.0, -half_distance_to_node, -half_width],
-        [height, -half_distance_to_node, -half_width],
-        //X normal face
-        [height, height, half_width],
-        [height, height, -half_width],
-        [height, -half_distance_to_node, -half_width],
-        [height, -half_distance_to_node, half_width],
-        //Y normal face
-        [height, height, half_width],
-        [height, height, -half_width],
-        [-half_distance_to_node, height, -half_width],
-        [-half_distance_to_node, height, half_width],
-    ]
-    .into_iter()
-    .map(|arr| Vec3::from_array(arr))
-    .collect::<Vec<Vec3>>();
-
-    let total_corner_piece_length = height + half_distance_to_node;
-    let uv_coords = vertices
-        .clone()
-        .into_iter()
-        .map(|vec| (vec + half_distance_to_node) / total_corner_piece_length)
-        .map(|vec| Vec2::new(vec.x, vec.y))
-        .collect::<Vec<Vec2>>();
-
-    let normals = vertices
-        .clone()
-        .into_iter()
-        .enumerate()
-        .map(|(i, _)| match i {
-            0..6 => Vec3::Z,
-            6..12 => -Vec3::Z,
-            12..16 => Vec3::X,
-            16..20 => Vec3::Y,
-            _ => panic!["stop"],
-        })
-        .collect::<Vec<Vec3>>();
-
-    // Create a new mesh using a triangle list topology, where each set of 3 vertices composes a triangle.
-    Mesh::new(
-        PrimitiveTopology::TriangleList,
-        RenderAssetUsages::default(),
-    )
-    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
-    .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uv_coords)
-    // Assign normals (everything points outwards)
-    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
-    .with_inserted_indices(Indices::U32(vec![
-        0, 1, 3, 0, 5, 1, 0, 3, 2, 0, 4, 5, // +Z face
-        6, 9, 7, 6, 7, 11, 6, 8, 9, 6, 11, 10, // -Z face
-        12, 14, 13, 12, 15, 14, // X face
-        16, 17, 18, 16, 18, 19, // Y face
-    ]))
-}
-
-fn get_connection_transform(from: CubeNode, to: CubeNode, connection_height: f32) -> Transform {
-    let border_type = BorderType::get_from_faces(&from.face, &to.face);
-    match border_type {
-        BorderType::SameFace => {
-            let forward = from.position - to.position;
-            let middle = (from.position + to.position) / 2.0;
-            Transform::IDENTITY
-                .looking_to(forward, from.face.normal())
-                .with_translation(middle + from.face.normal() * connection_height / 2.0)
-        }
-        BorderType::Connected => {
-            let forward = from.face.normal().cross(to.face.normal());
-            let translation = from.position.abs().max(to.position.abs()) * from.position.signum();
-            Transform::IDENTITY
-                .looking_to(forward, from.face.normal())
-                .with_translation(translation)
-        }
-        _ => panic!["unknown edge types"],
-    }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn toggle_wireframe(
-    mut wireframe_config: ResMut<WireframeConfig>,
-    keyboard: Res<ButtonInput<KeyCode>>,
-) {
-    if keyboard.just_pressed(KeyCode::Space) {
-        wireframe_config.global = !wireframe_config.global;
-    }
-}
-
-fn do_input(
-    mut camera_query: Query<(&mut Transform, &GlobalTransform, &Camera), Without<Interactable>>,
+fn input(
+    mut camera_query: Query<(&mut Transform, &GlobalTransform, &Camera), Without<Player>>,
     mut light_query: Query<
         &mut Transform,
-        (
-            With<DirectionalLight>,
-            Without<Interactable>,
-            Without<Camera>,
-        ),
+        (With<DirectionalLight>, Without<Player>, Without<Camera>),
     >,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     nodes: Query<
         (&Transform, &Handle<Mesh>),
-        (
-            With<Interactable>,
-            Without<Camera>,
-            Without<DirectionalLight>,
-        ),
+        (With<Player>, Without<Camera>, Without<DirectionalLight>),
     >,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     rapier_context: Res<RapierContext>,
