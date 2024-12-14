@@ -8,7 +8,8 @@ use bevy_rapier3d::{pipeline::QueryFilter, plugin::RapierContext};
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ControllerState {
     #[default]
-    Idleing,
+    IdlePostSolve,
+    IdlePostView,
     Solving,
     Viewing,
 }
@@ -19,7 +20,11 @@ pub struct Controller;
 impl Plugin for Controller {
     fn build(&self, app: &mut App) {
         app.init_state::<ControllerState>()
-            .add_systems(Update, idle.run_if(in_state(ControllerState::Idleing)))
+            .add_systems(
+                Update,
+                idle.run_if(in_state(ControllerState::IdlePostSolve)),
+            )
+            .add_systems(Update, idle.run_if(in_state(ControllerState::IdlePostView)))
             .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)))
             .add_systems(Update, solve.run_if(in_state(ControllerState::Solving)));
     }
@@ -76,7 +81,7 @@ fn view(
     mut next_controller_state: ResMut<NextState<ControllerState>>,
 ) {
     if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
-        next_controller_state.set(ControllerState::Idleing);
+        next_controller_state.set(ControllerState::IdlePostView);
         return;
     }
 }
@@ -92,7 +97,7 @@ fn solve(
     mut next_controller_state: ResMut<NextState<ControllerState>>,
 ) {
     if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
-        next_controller_state.set(ControllerState::Idleing);
+        next_controller_state.set(ControllerState::IdlePostSolve);
         return;
     }
 

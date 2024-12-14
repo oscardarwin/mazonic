@@ -9,7 +9,7 @@ impl Plugin for PlatonicCamera {
         app.init_state::<ControllerState>()
             .add_systems(
                 Update,
-                follow_player.run_if(in_state(ControllerState::Idleing)),
+                follow_player.run_if(in_state(ControllerState::IdlePostSolve)),
             )
             .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)))
             .add_systems(Startup, setup);
@@ -36,9 +36,34 @@ fn setup(mut commands: Commands) {
 }
 
 fn follow_player(
-    camera_query: Query<(&GlobalTransform, &Camera)>,
-    primary_window: Query<&Window, With<PrimaryWindow>>,
+    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut light_query: Query<
+        &mut Transform,
+        (With<DirectionalLight>, Without<Player>, Without<Camera>),
+    >,
+    player_query: Query<&Transform, (With<Player>, Without<Camera>)>,
 ) {
+    let player_transform = player_query.single();
+    let mut camera_transform = camera_query.single_mut();
+
+    let player_translation = player_transform.translation;
+    let camera_translation = camera_transform.translation;
+
+    let player_camera_angle = player_translation.angle_between(camera_translation);
+
+    if player_camera_angle < 0.25 {
+        return;
+    }
+
+    let target_angle = 0.005 * player_camera_angle;
+
+    let player_camera_axis = camera_translation.cross(player_translation);
+
+    let rotation = Quat::from_axis_angle(player_camera_axis, target_angle);
+    camera_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
+    let mut light_transform = light_query.single_mut();
+
+    light_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
 }
 
 fn view(
