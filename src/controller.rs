@@ -321,16 +321,17 @@ fn compute_intersection_point_of_edge(
         project_point_to_plane(&other_edge_node.position, plane_point, &plane_normal);
 
     let node_to_other_vec = other_node_on_player_plane - plane_point;
-    let edge_norm_squared = node_to_other_vec.normalize() / node_to_other_vec.norm();
     let project_ray_on_face = project_ray_to_player_face(ray, cube_node, elevation);
 
     let face_ray = project_ray_on_face
         .map(|intersection_point| intersection_point - plane_point)
         .map(|relative_intersection_point| {
-            relative_intersection_point.dot(node_to_other_vec) * edge_norm_squared
+            relative_intersection_point.dot(node_to_other_vec)
+                / node_to_other_vec.dot(node_to_other_vec)
         })
-        .map(|relative_intersection_projected_to_edge| {
-            relative_intersection_projected_to_edge + plane_point
+        .map(|distance_along_node_other_vec| distance_along_node_other_vec.clamp(0.0, 1.0))
+        .map(|clamped_distance_along_node_to_other_vec| {
+            clamped_distance_along_node_to_other_vec * node_to_other_vec + plane_point
         });
 
     println!(
