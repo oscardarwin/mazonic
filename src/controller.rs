@@ -1,11 +1,11 @@
 use std::f32::consts::PI;
 
 use crate::{
+    player::{Player, PlayerMazePosition},
     shape::cube::{
         self,
         maze::{BorderType, CubeMaze, CubeNode, Edge},
     },
-    Player, PlayerMazePosition,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
@@ -28,7 +28,7 @@ use bevy_rapier3d::{
 };
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
-enum ControllerState {
+pub enum ControllerState {
     #[default]
     Idleing,
     Solving,
@@ -103,40 +103,6 @@ fn view(
     if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
         next_controller_state.set(ControllerState::Idleing);
         return;
-    }
-
-    let Ok(window) = primary_window.get_single() else {
-        return;
-    };
-
-    let Some(cursor_position) = window.cursor_position() else {
-        // if the cursor is not inside the window, we can't do anything
-        return;
-    };
-
-    let previous_cursor_position = last_pos.clone();
-    *last_pos = Some(cursor_position);
-
-    let delta_device_pixels = cursor_position - previous_cursor_position.unwrap_or(cursor_position);
-
-    if delta_device_pixels.norm() > 20.0 {
-        return;
-    }
-
-    let mut camera_transform = camera_query.single_mut();
-    let delta = camera_transform.right() * delta_device_pixels.x
-        + camera_transform.up() * delta_device_pixels.y;
-    let axis = delta
-        .cross(camera_transform.forward().as_vec3())
-        .normalize();
-
-    if axis.norm() > 0.01 {
-        // println!("rotate_around: {:?} with delta: {:?}", axis, delta);
-        let rotation = Quat::from_axis_angle(axis, delta.norm() / 150.0);
-        let mut light_transform = light_query.single_mut();
-
-        light_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
-        camera_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
     }
 }
 

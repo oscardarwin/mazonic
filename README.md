@@ -6,8 +6,6 @@ smooth player movement.
 
 ## Levels selector should be a icosohedron.
 
-
-
 # Build for Web:
 
 install wasm32-unknown-unknown
