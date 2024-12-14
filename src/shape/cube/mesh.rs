@@ -1,20 +1,10 @@
-use std::f32::consts::PI;
 
 use bevy::{
-    color::palettes::basic::SILVER,
-    math::{vec2, NormedVectorSpace},
     prelude::*,
     render::{
         mesh::{Indices, PrimitiveTopology},
         render_asset::RenderAssetUsages,
-        render_resource::{Extent3d, TextureDimension, TextureFormat},
     },
-    window::PrimaryWindow,
-};
-use bevy_rapier3d::{
-    geometry::Collider,
-    pipeline::QueryFilter,
-    plugin::{NoUserData, RapierContext, RapierPhysicsPlugin},
 };
 
 use super::maze::{BorderType, CubeNode};
@@ -32,7 +22,7 @@ pub fn get_connection_mesh(
 
     match border_type {
         BorderType::SameFace => {
-            let length = (distance_between_nodes - node_size);
+            let length = distance_between_nodes - node_size;
             let half_width = width / 2.0;
             let cube = Cuboid::new(width, connection_height, length).into();
             cube

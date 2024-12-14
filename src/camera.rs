@@ -1,31 +1,12 @@
-use std::f32::consts::PI;
 
 use crate::{
     controller::ControllerState,
     player::Player,
-    shape::cube::{
-        self,
-        maze::{BorderType, CubeMaze, CubeNode, Edge},
-    },
 };
-#[cfg(not(target_arch = "wasm32"))]
-use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
 use bevy::{
-    app::Plugins,
-    color::palettes::basic::SILVER,
-    math::{vec2, NormedVectorSpace},
+    math::NormedVectorSpace,
     prelude::*,
-    render::{
-        mesh::{Indices, PrimitiveTopology},
-        render_asset::RenderAssetUsages,
-        render_resource::{Extent3d, TextureDimension, TextureFormat},
-    },
     window::PrimaryWindow,
-};
-use bevy_rapier3d::{
-    geometry::Collider,
-    pipeline::QueryFilter,
-    plugin::{NoUserData, RapierContext, RapierPhysicsPlugin},
 };
 
 #[derive(Default)]
@@ -77,7 +58,7 @@ fn view(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut last_pos: Local<Option<Vec2>>,
-    mut next_controller_state: ResMut<NextState<ControllerState>>,
+    next_controller_state: ResMut<NextState<ControllerState>>,
 ) {
     let Ok(window) = primary_window.get_single() else {
         return;

@@ -1,27 +1,9 @@
-use std::f32::consts::PI;
 
 use crate::shape::cube::{
-    self,
-    maze::{CubeMaze, CubeNode, Edge, Face},
+    maze::{CubeMaze, CubeNode},
 };
-#[cfg(not(target_arch = "wasm32"))]
-use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
-use bevy::{
-    color::palettes::basic::SILVER,
-    math::{vec2, NormedVectorSpace},
-    prelude::*,
-    render::{
-        mesh::{Indices, PrimitiveTopology},
-        render_asset::RenderAssetUsages,
-        render_resource::{Extent3d, TextureDimension, TextureFormat},
-    },
-    window::PrimaryWindow,
-};
-use bevy_rapier3d::{
-    geometry::Collider,
-    pipeline::QueryFilter,
-    plugin::{NoUserData, RapierContext, RapierPhysicsPlugin},
-};
+use bevy::prelude::*;
+use bevy_rapier3d::geometry::Collider;
 
 /// A marker component for our shapes so we can query them separately from the ground plane
 #[derive(Component)]

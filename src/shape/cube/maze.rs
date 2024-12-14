@@ -4,13 +4,13 @@ use std::{
 };
 
 use bevy::{
-    ecs::{component::Component, system::Resource},
+    ecs::system::Resource,
     math::Vec3,
 };
 use itertools::iproduct;
 use maze_generator::{
     config::Maze,
-    model::{Door, RoomId},
+    model::Door,
     traversal_graph_generator::TraversalGraphGenerator,
 };
 use strum::IntoEnumIterator;

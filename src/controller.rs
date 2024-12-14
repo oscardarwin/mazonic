@@ -1,30 +1,18 @@
-use std::f32::consts::PI;
 
 use crate::{
     player::{Player, PlayerMazePosition},
     shape::cube::{
-        self,
-        maze::{BorderType, CubeMaze, CubeNode, Edge},
+        maze::{BorderType, CubeMaze, CubeNode},
     },
 };
-#[cfg(not(target_arch = "wasm32"))]
-use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
 use bevy::{
-    app::Plugins,
-    color::palettes::basic::SILVER,
-    math::{vec2, NormedVectorSpace},
+    math::NormedVectorSpace,
     prelude::*,
-    render::{
-        mesh::{Indices, PrimitiveTopology},
-        render_asset::RenderAssetUsages,
-        render_resource::{Extent3d, TextureDimension, TextureFormat},
-    },
     window::PrimaryWindow,
 };
 use bevy_rapier3d::{
-    geometry::Collider,
     pipeline::QueryFilter,
-    plugin::{NoUserData, RapierContext, RapierPhysicsPlugin},
+    plugin::RapierContext,
 };
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
@@ -90,14 +78,14 @@ fn idle(
 }
 
 fn view(
-    mut camera_query: Query<&mut Transform, With<Camera>>,
-    mut light_query: Query<
+    camera_query: Query<&mut Transform, With<Camera>>,
+    light_query: Query<
         &mut Transform,
         (With<DirectionalLight>, Without<Player>, Without<Camera>),
     >,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut last_pos: Local<Option<Vec2>>,
+    last_pos: Local<Option<Vec2>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
 ) {
     if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
@@ -138,7 +126,7 @@ fn solve(
     };
 
     // get plane for cuboid.
-    let (mut player_transform, mut player_maze_position) = player_query.single_mut();
+    let (player_transform, mut player_maze_position) = player_query.single_mut();
 
     *player_maze_position = match player_maze_position.as_ref() {
         PlayerMazePosition::Node(node) => {

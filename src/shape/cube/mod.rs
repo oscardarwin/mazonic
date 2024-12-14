@@ -4,17 +4,13 @@ mod mesh;
 use bevy::{
     asset::Assets,
     color::Color,
-    ecs::{
-        storage::Resources,
-        system::{Commands, ResMut, Resource},
-    },
-    math::primitives::{Cylinder, Sphere},
+    ecs::system::{Commands, ResMut},
+    math::primitives::Cylinder,
     pbr::{PbrBundle, StandardMaterial},
     prelude::*,
     render::mesh::Mesh,
     transform::components::Transform,
 };
-use bevy_rapier3d::geometry::Collider;
 
 use self::{
     maze::{BorderType, CubeMaze, CubeNode},
