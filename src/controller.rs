@@ -197,14 +197,19 @@ fn move_player_on_edge(
     let to_node_distance = to_node.position + to_node.face.normal() * maze.player_elevation
         - player_plane_edge_intersection;
 
-    let new_player_state = if to_node_distance.norm() > 0.1 {
+    let from_node_distance = from_node.position + from_node.face.normal() * maze.player_elevation
+        - player_plane_edge_intersection;
+
+    let new_player_state = if to_node_distance.norm() < 0.18 {
+        PlayerMazeState::Node(to_node.clone())
+    } else if from_node_distance.norm() < 0.18 {
+        PlayerMazeState::Node(from_node.clone())
+    } else {
         PlayerMazeState::Edge(
             from_node.clone(),
             to_node.clone(),
             player_plane_edge_intersection,
         )
-    } else {
-        PlayerMazeState::Node(to_node.clone())
     };
 
     Some(new_player_state)
