@@ -64,7 +64,7 @@ fn follow_player(
         return;
     }
 
-    let target_angle = 0.005 * target_camera_angle;
+    let target_angle = 0.01 * target_camera_angle;
 
     let player_camera_axis = camera_translation.cross(target_camera_unit_position);
 
