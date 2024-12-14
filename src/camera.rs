@@ -7,13 +7,12 @@ pub struct PlatonicCamera;
 
 impl Plugin for PlatonicCamera {
     fn build(&self, app: &mut App) {
-        app.init_state::<ControllerState>()
-            .add_systems(
-                Update,
-                follow_player.run_if(in_state(ControllerState::IdlePostSolve)),
-            )
-            .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)))
-            .add_systems(Startup, setup);
+        app.add_systems(
+            Update,
+            follow_player.run_if(in_state(ControllerState::IdlePostSolve)),
+        )
+        .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)))
+        .add_systems(Startup, setup);
     }
 }
 

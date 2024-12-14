@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_rapier3d::plugin::{NoUserData, RapierPhysicsPlugin};
 use camera::PlatonicCamera;
 use controller::Controller;
-use player::setup_player;
+use player::{setup_player, PlayerPlugin};
 use shape::cube::{self, maze::CubeMaze};
 
 mod camera;
@@ -23,14 +23,8 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(Controller::default())
         .add_plugins(PlatonicCamera::default())
-        .add_systems(
-            Startup,
-            (
-                load_maze,
-                setup_player.after(load_maze),
-                cube::spawn.after(load_maze),
-            ),
-        )
+        .add_plugins(PlayerPlugin::default())
+        .add_systems(Startup, (load_maze, cube::spawn.after(load_maze)))
         .run();
 }
 

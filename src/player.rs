@@ -1,5 +1,10 @@
-use crate::shape::cube::maze::{CubeMaze, CubeNode};
-use bevy::prelude::*;
+use std::fmt::Debug;
+
+use crate::{
+    load_maze,
+    shape::cube::maze::{CubeMaze, CubeNode},
+};
+use bevy::{math::VectorSpace, prelude::*};
 use bevy_rapier3d::geometry::Collider;
 
 /// A marker component for our shapes so we can query them separately from the ground plane
@@ -7,9 +12,19 @@ use bevy_rapier3d::geometry::Collider;
 pub struct Player;
 
 #[derive(Component, Debug)]
-pub enum PlayerMazePosition {
+pub enum PlayerMazeState {
     Node(CubeNode),
-    Edge(CubeNode, CubeNode),
+    Edge(CubeNode, CubeNode, Vec3),
+}
+
+#[derive(Default)]
+pub struct PlayerPlugin;
+
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, move_player)
+            .add_systems(Startup, setup_player.after(load_maze));
+    }
 }
 
 pub fn setup_player(
@@ -35,7 +50,7 @@ pub fn setup_player(
             ..default()
         })
         .insert(Player)
-        .insert(PlayerMazePosition::Node(initial_node))
+        .insert(PlayerMazeState::Node(initial_node))
         .insert(Collider::ball(player_shape.radius));
 }
 
@@ -45,4 +60,15 @@ fn compute_initial_player_transform(start_node: CubeNode) -> Transform {
     Transform::IDENTITY
         .looking_at(face_normal.any_orthogonal_vector(), face_normal)
         .with_translation(start_node.position + 0.2 * face_normal)
+}
+
+fn move_player(mut player_query: Query<(&mut Transform, &PlayerMazeState)>, maze: Res<CubeMaze>) {
+    let (mut player_transform, player_maze_state) = player_query.single_mut();
+
+    let target_position = match player_maze_state {
+        PlayerMazeState::Node(node) => node.position + maze.player_elevation * node.face.normal(),
+        PlayerMazeState::Edge(_, _, edge_position) => edge_position.clone(),
+    };
+
+    player_transform.translation = player_transform.translation.lerp(target_position, 0.1)
 }
