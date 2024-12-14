@@ -1,5 +1,6 @@
 use crate::{controller::ControllerState, player::Player};
 use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
+use itertools::iproduct;
 
 #[derive(Default)]
 pub struct PlatonicCamera;
@@ -49,15 +50,24 @@ fn follow_player(
     let player_translation = player_transform.translation;
     let camera_translation = camera_transform.translation;
 
-    let player_camera_angle = player_translation.angle_between(camera_translation);
+    // use faces for other types of shapes.
+    let target_camera_unit_position = iproduct!(-1..=1, -1..=1, -1..=1)
+        .map(|(x, y, z)| Vec3::new(x as f32, y as f32, z as f32))
+        .filter(|vec| vec.norm() > 0.5)
+        .min_by_key(|camera_unit_position| {
+            (player_translation.angle_between(camera_unit_position.clone()) * 100.0) as i32
+        })
+        .unwrap();
 
-    if player_camera_angle < 0.25 {
+    let target_camera_angle = target_camera_unit_position.angle_between(camera_translation);
+
+    if target_camera_angle < 0.15 {
         return;
     }
 
-    let target_angle = 0.005 * player_camera_angle;
+    let target_angle = 0.005 * target_camera_angle;
 
-    let player_camera_axis = camera_translation.cross(player_translation);
+    let player_camera_axis = camera_translation.cross(target_camera_unit_position);
 
     let rotation = Quat::from_axis_angle(player_camera_axis, target_angle);
     camera_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
