@@ -1,19 +1,9 @@
-
 use crate::{
     player::{Player, PlayerMazePosition},
-    shape::cube::{
-        maze::{BorderType, CubeMaze, CubeNode},
-    },
+    shape::cube::maze::{BorderType, CubeMaze, CubeNode},
 };
-use bevy::{
-    math::NormedVectorSpace,
-    prelude::*,
-    window::PrimaryWindow,
-};
-use bevy_rapier3d::{
-    pipeline::QueryFilter,
-    plugin::RapierContext,
-};
+use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
+use bevy_rapier3d::{pipeline::QueryFilter, plugin::RapierContext};
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ControllerState {
@@ -79,10 +69,7 @@ fn idle(
 
 fn view(
     camera_query: Query<&mut Transform, With<Camera>>,
-    light_query: Query<
-        &mut Transform,
-        (With<DirectionalLight>, Without<Player>, Without<Camera>),
-    >,
+    light_query: Query<&mut Transform, (With<DirectionalLight>, Without<Player>, Without<Camera>)>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     last_pos: Local<Option<Vec2>>,

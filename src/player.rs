@@ -1,7 +1,4 @@
-
-use crate::shape::cube::{
-    maze::{CubeMaze, CubeNode},
-};
+use crate::shape::cube::maze::{CubeMaze, CubeNode};
 use bevy::prelude::*;
 use bevy_rapier3d::geometry::Collider;
 

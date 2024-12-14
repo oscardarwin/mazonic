@@ -1,4 +1,3 @@
-
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::pbr::wireframe::WireframePlugin;
 use bevy::prelude::*;
@@ -6,10 +5,7 @@ use bevy_rapier3d::plugin::{NoUserData, RapierPhysicsPlugin};
 use camera::PlatonicCamera;
 use controller::Controller;
 use player::setup_player;
-use shape::cube::{
-    self,
-    maze::CubeMaze,
-};
+use shape::cube::{self, maze::CubeMaze};
 
 mod camera;
 mod controller;

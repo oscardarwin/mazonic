@@ -1,13 +1,5 @@
-
-use crate::{
-    controller::ControllerState,
-    player::Player,
-};
-use bevy::{
-    math::NormedVectorSpace,
-    prelude::*,
-    window::PrimaryWindow,
-};
+use crate::{controller::ControllerState, player::Player};
+use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
 
 #[derive(Default)]
 pub struct PlatonicCamera;

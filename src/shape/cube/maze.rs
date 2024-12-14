@@ -3,15 +3,10 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use bevy::{
-    ecs::system::Resource,
-    math::Vec3,
-};
+use bevy::{ecs::system::Resource, math::Vec3};
 use itertools::iproduct;
 use maze_generator::{
-    config::Maze,
-    model::Door,
-    traversal_graph_generator::TraversalGraphGenerator,
+    config::Maze, model::Door, traversal_graph_generator::TraversalGraphGenerator,
 };
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
