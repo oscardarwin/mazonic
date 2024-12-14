@@ -152,8 +152,11 @@ fn move_player_on_node(
     maze: Res<CubeMaze>,
     ray: Ray3d,
 ) -> PlayerMazePosition {
-    let face_intersection_point =
-        project_ray_to_player_face(ray, node, maze.player_elevation).unwrap();
+    let Some(face_intersection_point) =
+        project_ray_to_player_face(ray, node, maze.player_elevation)
+    else {
+        return PlayerMazePosition::Node(node.clone());
+    };
 
     let face_intersection_from_player = face_intersection_point - player_transform.translation;
 
