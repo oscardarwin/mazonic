@@ -10,6 +10,10 @@ Pick the node with the minimum angle to each neighbour node.
 
 Node now on path:
 
+# Cross Face Edge Idea
+
+project point from mouse onto plane at player level on both faces. Decide which plane based on which projected point is closer to origin.
+
 
 
 # Build for Web:

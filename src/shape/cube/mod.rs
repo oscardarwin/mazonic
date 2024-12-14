@@ -37,7 +37,7 @@ pub fn spawn(
     let green_material = materials.add(StandardMaterial::from_color(green));
     let charcoal_material = materials.add(StandardMaterial::from_color(charcoal));
 
-    let cube_gen = CubeMaze::build(3, 2.0);
+    let cube_gen = CubeMaze::build(3, 2.0, 0.2);
     let connection_height = 0.04;
 
     for node in cube_maze.maze.graph.nodes() {
@@ -95,7 +95,7 @@ pub fn spawn(
 }
 
 fn get_connection_transform(from: CubeNode, to: CubeNode, connection_height: f32) -> Transform {
-    let border_type = BorderType::get_from_faces(&from.face, &to.face);
+    let border_type = BorderType::from_faces(&from.face, &to.face);
     match border_type {
         BorderType::SameFace => {
             let forward = from.position - to.position;

@@ -3,7 +3,10 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use bevy::{ecs::system::Resource, math::Vec3};
+use bevy::{
+    ecs::{component::Component, system::Resource},
+    math::Vec3,
+};
 use itertools::iproduct;
 use maze_generator::{
     config::Maze,
@@ -50,7 +53,7 @@ pub enum BorderType {
 }
 
 impl BorderType {
-    pub fn get_from_faces(face_1: &Face, face_2: &Face) -> BorderType {
+    pub fn from_faces(face_1: &Face, face_2: &Face) -> BorderType {
         if face_1 == face_2 {
             BorderType::SameFace
         } else if BorderType::are_unconnected(face_1, face_2)
@@ -137,11 +140,12 @@ pub struct CubeMaze {
     pub nodes_per_edge: u8,
     pub face_size: f32,
     pub distance_between_nodes: f32,
+    pub player_elevation: f32,
     pub maze: Maze<CubeNode, Edge>,
 }
 
 impl CubeMaze {
-    pub fn build(nodes_per_edge: u8, face_size: f32) -> CubeMaze {
+    pub fn build(nodes_per_edge: u8, face_size: f32, player_elevation: f32) -> CubeMaze {
         let distance_between_nodes = face_size / ((1 + nodes_per_edge) as f32);
         let nodes = Self::make_nodes(nodes_per_edge, distance_between_nodes);
 
@@ -156,6 +160,7 @@ impl CubeMaze {
             nodes_per_edge,
             face_size,
             distance_between_nodes,
+            player_elevation,
             maze,
         }
     }
@@ -206,7 +211,7 @@ struct CubeTraversalGraphGenerator {
 
 impl TraversalGraphGenerator<CubeNode, Edge> for CubeTraversalGraphGenerator {
     fn can_connect(&self, from: &CubeNode, to: &CubeNode, with: &Edge) -> bool {
-        let border_type = BorderType::get_from_faces(&from.face, &to.face);
+        let border_type = BorderType::from_faces(&from.face, &to.face);
 
         let distance = from.position.distance(to.position);
 

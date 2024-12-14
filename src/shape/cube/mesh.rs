@@ -25,7 +25,7 @@ pub fn get_connection_mesh(
     distance_between_nodes: f32,
     connection_height: f32,
 ) -> Mesh {
-    let border_type = BorderType::get_from_faces(&from.face, &to.face);
+    let border_type = BorderType::from_faces(&from.face, &to.face);
 
     let width = 0.06;
     let node_size = 0.1;

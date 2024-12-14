@@ -1,0 +1,342 @@
+use std::f32::consts::PI;
+
+use crate::{
+    shape::cube::{
+        self,
+        maze::{BorderType, CubeMaze, CubeNode, Edge},
+    },
+    Player, PlayerMazePosition,
+};
+#[cfg(not(target_arch = "wasm32"))]
+use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
+use bevy::{
+    app::Plugins,
+    color::palettes::basic::SILVER,
+    math::{vec2, NormedVectorSpace},
+    prelude::*,
+    render::{
+        mesh::{Indices, PrimitiveTopology},
+        render_asset::RenderAssetUsages,
+        render_resource::{Extent3d, TextureDimension, TextureFormat},
+    },
+    window::PrimaryWindow,
+};
+use bevy_rapier3d::{
+    geometry::Collider,
+    pipeline::QueryFilter,
+    plugin::{NoUserData, RapierContext, RapierPhysicsPlugin},
+};
+
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+enum ControllerState {
+    #[default]
+    Idleing,
+    Solving,
+    Viewing,
+}
+
+#[derive(Default)]
+pub struct Controller;
+
+impl Plugin for Controller {
+    fn build(&self, app: &mut App) {
+        app.init_state::<ControllerState>()
+            .add_systems(Update, idle.run_if(in_state(ControllerState::Idleing)))
+            .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)))
+            .add_systems(Update, solve.run_if(in_state(ControllerState::Solving)));
+    }
+}
+
+fn idle(
+    camera_query: Query<(&GlobalTransform, &Camera)>,
+    primary_window: Query<&Window, With<PrimaryWindow>>,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    rapier_context: Res<RapierContext>,
+    controller_state: Res<State<ControllerState>>,
+    mut next_controller_state: ResMut<NextState<ControllerState>>,
+) {
+    if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
+        return;
+    }
+
+    let Ok(window) = primary_window.get_single() else {
+        return;
+    };
+    let window_size = window.size();
+
+    let Some(cursor_position) = window.cursor_position() else {
+        // if the cursor is not inside the window, we can't do anything
+        return;
+    };
+
+    let (camera_global_transform, camera) = camera_query.single();
+
+    let Some(ray) = camera.viewport_to_world(camera_global_transform, cursor_position) else {
+        // if it was impossible to compute for whatever reason; we can't do anything
+        return;
+    };
+
+    if let Some((entity, toi)) = rapier_context.cast_ray(
+        ray.origin,
+        ray.direction.into(),
+        4.0,
+        true,
+        QueryFilter::default(),
+    ) {
+        next_controller_state.set(ControllerState::Solving);
+    } else {
+        next_controller_state.set(ControllerState::Viewing);
+    }
+}
+
+fn view(
+    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut light_query: Query<
+        &mut Transform,
+        (With<DirectionalLight>, Without<Player>, Without<Camera>),
+    >,
+    primary_window: Query<&Window, With<PrimaryWindow>>,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    mut last_pos: Local<Option<Vec2>>,
+    mut next_controller_state: ResMut<NextState<ControllerState>>,
+) {
+    if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
+        next_controller_state.set(ControllerState::Idleing);
+        return;
+    }
+
+    let Ok(window) = primary_window.get_single() else {
+        return;
+    };
+
+    let Some(cursor_position) = window.cursor_position() else {
+        // if the cursor is not inside the window, we can't do anything
+        return;
+    };
+
+    let previous_cursor_position = last_pos.clone();
+    *last_pos = Some(cursor_position);
+
+    let delta_device_pixels = cursor_position - previous_cursor_position.unwrap_or(cursor_position);
+
+    if delta_device_pixels.norm() > 20.0 {
+        return;
+    }
+
+    let mut camera_transform = camera_query.single_mut();
+    let delta = camera_transform.right() * delta_device_pixels.x
+        + camera_transform.up() * delta_device_pixels.y;
+    let axis = delta
+        .cross(camera_transform.forward().as_vec3())
+        .normalize();
+
+    if axis.norm() > 0.01 {
+        // println!("rotate_around: {:?} with delta: {:?}", axis, delta);
+        let rotation = Quat::from_axis_angle(axis, delta.norm() / 150.0);
+        let mut light_transform = light_query.single_mut();
+
+        light_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
+        camera_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
+    }
+}
+
+fn solve(
+    camera_query: Query<(&GlobalTransform, &Camera)>,
+    primary_window: Query<&Window, With<PrimaryWindow>>,
+    mut player_query: Query<(&mut Transform, &mut PlayerMazePosition)>,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    rapier_context: Res<RapierContext>,
+    controller_state: Res<State<ControllerState>>,
+    maze: Res<CubeMaze>,
+    mut next_controller_state: ResMut<NextState<ControllerState>>,
+) {
+    if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
+        next_controller_state.set(ControllerState::Idleing);
+        return;
+    }
+
+    let Ok(window) = primary_window.get_single() else {
+        return;
+    };
+
+    let Some(cursor_position) = window.cursor_position() else {
+        // if the cursor is not inside the window, we can't do anything
+        return;
+    };
+
+    let (camera_global_transform, camera) = camera_query.single();
+
+    let Some(ray) = camera.viewport_to_world(camera_global_transform, cursor_position) else {
+        // if it was impossible to compute for whatever reason; we can't do anything
+        return;
+    };
+
+    // get plane for cuboid.
+    let (mut player_transform, mut player_maze_position) = player_query.single_mut();
+
+    *player_maze_position = match player_maze_position.as_ref() {
+        PlayerMazePosition::Node(node) => {
+            move_player_on_node(player_transform.as_ref(), node, maze, ray)
+        }
+        PlayerMazePosition::Edge(from_node, to_node) => {
+            move_player_on_edge(player_transform, from_node, to_node, ray, maze)
+        }
+    };
+}
+
+fn project_ray_to_player_face(
+    ray: Ray3d,
+    cube_node: &CubeNode,
+    player_elevation: f32,
+) -> Option<Vec3> {
+    let plane_normal = cube_node.face.normal();
+    let plane_point = cube_node.position + player_elevation * plane_normal;
+
+    ray.intersect_plane(plane_point, InfinitePlane3d::new(plane_normal))
+        .map(|ray_distance| ray.origin + ray.direction.normalize() * ray_distance)
+}
+
+fn project_point_to_plane(point: &Vec3, plane_position: Vec3, plane_normal: &Vec3) -> Vec3 {
+    *point - plane_normal.dot(*point - plane_position) * *plane_normal
+}
+
+fn move_player_on_node(
+    player_transform: &Transform,
+    node: &CubeNode,
+    maze: Res<CubeMaze>,
+    ray: Ray3d,
+) -> PlayerMazePosition {
+    let face_intersection_point =
+        project_ray_to_player_face(ray, node, maze.player_elevation).unwrap();
+
+    let face_intersection_from_player = face_intersection_point - player_transform.translation;
+
+    if face_intersection_from_player.norm() <= 0.18 {
+        return PlayerMazePosition::Node(node.clone());
+    }
+
+    let player_position = player_transform.translation;
+
+    let node_face_normal = node.face.normal();
+    let node_player_plane_position =
+        project_point_to_plane(&node.position, player_position, &node_face_normal);
+
+    let Some((_, to_node, _)) =
+        maze.maze
+            .graph
+            .edges(node.clone())
+            .min_by(|(_, node_1, _), (_, node_2, _)| {
+                let node_1_position = node_1.position;
+                let node_2_position = node_2.position;
+
+                let node_1_player_plane_position =
+                    project_point_to_plane(&node_1_position, player_position, &node_face_normal);
+
+                let node_2_player_plane_position =
+                    project_point_to_plane(&node_2_position, player_position, &node_face_normal);
+
+                let edge_1_vec = node_1_player_plane_position - node_player_plane_position;
+                let edge_2_vec = node_2_player_plane_position - node_player_plane_position;
+
+                let angle_to_edge_1 = edge_1_vec.angle_between(face_intersection_from_player);
+                let angle_to_edge_2 = edge_2_vec.angle_between(face_intersection_from_player);
+                angle_to_edge_1.total_cmp(&angle_to_edge_2)
+            })
+    else {
+        return PlayerMazePosition::Node(node.clone());
+    };
+
+    PlayerMazePosition::Edge(node.clone(), to_node)
+}
+
+fn move_player_on_edge(
+    mut player_transform: Mut<Transform>,
+    from_node: &CubeNode,
+    to_node: &CubeNode,
+    ray: Ray3d,
+    maze: Res<CubeMaze>,
+) -> PlayerMazePosition {
+    let player_plane_edge_intersection =
+        compute_player_plane_edge_intersection(ray, from_node, to_node, maze.player_elevation)
+            .unwrap();
+
+    let to_node_distance = to_node.position + to_node.face.normal() * maze.player_elevation
+        - player_plane_edge_intersection;
+
+    if to_node_distance.norm() < 0.1 {
+        player_transform.translation =
+            to_node.position + maze.player_elevation * to_node.face.normal();
+        PlayerMazePosition::Node(to_node.clone())
+    } else {
+        player_transform.translation = player_plane_edge_intersection;
+        PlayerMazePosition::Edge(from_node.clone(), to_node.clone())
+    }
+}
+
+fn compute_player_plane_edge_intersection(
+    screen_ray: Ray3d,
+    from_node: &CubeNode,
+    to_node: &CubeNode,
+    player_elevation: f32,
+) -> Option<Vec3> {
+    let from_plane_intersection =
+        compute_intersection_point_of_edge(screen_ray, &from_node, player_elevation, &to_node);
+
+    let border_type = BorderType::from_faces(&from_node.face, &to_node.face);
+
+    match border_type {
+        BorderType::SameFace => from_plane_intersection,
+        BorderType::Connected => {
+            let to_plane_intersection = compute_intersection_point_of_edge(
+                screen_ray,
+                &to_node,
+                player_elevation,
+                &from_node,
+            );
+
+            std::cmp::min_by(
+                from_plane_intersection,
+                to_plane_intersection,
+                |opt_x, opt_y| {
+                    let opt_x_norm = opt_x.map(|x| x.norm());
+                    let opt_y_norm = opt_y.map(|y| y.norm());
+
+                    opt_x_norm.into_iter().partial_cmp(opt_y_norm).unwrap()
+                },
+            )
+        }
+        _ => panic!["Shouldn't able to move between these nodes."],
+    }
+}
+
+fn compute_intersection_point_of_edge(
+    ray: Ray3d,
+    cube_node: &CubeNode,
+    elevation: f32,
+    other_edge_node: &CubeNode,
+) -> Option<Vec3> {
+    let plane_normal = cube_node.face.normal();
+    let plane_point = cube_node.position + elevation * plane_normal;
+    let other_node_on_player_plane =
+        project_point_to_plane(&other_edge_node.position, plane_point, &plane_normal);
+
+    let node_to_other_vec = other_node_on_player_plane - plane_point;
+    let edge_norm_squared = node_to_other_vec.normalize() / node_to_other_vec.norm();
+    let project_ray_on_face = project_ray_to_player_face(ray, cube_node, elevation);
+
+    let face_ray = project_ray_on_face
+        .map(|intersection_point| intersection_point - plane_point)
+        .map(|relative_intersection_point| {
+            relative_intersection_point.dot(node_to_other_vec) * edge_norm_squared
+        })
+        .map(|relative_intersection_projected_to_edge| {
+            relative_intersection_projected_to_edge + plane_point
+        });
+
+    println!(
+        "projected_ray: {:?}, snapped to edge: {:?}",
+        project_ray_on_face, face_ray
+    );
+
+    face_ray
+}
