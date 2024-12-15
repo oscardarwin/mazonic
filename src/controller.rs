@@ -236,15 +236,10 @@ fn compute_player_plane_edge_intersection(
                 &from_node,
             );
 
-            std::cmp::min_by(
+            std::cmp::min_by_key(
                 from_plane_intersection,
                 to_plane_intersection,
-                |opt_x, opt_y| {
-                    let opt_x_norm = opt_x.map(|x| x.norm());
-                    let opt_y_norm = opt_y.map(|y| y.norm());
-
-                    opt_x_norm.into_iter().partial_cmp(opt_y_norm).unwrap()
-                },
+                |opt_intersection| opt_intersection.map(|x| (100.0 * x.norm()) as u16),
             )
         }
         _ => panic!["Shouldn't able to move between these nodes."],

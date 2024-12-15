@@ -1,8 +1,7 @@
 # TODO:
 
 ## Improve Game Feel
-camera that rotates around a little as you move.
-smooth player movement.
+don't snap to unseen faces.
 
 ## Levels selector should be a icosohedron.
 
