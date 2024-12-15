@@ -253,6 +253,11 @@ fn compute_intersection_point_of_edge(
     other_edge_node: &CubeNode,
 ) -> Option<Vec3> {
     let plane_normal = cube_node.face.normal();
+
+    if plane_normal.dot(Vec3::from(ray.direction)) > 0.0 {
+        return None;
+    }
+
     let plane_point = cube_node.position + elevation * plane_normal;
     let other_node_on_player_plane =
         project_point_to_plane(&other_edge_node.position, plane_point, &plane_normal);
