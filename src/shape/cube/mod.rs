@@ -29,11 +29,11 @@ pub fn spawn(
     let charcoal = Color::srgb_u8(57, 62, 70);
 
     let white_material = materials.add(StandardMaterial::from_color(white));
+    let red_material = materials.add(StandardMaterial::from_color(Color::srgb_u8(0, 130, 140)));
     let beige_material = materials.add(StandardMaterial::from_color(beige));
     let green_material = materials.add(StandardMaterial::from_color(green));
     let charcoal_material = materials.add(StandardMaterial::from_color(charcoal));
 
-    let cube_gen = CubeMaze::build(3, 2.0, 0.2);
     let connection_height = 0.04;
 
     for node in cube_maze.maze.graph.nodes() {
@@ -73,9 +73,16 @@ pub fn spawn(
         let connecting_mesh = meshes.add(mesh);
 
         let transform = get_connection_transform(source_node, target_node, connection_height);
+
+        let material = if cube_maze.maze.graph.contains_edge(target_node, source_node) {
+            red_material.clone()
+        } else {
+            beige_material.clone()
+        };
+
         commands.spawn(PbrBundle {
             mesh: connecting_mesh,
-            material: beige_material.clone(),
+            material,
             transform,
             ..default()
         });

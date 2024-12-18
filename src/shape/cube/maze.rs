@@ -113,7 +113,7 @@ impl PartialEq for CubeNode {
 
 impl Eq for CubeNode {}
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Default)]
 pub struct Edge;
 
 impl Door<CubeNode> for Edge {
@@ -205,7 +205,7 @@ struct CubeTraversalGraphGenerator {
 }
 
 impl TraversalGraphGenerator<CubeNode, Edge> for CubeTraversalGraphGenerator {
-    fn can_connect(&self, from: &CubeNode, to: &CubeNode, with: &Edge) -> bool {
+    fn can_connect(&self, from: &CubeNode, to: &CubeNode) -> bool {
         let border_type = BorderType::from_faces(&from.face, &to.face);
 
         let distance = from.position.distance(to.position);
