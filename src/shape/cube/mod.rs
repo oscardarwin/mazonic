@@ -76,6 +76,19 @@ pub fn spawn(
         });
     }
 
+    let last_node = cube_maze.maze.solution.last().unwrap();
+    commands.spawn(PbrBundle {
+        mesh: Mesh3d(meshes.add(Circle::new(0.1))),
+        material: MeshMaterial3d(white_material.clone()),
+        transform: Transform::IDENTITY
+            .looking_at(
+                -last_node.face.normal(),
+                last_node.face.normal().any_orthogonal_vector(),
+            )
+            .with_translation(last_node.position + last_node.face.normal() * 0.002),
+        ..default()
+    });
+
     let cuboid = meshes.add(Cuboid::from_length(1.5));
     commands.spawn(PbrBundle {
         mesh: Mesh3d(cuboid),
