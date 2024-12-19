@@ -1,21 +1,27 @@
 pub mod maze;
 mod mesh;
 
+use std::f32::consts::FRAC_PI_2;
+
 use bevy::{
     asset::Assets,
     color::Color,
     ecs::system::{Commands, ResMut},
-    math::primitives::Cylinder,
+    math::{primitives::Cylinder, vec2, NormedVectorSpace},
     pbr::{PbrBundle, StandardMaterial},
     prelude::*,
     render::mesh::Mesh,
     transform::components::Transform,
 };
-use bevy_vector_shapes::{painter::ShapeCommands, shapes::LineSpawner};
+use bevy_vector_shapes::{
+    painter::{ShapeCommands, ShapeConfig, ShapeSpawner},
+    render::ShapePipelineType,
+    shapes::{LineBundle, LineComponent, LineSpawner, ShapeAlphaMode, ShapeBundle, TriangleBundle},
+};
 
 use self::{
     maze::{BorderType, CubeMaze, CubeNode},
-    mesh::get_connection_mesh,
+    mesh::EdgeMeshBuilder,
 };
 
 pub fn spawn(
@@ -36,85 +42,73 @@ pub fn spawn(
     let green_material = materials.add(StandardMaterial::from_color(green));
     let charcoal_material = materials.add(StandardMaterial::from_color(charcoal));
 
-    let connection_height = 0.04;
+    let face_angle = FRAC_PI_2;
+    let edge_mesh_builder = EdgeMeshBuilder::new();
 
-    for node in cube_maze.maze.graph.nodes() {
-        let cylinder = Cylinder::new(0.09, connection_height + 0.005);
+    let face_connection_mesh = meshes.add(edge_mesh_builder.line(cube_maze.distance_between_nodes));
+    let face_arrow_mesh =
+        meshes.add(edge_mesh_builder.dashed_arrow(cube_maze.distance_between_nodes));
 
-        let cylinder_mesh = meshes.add(cylinder);
+    let edge_mesh =
+        meshes.add(edge_mesh_builder.edge_line(cube_maze.distance_between_nodes / 2.0, face_angle));
+    let edge_arrow_mesh = meshes.add(
+        edge_mesh_builder.dashed_arrow_edge(cube_maze.distance_between_nodes / 2.0, face_angle),
+    );
 
-        let face_normal = node.face.normal();
+    for (source_node, target_node, _) in cube_maze.maze.graph.all_edges() {
+        let bidirectional = cube_maze.maze.graph.contains_edge(target_node, source_node);
 
-        let transform = Transform::IDENTITY
-            .looking_at(face_normal.any_orthogonal_vector(), face_normal)
-            .with_translation(node.position + 0.5 * connection_height * face_normal);
-
-        let material = if *cube_maze.maze.solution.first().unwrap() == node {
-            white_material.clone()
-        } else if *cube_maze.maze.solution.last().unwrap() == node {
-            white_material.clone()
-        } else {
-            beige_material.clone()
+        let mesh_handle = match BorderType::from_faces(&source_node.face, &target_node.face) {
+            BorderType::SameFace if bidirectional => face_connection_mesh.clone(),
+            BorderType::SameFace if !bidirectional => face_arrow_mesh.clone(),
+            BorderType::Connected if bidirectional => edge_mesh.clone(),
+            BorderType::Connected if !bidirectional => edge_arrow_mesh.clone(),
+            _ => panic!["unknown edge types"],
         };
 
+        let old_transform = get_connection_transform(source_node, target_node);
+
         commands.spawn(PbrBundle {
-            mesh: cylinder_mesh,
-            material,
-            transform,
+            mesh: Mesh3d(mesh_handle),
+            material: MeshMaterial3d(beige_material.clone()),
+            transform: old_transform,
             ..default()
         });
     }
 
-    for (source_node, target_node, edge) in cube_maze.maze.graph.all_edges() {
-        shape_commands.line(source_node.position, target_node.position);
-
-        let mesh = get_connection_mesh(
-            source_node,
-            target_node,
-            cube_maze.distance_between_nodes,
-            connection_height,
-        );
-        let transform = get_connection_transform(source_node, target_node, connection_height);
-
-        let material = if cube_maze.maze.graph.contains_edge(target_node, source_node) {
-            red_material.clone()
-        } else {
-            beige_material.clone()
-        };
-
-        // commands.spawn(PbrBundle {
-        //     mesh: meshes.add(mesh),
-        //     material,
-        //     transform,
-        //     ..default()
-        // });
-    }
-
     let cuboid = meshes.add(Cuboid::from_length(1.5));
     commands.spawn(PbrBundle {
-        mesh: cuboid,
-        material: green_material.clone(),
+        mesh: Mesh3d(cuboid),
+        material: MeshMaterial3d(green_material.clone()),
         transform: Transform::IDENTITY,
         ..default()
     });
 }
 
-fn get_connection_transform(from: CubeNode, to: CubeNode, connection_height: f32) -> Transform {
-    let border_type = BorderType::from_faces(&from.face, &to.face);
-    match border_type {
+fn get_connection_transform(from: CubeNode, to: CubeNode) -> Transform {
+    match BorderType::from_faces(&from.face, &to.face) {
         BorderType::SameFace => {
             let forward = from.position - to.position;
-            let middle = (from.position + to.position) / 2.0;
             Transform::IDENTITY
                 .looking_to(forward, from.face.normal())
-                .with_translation(middle + from.face.normal() * connection_height / 2.0)
+                .with_translation(from.position + from.face.normal() * 0.001)
         }
         BorderType::Connected => {
-            let forward = from.face.normal().cross(to.face.normal());
-            let translation = from.position.abs().max(to.position.abs()) * from.position.signum();
+            let from_normal = from.face.normal();
+            let to_normal = to.face.normal();
+
+            let half_angle = from_normal.angle_between(to_normal) / 2.0;
+
+            let average_normal = from_normal.lerp(to_normal, 0.5).normalize();
+
+            let edge_vec = to.position - from.position;
+
+            let intersection_point = from.position
+                + (edge_vec + edge_vec.norm() * half_angle.tan() * average_normal) / 2.0;
+
             Transform::IDENTITY
-                .looking_to(forward, from.face.normal())
-                .with_translation(translation)
+                .looking_to(intersection_point - to.position, to.face.normal())
+                .with_translation(intersection_point + average_normal * 0.001)
         }
         _ => panic!["unknown edge types"],
     }

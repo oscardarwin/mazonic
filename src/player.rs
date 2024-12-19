@@ -43,8 +43,8 @@ pub fn setup_player(
 
     commands
         .spawn(PbrBundle {
-            mesh: player_mesh,
-            material: white_material.clone(),
+            mesh: Mesh3d(player_mesh),
+            material: MeshMaterial3d(white_material.clone()),
             transform: player_transform,
             ..default()
         })

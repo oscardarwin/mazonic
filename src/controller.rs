@@ -34,7 +34,7 @@ fn idle(
     camera_query: Query<(&GlobalTransform, &Camera)>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    rapier_context: Res<RapierContext>,
+    rapier_context_query: Query<&RapierContext>,
     controller_state: Res<State<ControllerState>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
 ) {
@@ -54,12 +54,15 @@ fn idle(
 
     let (camera_global_transform, camera) = camera_query.single();
 
-    let Some(ray) = camera.viewport_to_world(camera_global_transform, cursor_position) else {
+    let Some(ray) = camera
+        .viewport_to_world(camera_global_transform, cursor_position)
+        .ok()
+    else {
         // if it was impossible to compute for whatever reason; we can't do anything
         return;
     };
 
-    if let Some((entity, toi)) = rapier_context.cast_ray(
+    if let Some((entity, toi)) = rapier_context_query.single().cast_ray(
         ray.origin,
         ray.direction.into(),
         4.0,
@@ -91,7 +94,6 @@ fn solve(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<(&mut Transform, &mut PlayerMazeState)>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    rapier_context: Res<RapierContext>,
     controller_state: Res<State<ControllerState>>,
     maze: Res<CubeMaze>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
@@ -112,7 +114,10 @@ fn solve(
 
     let (camera_global_transform, camera) = camera_query.single();
 
-    let Some(ray) = camera.viewport_to_world(camera_global_transform, cursor_position) else {
+    let Some(ray) = camera
+        .viewport_to_world(camera_global_transform, cursor_position)
+        .ok()
+    else {
         // if it was impossible to compute for whatever reason; we can't do anything
         return;
     };
@@ -122,10 +127,10 @@ fn solve(
 
     if let Some(new_player_maze_state) = match player_maze_state.as_ref() {
         PlayerMazeState::Node(node) => {
-            move_player_on_node(player_transform.as_ref(), node, maze, ray)
+            move_player_on_node(player_transform.as_ref(), &node, maze, ray)
         }
         PlayerMazeState::Edge(from_node, to_node, _) => {
-            move_player_on_edge(player_transform, from_node, to_node, ray, maze)
+            move_player_on_edge(player_transform, &from_node, &to_node, ray, maze)
         }
     } {
         *player_maze_state = new_player_maze_state;
