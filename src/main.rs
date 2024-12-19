@@ -2,6 +2,7 @@
 use bevy::pbr::wireframe::WireframePlugin;
 use bevy::prelude::*;
 use bevy_rapier3d::plugin::{NoUserData, RapierPhysicsPlugin};
+use bevy_vector_shapes::ShapePlugin;
 use camera::PlatonicCamera;
 use controller::Controller;
 use player::{setup_player, PlayerPlugin};
@@ -24,6 +25,7 @@ fn main() {
         .add_plugins(Controller::default())
         .add_plugins(PlatonicCamera::default())
         .add_plugins(PlayerPlugin::default())
+        .add_plugins(ShapePlugin::default())
         .add_systems(Startup, (load_maze, cube::spawn.after(load_maze)))
         .run();
 }

@@ -11,6 +11,7 @@ use bevy::{
     render::mesh::Mesh,
     transform::components::Transform,
 };
+use bevy_vector_shapes::{painter::ShapeCommands, shapes::LineSpawner};
 
 use self::{
     maze::{BorderType, CubeMaze, CubeNode},
@@ -22,6 +23,7 @@ pub fn spawn(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     cube_maze: Res<CubeMaze>,
+    mut shape_commands: ShapeCommands,
 ) {
     let white = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);
@@ -64,14 +66,14 @@ pub fn spawn(
     }
 
     for (source_node, target_node, edge) in cube_maze.maze.graph.all_edges() {
+        shape_commands.line(source_node.position, target_node.position);
+
         let mesh = get_connection_mesh(
             source_node,
             target_node,
             cube_maze.distance_between_nodes,
             connection_height,
         );
-        let connecting_mesh = meshes.add(mesh);
-
         let transform = get_connection_transform(source_node, target_node, connection_height);
 
         let material = if cube_maze.maze.graph.contains_edge(target_node, source_node) {
@@ -80,12 +82,12 @@ pub fn spawn(
             beige_material.clone()
         };
 
-        commands.spawn(PbrBundle {
-            mesh: connecting_mesh,
-            material,
-            transform,
-            ..default()
-        });
+        // commands.spawn(PbrBundle {
+        //     mesh: meshes.add(mesh),
+        //     material,
+        //     transform,
+        //     ..default()
+        // });
     }
 
     let cuboid = meshes.add(Cuboid::from_length(1.5));
