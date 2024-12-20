@@ -1,13 +1,28 @@
 # TODO:
 
 ## Improve Maze Design
-- Prioritise long branches.
-
-## Graphics
-No node when there is just an in and out of edge.
+- more back edges from stranded nodes.
+- 
 
 ## More types of levels
+Tetrahedron
+Octahedron
+Dodecahedron
+Icosahedron
+
+## Save levels as JSON
+
+## Sort out GIT
+
+## Graphics
+Add death node for any stranded edges. 
+Shaders
+
 ## Levels selector should be a icosohedron.
+
+## Music
+
+## Effects
 
 # Build for Web:
 
