@@ -18,11 +18,13 @@ use bevy_vector_shapes::{
     render::ShapePipelineType,
     shapes::{LineBundle, LineComponent, LineSpawner, ShapeAlphaMode, ShapeBundle, TriangleBundle},
 };
+use petgraph::Direction;
 
 use self::{
     maze::{BorderType, CubeMaze, CubeNode},
     mesh::EdgeMeshBuilder,
 };
+use itertools::Itertools;
 
 pub fn spawn(
     mut commands: Commands,
@@ -38,6 +40,55 @@ pub fn spawn(
     let cyan_material = materials.add(StandardMaterial::from_color(cyan));
     let beige_material = materials.add(StandardMaterial::from_color(beige));
     let green_material = materials.add(StandardMaterial::from_color(green));
+
+    let goal_node = cube_maze.maze.solution.last().unwrap();
+    for node in cube_maze.maze.graph.nodes().filter(|node| {
+        let incoming_neighbors = cube_maze
+            .maze
+            .graph
+            .neighbors_directed(*node, Direction::Incoming);
+        let outgoing_neighbors = cube_maze
+            .maze
+            .graph
+            .neighbors_directed(*node, Direction::Outgoing);
+
+        let neighbors = incoming_neighbors
+            .chain(outgoing_neighbors)
+            .unique()
+            .collect::<Vec<CubeNode>>();
+
+        neighbors.len() != 2 || {
+            let first_neighbor = neighbors[0];
+            let second_neighbor = neighbors[1];
+
+            let node_to_first_vec = node.position - first_neighbor.position;
+            let node_to_second_vec = node.position - second_neighbor.position;
+
+            node_to_first_vec.dot(node_to_second_vec).abs() < 0.1
+        }
+    }) {
+        let material_handle = if node == *goal_node {
+            cyan_material.clone()
+        } else {
+            beige_material.clone()
+        };
+
+        let transform = Transform::IDENTITY
+            .looking_at(
+                -node.face.normal(),
+                node.face.normal().any_orthogonal_vector(),
+            )
+            .with_translation(node.position + node.face.normal() * 0.002);
+
+        let radius = if node == *goal_node { 0.1 } else { 0.06 };
+
+        commands.spawn(PbrBundle {
+            mesh: Mesh3d(meshes.add(Circle::new(radius))),
+            material: MeshMaterial3d(material_handle),
+            transform,
+            ..default()
+        });
+    }
 
     let face_angle = FRAC_PI_2;
     let edge_mesh_builder = EdgeMeshBuilder::new();
@@ -79,19 +130,6 @@ pub fn spawn(
             ..default()
         });
     }
-
-    let last_node = cube_maze.maze.solution.last().unwrap();
-    commands.spawn(PbrBundle {
-        mesh: Mesh3d(meshes.add(Circle::new(0.1))),
-        material: MeshMaterial3d(cyan_material.clone()),
-        transform: Transform::IDENTITY
-            .looking_at(
-                -last_node.face.normal(),
-                last_node.face.normal().any_orthogonal_vector(),
-            )
-            .with_translation(last_node.position + last_node.face.normal() * 0.002),
-        ..default()
-    });
 
     let cuboid = meshes.add(Cuboid::from_length(1.5));
     commands.spawn(PbrBundle {

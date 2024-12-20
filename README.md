@@ -1,8 +1,5 @@
 # TODO:
 
-## Improve Maze Design
-- more back edges from stranded nodes.
-- make the solitary outgoing edge of a node (with a different incoming edge) one way.
 
 ## More types of levels
 Tetrahedron
@@ -14,8 +11,11 @@ Icosahedron
 
 ## Sort out GIT
 
+## Improve Maze Design
+- more back edges from stranded nodes.
+- make the solitary outgoing edge of a node (with a different incoming edge) one way.
+
 ## Graphics
-Add death node for any stranded edges.
 Combine connected one way lines into a single dashed line.
 Shaders
 
