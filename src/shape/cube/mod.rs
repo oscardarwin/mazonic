@@ -31,16 +31,13 @@ pub fn spawn(
     cube_maze: Res<CubeMaze>,
     mut shape_commands: ShapeCommands,
 ) {
-    let white = Color::srgb_u8(247, 247, 0);
+    let cyan = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);
     let green = Color::srgb_u8(109, 152, 134);
-    let charcoal = Color::srgb_u8(57, 62, 70);
 
-    let white_material = materials.add(StandardMaterial::from_color(white));
-    let red_material = materials.add(StandardMaterial::from_color(Color::srgb_u8(0, 130, 140)));
+    let cyan_material = materials.add(StandardMaterial::from_color(cyan));
     let beige_material = materials.add(StandardMaterial::from_color(beige));
     let green_material = materials.add(StandardMaterial::from_color(green));
-    let charcoal_material = materials.add(StandardMaterial::from_color(charcoal));
 
     let face_angle = FRAC_PI_2;
     let edge_mesh_builder = EdgeMeshBuilder::new();
@@ -58,20 +55,27 @@ pub fn spawn(
     for (source_node, target_node, _) in cube_maze.maze.graph.all_edges() {
         let bidirectional = cube_maze.maze.graph.contains_edge(target_node, source_node);
 
-        let mesh_handle = match BorderType::from_faces(&source_node.face, &target_node.face) {
-            BorderType::SameFace if bidirectional => face_connection_mesh.clone(),
-            BorderType::SameFace if !bidirectional => face_arrow_mesh.clone(),
-            BorderType::Connected if bidirectional => edge_mesh.clone(),
-            BorderType::Connected if !bidirectional => edge_arrow_mesh.clone(),
-            _ => panic!["unknown edge types"],
+        if bidirectional && source_node.cmp(&target_node).is_lt() {
+            continue;
+        }
+
+        let Some(border_type) = BorderType::from_faces(&source_node.face, &target_node.face) else {
+            panic!["unknown edge type"];
         };
 
-        let old_transform = get_connection_transform(source_node, target_node);
+        let mesh_handle = match (&border_type, bidirectional) {
+            (BorderType::SameFace, true) => face_connection_mesh.clone(),
+            (BorderType::SameFace, false) => face_arrow_mesh.clone(),
+            (BorderType::Connected, true) => edge_mesh.clone(),
+            (BorderType::Connected, false) => edge_arrow_mesh.clone(),
+        };
+
+        let transform = get_connection_transform(source_node, target_node, &border_type);
 
         commands.spawn(PbrBundle {
             mesh: Mesh3d(mesh_handle),
             material: MeshMaterial3d(beige_material.clone()),
-            transform: old_transform,
+            transform,
             ..default()
         });
     }
@@ -79,7 +83,7 @@ pub fn spawn(
     let last_node = cube_maze.maze.solution.last().unwrap();
     commands.spawn(PbrBundle {
         mesh: Mesh3d(meshes.add(Circle::new(0.1))),
-        material: MeshMaterial3d(white_material.clone()),
+        material: MeshMaterial3d(cyan_material.clone()),
         transform: Transform::IDENTITY
             .looking_at(
                 -last_node.face.normal(),
@@ -98,8 +102,8 @@ pub fn spawn(
     });
 }
 
-fn get_connection_transform(from: CubeNode, to: CubeNode) -> Transform {
-    match BorderType::from_faces(&from.face, &to.face) {
+fn get_connection_transform(from: CubeNode, to: CubeNode, border_type: &BorderType) -> Transform {
+    match border_type {
         BorderType::SameFace => {
             let forward = from.position - to.position;
             Transform::IDENTITY
@@ -123,6 +127,5 @@ fn get_connection_transform(from: CubeNode, to: CubeNode) -> Transform {
                 .looking_to(intersection_point - to.position, to.face.normal())
                 .with_translation(intersection_point + average_normal * 0.001)
         }
-        _ => panic!["unknown edge types"],
     }
 }

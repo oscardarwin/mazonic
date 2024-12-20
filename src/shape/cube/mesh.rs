@@ -31,10 +31,10 @@ impl EdgeMeshBuilder {
         .with_inserted_indices(Indices::U32(vec![]));
 
         EdgeMeshBuilder {
-            dash_width: 0.05,
+            dash_width: 0.07,
             dash_length: 0.1,
             min_spacing: 0.06,
-            arrow_head_width: 0.1,
+            arrow_head_width: 0.12,
             empty_mesh,
         }
     }

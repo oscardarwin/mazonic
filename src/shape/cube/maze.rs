@@ -1,6 +1,7 @@
 use std::{
     cmp::Ordering,
     hash::{Hash, Hasher},
+    ops::Not,
 };
 
 use bevy::{ecs::system::Resource, math::Vec3};
@@ -44,20 +45,17 @@ impl Face {
 pub enum BorderType {
     SameFace,
     Connected,
-    Unconnected,
 }
 
 impl BorderType {
-    pub fn from_faces(face_1: &Face, face_2: &Face) -> BorderType {
-        if face_1 == face_2 {
-            BorderType::SameFace
-        } else if BorderType::are_unconnected(face_1, face_2)
-            || BorderType::are_unconnected(face_2, face_1)
-        {
-            BorderType::Unconnected
-        } else {
-            BorderType::Connected
-        }
+    pub fn from_faces(face_1: &Face, face_2: &Face) -> Option<BorderType> {
+        BorderType::are_unconnected(face_1, face_2).not().then(|| {
+            if face_1 == face_2 {
+                BorderType::SameFace
+            } else {
+                BorderType::Connected
+            }
+        })
     }
 
     fn are_unconnected(face_1: &Face, face_2: &Face) -> bool {
@@ -65,6 +63,9 @@ impl BorderType {
             (Face::Front, Face::Back) => true,
             (Face::Up, Face::Down) => true,
             (Face::Left, Face::Right) => true,
+            (Face::Back, Face::Front) => true,
+            (Face::Down, Face::Up) => true,
+            (Face::Right, Face::Left) => true,
             _ => false,
         }
     }
@@ -206,20 +207,11 @@ struct CubeTraversalGraphGenerator {
 
 impl TraversalGraphGenerator<CubeNode, Edge> for CubeTraversalGraphGenerator {
     fn can_connect(&self, from: &CubeNode, to: &CubeNode) -> bool {
-        let border_type = BorderType::from_faces(&from.face, &to.face);
-
         let distance = from.position.distance(to.position);
 
-        match (border_type, distance) {
-            (BorderType::Unconnected, _) => false,
-            (BorderType::SameFace, distance) if distance - 0.1 <= self.distance_between_nodes => {
-                true
-            }
-            (BorderType::Connected, distance)
-                if distance - 0.1 <= self.distance_between_nodes * 0.8 =>
-            {
-                true
-            }
+        match BorderType::from_faces(&from.face, &to.face) {
+            Some(BorderType::SameFace) => distance - 0.1 <= self.distance_between_nodes,
+            Some(BorderType::Connected) => distance - 0.1 <= self.distance_between_nodes * 0.8,
             _ => false,
         }
     }
