@@ -77,11 +77,7 @@ fn idle(
 }
 
 fn view(
-    camera_query: Query<&mut Transform, With<Camera>>,
-    light_query: Query<&mut Transform, (With<DirectionalLight>, Without<Player>, Without<Camera>)>,
-    primary_window: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    last_pos: Local<Option<Vec2>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
 ) {
     if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
@@ -95,7 +91,6 @@ fn solve(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<(&mut Transform, &mut PlayerMazeState)>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    controller_state: Res<State<ControllerState>>,
     maze: Res<CubeMaze>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     game_settings: Res<GameSettings>,
@@ -135,13 +130,9 @@ fn solve(
             game_settings.player_elevation,
             ray,
         ),
-        PlayerMazeState::Edge(from_node, to_node, _) => move_player_on_edge(
-            player_transform,
-            &from_node,
-            &to_node,
-            ray,
-            game_settings.player_elevation,
-        ),
+        PlayerMazeState::Edge(from_node, to_node, _) => {
+            move_player_on_edge(&from_node, &to_node, ray, game_settings.player_elevation)
+        }
     } {
         *player_maze_state = new_player_maze_state;
     }
@@ -172,13 +163,13 @@ fn move_player_on_node(
 ) -> Option<PlayerMazeState> {
     let face_intersection_point = project_ray_to_player_face(ray, node, player_elevation)?;
 
-    let face_intersection_from_player = face_intersection_point - player_transform.translation;
+    let node_player_position = node.position + node.face.normal() * player_elevation;
+
+    let face_intersection_from_player = face_intersection_point - node_player_position;
 
     if face_intersection_from_player.norm() <= 0.18 {
         return None;
     }
-
-    let player_position = player_transform.translation;
 
     let node_face_normal = node.face.normal();
     let node_player_plane_position = node.position + player_elevation * node_face_normal;
@@ -191,7 +182,7 @@ fn move_player_on_node(
             let to_node_position = to_node.position;
 
             let to_node_player_plane_position =
-                project_point_to_plane(&to_node_position, player_position, &node_face_normal);
+                project_point_to_plane(&to_node_position, node_player_position, &node_face_normal);
 
             let edge_vec = to_node_player_plane_position - node_player_plane_position;
 
