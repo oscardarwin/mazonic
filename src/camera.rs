@@ -82,9 +82,7 @@ fn view(
         (With<DirectionalLight>, Without<Player>, Without<Camera>),
     >,
     primary_window: Query<&Window, With<PrimaryWindow>>,
-    mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut last_pos: Local<Option<Vec2>>,
-    next_controller_state: ResMut<NextState<ControllerState>>,
 ) {
     let Ok(window) = primary_window.get_single() else {
         return;
