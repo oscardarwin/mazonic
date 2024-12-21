@@ -5,7 +5,7 @@ use crate::{
     load_maze,
     shape::cube::maze::{CubeMaze, CubeNode},
 };
-use bevy::{math::VectorSpace, prelude::*};
+use bevy::prelude::*;
 use bevy_rapier3d::geometry::Collider;
 
 #[derive(Component)]

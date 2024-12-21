@@ -36,7 +36,6 @@ fn idle(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     rapier_context_query: Query<&RapierContext>,
-    controller_state: Res<State<ControllerState>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
 ) {
     if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
