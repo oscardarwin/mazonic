@@ -241,7 +241,7 @@ fn compute_player_plane_edge_intersection(
     let from_plane_intersection =
         compute_intersection_point_of_edge(screen_ray, &from_node, player_elevation, &to_node);
 
-    match BorderType::from_faces(&from_node.face, &to_node.face)? {
+    match &from_node.face.border_type(&to_node.face)? {
         BorderType::SameFace => from_plane_intersection,
         BorderType::Connected => {
             let to_plane_intersection = compute_intersection_point_of_edge(

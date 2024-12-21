@@ -39,18 +39,10 @@ impl Face {
             Face::Down => (Vec3::X, Vec3::Y),
         }
     }
-}
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum BorderType {
-    SameFace,
-    Connected,
-}
-
-impl BorderType {
-    pub fn from_faces(face_1: &Face, face_2: &Face) -> Option<BorderType> {
-        BorderType::are_unconnected(face_1, face_2).not().then(|| {
-            if face_1 == face_2 {
+    pub fn border_type(&self, other: &Face) -> Option<BorderType> {
+        self.is_disconnected_from(other).not().then(|| {
+            if self == other {
                 BorderType::SameFace
             } else {
                 BorderType::Connected
@@ -58,8 +50,8 @@ impl BorderType {
         })
     }
 
-    fn are_unconnected(face_1: &Face, face_2: &Face) -> bool {
-        match (face_1, face_2) {
+    fn is_disconnected_from(&self, other: &Face) -> bool {
+        match (self, other) {
             (Face::Front, Face::Back) => true,
             (Face::Up, Face::Down) => true,
             (Face::Left, Face::Right) => true,
@@ -71,6 +63,11 @@ impl BorderType {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub enum BorderType {
+    SameFace,
+    Connected,
+}
 #[derive(Debug, Clone, Copy)]
 pub struct CubeNode {
     pub position: Vec3,
@@ -207,7 +204,7 @@ impl TraversalGraphGenerator<CubeNode, Edge> for CubeTraversalGraphGenerator {
     fn can_connect(&self, from: &CubeNode, to: &CubeNode) -> bool {
         let distance = from.position.distance(to.position);
 
-        match BorderType::from_faces(&from.face, &to.face) {
+        match from.face.border_type(&to.face) {
             Some(BorderType::SameFace) => distance - 0.1 <= self.distance_between_nodes,
             Some(BorderType::Connected) => distance - 0.1 <= self.distance_between_nodes * 0.8,
             _ => false,
