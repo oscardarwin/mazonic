@@ -136,12 +136,11 @@ pub struct CubeMaze {
     pub nodes_per_edge: u8,
     pub face_size: f32,
     pub distance_between_nodes: f32,
-    pub player_elevation: f32,
     pub maze: Maze<CubeNode, Edge>,
 }
 
 impl CubeMaze {
-    pub fn build(nodes_per_edge: u8, face_size: f32, player_elevation: f32) -> CubeMaze {
+    pub fn build(nodes_per_edge: u8, face_size: f32) -> CubeMaze {
         let distance_between_nodes = face_size / ((1 + nodes_per_edge) as f32);
         let nodes = Self::make_nodes(nodes_per_edge, distance_between_nodes);
 
@@ -156,7 +155,6 @@ impl CubeMaze {
             nodes_per_edge,
             face_size,
             distance_between_nodes,
-            player_elevation,
             maze,
         }
     }

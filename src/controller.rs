@@ -1,4 +1,5 @@
 use crate::{
+    game_settings::GameSettings,
     player::{Player, PlayerMazeState},
     shape::cube::maze::{BorderType, CubeMaze, CubeNode},
 };
@@ -97,6 +98,8 @@ fn solve(
     controller_state: Res<State<ControllerState>>,
     maze: Res<CubeMaze>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
+    game_settings: Res<GameSettings>,
+    rapier_context_query: Query<&RapierContext>,
 ) {
     if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
         next_controller_state.set(ControllerState::IdlePostSolve);
@@ -126,12 +129,20 @@ fn solve(
     let (player_transform, mut player_maze_state) = player_query.single_mut();
 
     if let Some(new_player_maze_state) = match player_maze_state.as_ref() {
-        PlayerMazeState::Node(node) => {
-            move_player_on_node(player_transform.as_ref(), &node, maze, ray)
-        }
-        PlayerMazeState::Edge(from_node, to_node, _) => {
-            move_player_on_edge(player_transform, &from_node, &to_node, ray, maze)
-        }
+        PlayerMazeState::Node(node) => move_player_on_node(
+            player_transform.as_ref(),
+            &node,
+            maze,
+            game_settings.player_elevation,
+            ray,
+        ),
+        PlayerMazeState::Edge(from_node, to_node, _) => move_player_on_edge(
+            player_transform,
+            &from_node,
+            &to_node,
+            ray,
+            game_settings.player_elevation,
+        ),
     } {
         *player_maze_state = new_player_maze_state;
     }
@@ -157,9 +168,10 @@ fn move_player_on_node(
     player_transform: &Transform,
     node: &CubeNode,
     maze: Res<CubeMaze>,
+    player_elevation: f32,
     ray: Ray3d,
 ) -> Option<PlayerMazeState> {
-    let face_intersection_point = project_ray_to_player_face(ray, node, maze.player_elevation)?;
+    let face_intersection_point = project_ray_to_player_face(ray, node, player_elevation)?;
 
     let face_intersection_from_player = face_intersection_point - player_transform.translation;
 
@@ -170,7 +182,7 @@ fn move_player_on_node(
     let player_position = player_transform.translation;
 
     let node_face_normal = node.face.normal();
-    let node_player_plane_position = node.position + maze.player_elevation * node_face_normal;
+    let node_player_plane_position = node.position + player_elevation * node_face_normal;
 
     maze.maze
         .graph
@@ -194,15 +206,15 @@ fn move_player_on_edge(
     from_node: &CubeNode,
     to_node: &CubeNode,
     ray: Ray3d,
-    maze: Res<CubeMaze>,
+    player_elevation: f32,
 ) -> Option<PlayerMazeState> {
     let player_plane_edge_intersection =
-        compute_player_plane_edge_intersection(ray, from_node, to_node, maze.player_elevation)?;
+        compute_player_plane_edge_intersection(ray, from_node, to_node, player_elevation)?;
 
-    let to_node_distance = to_node.position + to_node.face.normal() * maze.player_elevation
+    let to_node_distance = to_node.position + to_node.face.normal() * player_elevation
         - player_plane_edge_intersection;
 
-    let from_node_distance = from_node.position + from_node.face.normal() * maze.player_elevation
+    let from_node_distance = from_node.position + from_node.face.normal() * player_elevation
         - player_plane_edge_intersection;
 
     let new_player_state = if to_node_distance.norm() < 0.18 {

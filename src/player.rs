@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use crate::{
+    game_settings::GameSettings,
     load_maze,
     shape::cube::maze::{CubeMaze, CubeNode},
 };
@@ -30,6 +31,7 @@ pub fn setup_player(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    settings: Res<GameSettings>,
     cube_maze: Res<CubeMaze>,
 ) {
     let white = Color::srgb_u8(247, 247, 0);
@@ -37,7 +39,8 @@ pub fn setup_player(
     let white_material = materials.add(StandardMaterial::from_color(white));
 
     let initial_node = cube_maze.maze.solution.first().unwrap().clone();
-    let player_transform = compute_initial_player_transform(initial_node);
+    let player_transform =
+        compute_initial_player_transform(initial_node, settings.player_elevation);
     let player_shape = Sphere::new(0.1);
     let player_mesh = meshes.add(player_shape);
 
@@ -53,19 +56,24 @@ pub fn setup_player(
         .insert(Collider::ball(player_shape.radius));
 }
 
-fn compute_initial_player_transform(start_node: CubeNode) -> Transform {
+fn compute_initial_player_transform(start_node: CubeNode, player_elevation: f32) -> Transform {
     let face_normal = start_node.face.normal();
 
     Transform::IDENTITY
         .looking_at(face_normal.any_orthogonal_vector(), face_normal)
-        .with_translation(start_node.position + 0.2 * face_normal)
+        .with_translation(start_node.position + player_elevation * face_normal)
 }
 
-fn move_player(mut player_query: Query<(&mut Transform, &PlayerMazeState)>, maze: Res<CubeMaze>) {
+fn move_player(
+    mut player_query: Query<(&mut Transform, &PlayerMazeState)>,
+    settings: Res<GameSettings>,
+) {
     let (mut player_transform, player_maze_state) = player_query.single_mut();
 
     let target_position = match player_maze_state {
-        PlayerMazeState::Node(node) => node.position + maze.player_elevation * node.face.normal(),
+        PlayerMazeState::Node(node) => {
+            node.position + settings.player_elevation * node.face.normal()
+        }
         PlayerMazeState::Edge(_, _, edge_position) => edge_position.clone(),
     };
 

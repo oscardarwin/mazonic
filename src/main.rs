@@ -5,11 +5,13 @@ use bevy_rapier3d::plugin::{NoUserData, RapierPhysicsPlugin};
 use bevy_vector_shapes::ShapePlugin;
 use camera::PlatonicCamera;
 use controller::Controller;
+use game_settings::GameSettingsPlugin;
 use player::{setup_player, PlayerPlugin};
 use shape::cube::{self, maze::CubeMaze};
 
 mod camera;
 mod controller;
+mod game_settings;
 mod model;
 mod player;
 mod shape;
@@ -21,6 +23,7 @@ fn main() {
             #[cfg(not(target_arch = "wasm32"))]
             WireframePlugin,
         ))
+        .add_plugins(GameSettingsPlugin::default())
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(Controller::default())
         .add_plugins(PlatonicCamera::default())
@@ -31,6 +34,6 @@ fn main() {
 }
 
 fn load_maze(mut commands: Commands) {
-    let maze = CubeMaze::build(3, 2.0, 0.2);
+    let maze = CubeMaze::build(3, 2.0);
     commands.insert_resource(maze);
 }
