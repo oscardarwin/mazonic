@@ -99,7 +99,6 @@ fn solve(
     maze: Res<CubeMaze>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     game_settings: Res<GameSettings>,
-    rapier_context_query: Query<&RapierContext>,
 ) {
     if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
         next_controller_state.set(ControllerState::IdlePostSolve);
@@ -202,7 +201,6 @@ fn move_player_on_node(
 }
 
 fn move_player_on_edge(
-    player_transform: Mut<Transform>,
     from_node: &CubeNode,
     to_node: &CubeNode,
     ray: Ray3d,
