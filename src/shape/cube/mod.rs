@@ -13,10 +13,7 @@ use bevy::{
     render::mesh::Mesh,
     transform::components::Transform,
 };
-use bevy_vector_shapes::{
-    painter::ShapeCommands,
-    shapes::{LineBundle, LineSpawner},
-};
+use bevy_vector_shapes::shapes::{LineBundle, LineSpawner};
 use petgraph::Direction;
 
 use self::{

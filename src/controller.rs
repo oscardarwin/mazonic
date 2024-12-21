@@ -1,6 +1,6 @@
 use crate::{
     game_settings::GameSettings,
-    player::{Player, PlayerMazeState},
+    player::PlayerMazeState,
     shape::cube::maze::{BorderType, CubeMaze, CubeNode},
 };
 use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
@@ -46,7 +46,6 @@ fn idle(
     let Ok(window) = primary_window.get_single() else {
         return;
     };
-    let window_size = window.size();
 
     let Some(cursor_position) = window.cursor_position() else {
         // if the cursor is not inside the window, we can't do anything
@@ -63,13 +62,17 @@ fn idle(
         return;
     };
 
-    if let Some((entity, toi)) = rapier_context_query.single().cast_ray(
-        ray.origin,
-        ray.direction.into(),
-        4.0,
-        true,
-        QueryFilter::default(),
-    ) {
+    if rapier_context_query
+        .single()
+        .cast_ray(
+            ray.origin,
+            ray.direction.into(),
+            4.0,
+            true,
+            QueryFilter::default(),
+        )
+        .is_some()
+    {
         next_controller_state.set(ControllerState::Solving);
     } else {
         next_controller_state.set(ControllerState::Viewing);
@@ -89,7 +92,7 @@ fn view(
 fn solve(
     camera_query: Query<(&GlobalTransform, &Camera)>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
-    mut player_query: Query<(&mut Transform, &mut PlayerMazeState)>,
+    mut player_query: Query<&mut PlayerMazeState>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     maze: Res<CubeMaze>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
@@ -120,16 +123,12 @@ fn solve(
     };
 
     // get plane for cuboid.
-    let (player_transform, mut player_maze_state) = player_query.single_mut();
+    let mut player_maze_state = player_query.single_mut();
 
     if let Some(new_player_maze_state) = match player_maze_state.as_ref() {
-        PlayerMazeState::Node(node) => move_player_on_node(
-            player_transform.as_ref(),
-            &node,
-            maze,
-            game_settings.player_elevation,
-            ray,
-        ),
+        PlayerMazeState::Node(node) => {
+            move_player_on_node(&node, maze, game_settings.player_elevation, ray)
+        }
         PlayerMazeState::Edge(from_node, to_node, _) => {
             move_player_on_edge(&from_node, &to_node, ray, game_settings.player_elevation)
         }
@@ -155,7 +154,6 @@ fn project_point_to_plane(point: &Vec3, plane_position: Vec3, plane_normal: &Vec
 }
 
 fn move_player_on_node(
-    player_transform: &Transform,
     node: &CubeNode,
     maze: Res<CubeMaze>,
     player_elevation: f32,

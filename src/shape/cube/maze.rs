@@ -130,8 +130,6 @@ impl Door<CubeNode> for Edge {
 
 #[derive(Resource)]
 pub struct CubeMaze {
-    pub nodes_per_edge: u8,
-    pub face_size: f32,
     pub distance_between_nodes: f32,
     pub maze: Maze<CubeNode, Edge>,
 }
@@ -149,8 +147,6 @@ impl CubeMaze {
         let maze = Maze::build(traversal_graph);
 
         CubeMaze {
-            nodes_per_edge,
-            face_size,
             distance_between_nodes,
             maze,
         }
