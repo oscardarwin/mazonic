@@ -1,7 +1,6 @@
 use std::f32::consts::{FRAC_PI_2, PI};
 
 use bevy::{
-    math::NormedVectorSpace,
     prelude::*,
     render::{
         mesh::{Indices, PrimitiveTopology},
@@ -9,7 +8,6 @@ use bevy::{
     },
 };
 
-use super::maze::{BorderType, CubeNode};
 
 pub struct EdgeMeshBuilder {
     dash_width: f32,

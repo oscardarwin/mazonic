@@ -202,7 +202,7 @@ fn move_player_on_node(
 }
 
 fn move_player_on_edge(
-    mut player_transform: Mut<Transform>,
+    player_transform: Mut<Transform>,
     from_node: &CubeNode,
     to_node: &CubeNode,
     ray: Ray3d,

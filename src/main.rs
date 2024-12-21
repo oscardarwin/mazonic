@@ -6,7 +6,7 @@ use bevy_vector_shapes::ShapePlugin;
 use camera::PlatonicCamera;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
-use player::{setup_player, PlayerPlugin};
+use player::PlayerPlugin;
 use shape::cube::{self, maze::CubeMaze};
 
 mod camera;

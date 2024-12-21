@@ -7,16 +7,15 @@ use bevy::{
     asset::Assets,
     color::Color,
     ecs::system::{Commands, ResMut},
-    math::{primitives::Cylinder, vec2, NormedVectorSpace},
+    math::NormedVectorSpace,
     pbr::{PbrBundle, StandardMaterial},
     prelude::*,
     render::mesh::Mesh,
     transform::components::Transform,
 };
 use bevy_vector_shapes::{
-    painter::{ShapeCommands, ShapeConfig, ShapeSpawner},
-    render::ShapePipelineType,
-    shapes::{LineBundle, LineComponent, LineSpawner, ShapeAlphaMode, ShapeBundle, TriangleBundle},
+    painter::ShapeCommands,
+    shapes::{LineBundle, LineSpawner},
 };
 use petgraph::Direction;
 
@@ -31,7 +30,7 @@ pub fn spawn(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     cube_maze: Res<CubeMaze>,
-    mut shape_commands: ShapeCommands,
+    shape_commands: ShapeCommands,
 ) {
     let cyan = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);
