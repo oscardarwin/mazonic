@@ -110,7 +110,7 @@ pub fn spawn(
             continue;
         }
 
-        let Some(border_type) = source_node.face.from_faces(&target_node.face) else {
+        let Some(border_type) = source_node.face.border_type(&target_node.face) else {
             panic!["unknown edge type"];
         };
 
