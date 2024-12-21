@@ -12,7 +12,6 @@ use shape::cube::{self, maze::CubeMaze};
 mod camera;
 mod controller;
 mod game_settings;
-mod model;
 mod player;
 mod shape;
 
