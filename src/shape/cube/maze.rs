@@ -148,26 +148,26 @@ pub trait IsRoom<F: HasFace> {
 }
 
 pub trait Platonic {
-    type MazeFace: HasFace;
-    type MazeRoom: Debug + Clone + Copy + Hash + Eq + Ord + PartialOrd + IsRoom<Self::MazeFace>;
+    type Face: HasFace;
+    type Room: Debug + Clone + Copy + Hash + Eq + Ord + PartialOrd + IsRoom<Self::Face>;
 
     fn make_nodes_from_face(
-        face: Self::MazeFace,
+        face: Self::Face,
         nodes_per_edge: u8,
         distance_between_nodes: f32,
-    ) -> Vec<Self::MazeRoom>;
+    ) -> Vec<Self::Room>;
 
     fn generate_traversal_graph(
         distance_between_nodes: f32,
-        nodes: Vec<Self::MazeRoom>,
-    ) -> TraversalGraph<Self::MazeRoom, CubeEdge>;
+        nodes: Vec<Self::Room>,
+    ) -> TraversalGraph<Self::Room, CubeEdge>;
 }
 
 pub struct Cube;
 
 impl Platonic for Cube {
-    type MazeFace = CubeFace;
-    type MazeRoom = CubeNode;
+    type Face = CubeFace;
+    type Room = CubeNode;
 
     fn make_nodes_from_face(
         face: CubeFace,
@@ -215,7 +215,7 @@ impl Platonic for Cube {
 #[derive(Resource)]
 pub struct CubeMaze<P: Platonic> {
     pub distance_between_nodes: f32,
-    pub maze: Maze<P::MazeRoom, CubeEdge>,
+    pub maze: Maze<P::Room, CubeEdge>,
 }
 
 impl<P: Platonic> CubeMaze<P> {
@@ -232,8 +232,8 @@ impl<P: Platonic> CubeMaze<P> {
         }
     }
 
-    fn make_nodes(nodes_per_edge: u8, distance_between_nodes: f32) -> Vec<P::MazeRoom> {
-        P::MazeFace::iter()
+    fn make_nodes(nodes_per_edge: u8, distance_between_nodes: f32) -> Vec<P::Room> {
+        P::Face::iter()
             .flat_map(|face| P::make_nodes_from_face(face, nodes_per_edge, distance_between_nodes))
             .collect()
     }
