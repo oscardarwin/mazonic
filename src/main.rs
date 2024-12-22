@@ -35,7 +35,14 @@ fn main() {
         .run();
 }
 
+#[derive(Resource)]
+pub struct DummyCubeMaze {
+    pub maze: CubeMaze<Cube>,
+    pub cube: Cube,
+}
+
 fn load_maze(mut commands: Commands) {
-    let maze = Cube::build(3, 2.0);
-    commands.insert_resource(maze);
+    let cube = Cube::new(3, 2.0);
+    let maze = cube.build();
+    commands.insert_resource(DummyCubeMaze { maze, cube });
 }
