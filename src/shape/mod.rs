@@ -1,4 +1,5 @@
 pub mod cube;
+mod platonic_mesh_builder;
 pub mod platonic_solid;
 mod spawn;
 
