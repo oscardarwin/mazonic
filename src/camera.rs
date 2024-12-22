@@ -114,7 +114,7 @@ fn view(
         let rotation = Quat::from_axis_angle(axis, delta.norm() / 150.0);
         let mut light_transform = light_query.single_mut();
 
-        light_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
-        camera_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
+        light_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), -rotation);
+        camera_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), -rotation);
     }
 }

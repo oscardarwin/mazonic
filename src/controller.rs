@@ -1,7 +1,9 @@
 use crate::{
     game_settings::GameSettings,
     player::PlayerMazeState,
-    shape::cube::maze::{BorderType, Cube, CubeEdge, CubeMaze, CubeNode, HasFace},
+    shape::cube::maze::{
+        BorderType, Cube, CubeEdge, CubeMaze, CubeNode, HasFace, IsRoom, PlatonicSolid,
+    },
     Level,
 };
 use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
@@ -29,7 +31,10 @@ impl Plugin for Controller {
             )
             .add_systems(Update, idle.run_if(in_state(ControllerState::IdlePostView)))
             .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)))
-            .add_systems(Update, solve.run_if(in_state(ControllerState::Solving)));
+            .add_systems(
+                Update,
+                solve::<Cube>.run_if(in_state(ControllerState::Solving)),
+            );
     }
 }
 
@@ -90,12 +95,12 @@ fn view(
     }
 }
 
-fn solve(
+fn solve<P: PlatonicSolid>(
     camera_query: Query<(&GlobalTransform, &Camera)>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
-    mut player_query: Query<&mut PlayerMazeState>,
+    mut player_query: Query<&mut PlayerMazeState<P>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    level: Res<Level<Cube>>,
+    level: Res<Level<P>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     game_settings: Res<GameSettings>,
 ) {
@@ -127,24 +132,24 @@ fn solve(
     let mut player_maze_state = player_query.single_mut();
 
     if let Some(new_player_maze_state) = match player_maze_state.as_ref() {
-        PlayerMazeState::Node(node) => {
-            move_player_on_node(&node, &level.maze, game_settings.player_elevation, ray)
+        PlayerMazeState::<P>::Node(node) => {
+            move_player_on_node::<P>(&node, &level.maze, game_settings.player_elevation, ray)
         }
-        PlayerMazeState::Edge(from_node, to_node, _) => {
-            move_player_on_edge(&from_node, &to_node, ray, game_settings.player_elevation)
+        PlayerMazeState::<P>::Edge(from_node, to_node, _) => {
+            move_player_on_edge::<P>(&from_node, &to_node, ray, game_settings.player_elevation)
         }
     } {
         *player_maze_state = new_player_maze_state;
     }
 }
 
-fn project_ray_to_player_face(
+fn project_ray_to_player_face<P: PlatonicSolid>(
     ray: Ray3d,
-    cube_node: &CubeNode,
+    cube_node: &P::Room,
     player_elevation: f32,
 ) -> Option<Vec3> {
-    let plane_normal = cube_node.face.normal();
-    let plane_point = cube_node.position + player_elevation * plane_normal;
+    let plane_normal = cube_node.face().normal();
+    let plane_point = cube_node.position() + player_elevation * plane_normal;
 
     ray.intersect_plane(plane_point, InfinitePlane3d::new(plane_normal))
         .map(|ray_distance| ray.origin + ray.direction.normalize() * ray_distance)
@@ -154,15 +159,15 @@ fn project_point_to_plane(point: &Vec3, plane_position: Vec3, plane_normal: &Vec
     *point - plane_normal.dot(*point - plane_position) * *plane_normal
 }
 
-fn move_player_on_node(
-    node: &CubeNode,
-    maze: &Maze<CubeNode, CubeEdge>,
+fn move_player_on_node<P: PlatonicSolid>(
+    node: &P::Room,
+    maze: &Maze<P::Room, CubeEdge>,
     player_elevation: f32,
     ray: Ray3d,
-) -> Option<PlayerMazeState> {
-    let face_intersection_point = project_ray_to_player_face(ray, node, player_elevation)?;
+) -> Option<PlayerMazeState<P>> {
+    let face_intersection_point = project_ray_to_player_face::<P>(ray, node, player_elevation)?;
 
-    let node_player_position = node.position + node.face.normal() * player_elevation;
+    let node_player_position = node.position() + node.face().normal() * player_elevation;
 
     let face_intersection_from_player = face_intersection_point - node_player_position;
 
@@ -170,14 +175,14 @@ fn move_player_on_node(
         return None;
     }
 
-    let node_face_normal = node.face.normal();
-    let node_player_plane_position = node.position + player_elevation * node_face_normal;
+    let node_face_normal = node.face().normal();
+    let node_player_plane_position = node.position() + player_elevation * node_face_normal;
 
     maze.graph
         .edges(node.clone())
         .map(|(_, to_node, _)| to_node)
         .min_by_key(|to_node| {
-            let to_node_position = to_node.position;
+            let to_node_position = to_node.position();
 
             let to_node_player_plane_position =
                 project_point_to_plane(&to_node_position, node_player_position, &node_face_normal);
@@ -186,30 +191,32 @@ fn move_player_on_node(
 
             (edge_vec.angle_between(face_intersection_from_player) * 50.0) as u16
         })
-        .map(|to_node| PlayerMazeState::Edge(node.clone(), to_node, node_player_plane_position))
+        .map(|to_node| {
+            PlayerMazeState::<P>::Edge(node.clone(), to_node, node_player_plane_position)
+        })
 }
 
-fn move_player_on_edge(
-    from_node: &CubeNode,
-    to_node: &CubeNode,
+fn move_player_on_edge<P: PlatonicSolid>(
+    from_node: &P::Room,
+    to_node: &P::Room,
     ray: Ray3d,
     player_elevation: f32,
-) -> Option<PlayerMazeState> {
+) -> Option<PlayerMazeState<P>> {
     let player_plane_edge_intersection =
-        compute_player_plane_edge_intersection(ray, from_node, to_node, player_elevation)?;
+        compute_player_plane_edge_intersection::<P>(ray, from_node, to_node, player_elevation)?;
 
-    let to_node_distance = to_node.position + to_node.face.normal() * player_elevation
+    let to_node_distance = to_node.position() + to_node.face().normal() * player_elevation
         - player_plane_edge_intersection;
 
-    let from_node_distance = from_node.position + from_node.face.normal() * player_elevation
+    let from_node_distance = from_node.position() + from_node.face().normal() * player_elevation
         - player_plane_edge_intersection;
 
     let new_player_state = if to_node_distance.norm() < 0.18 {
-        PlayerMazeState::Node(to_node.clone())
+        PlayerMazeState::<P>::Node(to_node.clone())
     } else if from_node_distance.norm() < 0.18 {
-        PlayerMazeState::Node(from_node.clone())
+        PlayerMazeState::<P>::Node(from_node.clone())
     } else {
-        PlayerMazeState::Edge(
+        PlayerMazeState::<P>::Edge(
             from_node.clone(),
             to_node.clone(),
             player_plane_edge_intersection,
@@ -219,19 +226,19 @@ fn move_player_on_edge(
     Some(new_player_state)
 }
 
-fn compute_player_plane_edge_intersection(
+fn compute_player_plane_edge_intersection<P: PlatonicSolid>(
     screen_ray: Ray3d,
-    from_node: &CubeNode,
-    to_node: &CubeNode,
+    from_node: &P::Room,
+    to_node: &P::Room,
     player_elevation: f32,
 ) -> Option<Vec3> {
     let from_plane_intersection =
-        compute_intersection_point_of_edge(screen_ray, &from_node, player_elevation, &to_node);
+        compute_intersection_point_of_edge::<P>(screen_ray, &from_node, player_elevation, &to_node);
 
-    match &from_node.face.border_type(&to_node.face)? {
+    match &from_node.face().border_type(&to_node.face())? {
         BorderType::SameFace => from_plane_intersection,
         BorderType::Connected => {
-            let to_plane_intersection = compute_intersection_point_of_edge(
+            let to_plane_intersection = compute_intersection_point_of_edge::<P>(
                 screen_ray,
                 &to_node,
                 player_elevation,
@@ -247,24 +254,24 @@ fn compute_player_plane_edge_intersection(
     }
 }
 
-fn compute_intersection_point_of_edge(
+fn compute_intersection_point_of_edge<P: PlatonicSolid>(
     ray: Ray3d,
-    cube_node: &CubeNode,
+    room: &P::Room,
     elevation: f32,
-    other_edge_node: &CubeNode,
+    other_edge_room: &P::Room,
 ) -> Option<Vec3> {
-    let plane_normal = cube_node.face.normal();
+    let plane_normal = room.face().normal();
 
     if plane_normal.dot(Vec3::from(ray.direction)) > 0.0 {
         return None;
     }
 
-    let plane_point = cube_node.position + elevation * plane_normal;
+    let plane_point = room.position() + elevation * plane_normal;
     let other_node_on_player_plane =
-        project_point_to_plane(&other_edge_node.position, plane_point, &plane_normal);
+        project_point_to_plane(&other_edge_room.position(), plane_point, &plane_normal);
 
     let node_to_other_vec = other_node_on_player_plane - plane_point;
-    let project_ray_on_face = project_ray_to_player_face(ray, cube_node, elevation);
+    let project_ray_on_face = project_ray_to_player_face::<P>(ray, room, elevation);
 
     project_ray_on_face
         .map(|intersection_point| intersection_point - plane_point)
