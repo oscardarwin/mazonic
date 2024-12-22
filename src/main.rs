@@ -9,7 +9,7 @@ use game_settings::GameSettingsPlugin;
 use maze_generator::config::Maze;
 use player::PlayerPlugin;
 use shape::{
-    cube::{self, maze::Cube},
+    cube::Cube,
     platonic_solid::{Edge, PlatonicSolid},
 };
 
