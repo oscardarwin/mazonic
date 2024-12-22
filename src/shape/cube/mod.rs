@@ -15,7 +15,7 @@ use bevy::{
 };
 use petgraph::Direction;
 
-use crate::MazeLevel;
+use crate::Level;
 
 use self::{
     maze::{BorderType, Cube, CubeMaze, CubeNode, HasFace},
@@ -27,7 +27,7 @@ pub fn spawn(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    level: Res<MazeLevel<Cube>>,
+    level: Res<Level<Cube>>,
 ) {
     let cyan = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);

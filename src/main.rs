@@ -37,7 +37,7 @@ fn main() {
 }
 
 #[derive(Resource)]
-pub struct MazeLevel<P: PlatonicSolid> {
+pub struct Level<P: PlatonicSolid> {
     pub cube: Cube,
     pub maze: Maze<P::Room, CubeEdge>,
 }
@@ -45,5 +45,5 @@ pub struct MazeLevel<P: PlatonicSolid> {
 fn load_maze(mut commands: Commands) {
     let cube = Cube::new(3, 2.0);
     let CubeMaze(maze) = cube.build();
-    commands.insert_resource(MazeLevel::<Cube> { maze, cube });
+    commands.insert_resource(Level::<Cube> { maze, cube });
 }
