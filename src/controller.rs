@@ -1,9 +1,7 @@
 use crate::{
     game_settings::GameSettings,
     player::PlayerMazeState,
-    shape::cube::maze::{
-        BorderType, Cube, CubeEdge, CubeMaze, CubeRoom, HasFace, IsRoom, PlatonicSolid,
-    },
+    shape::cube::maze::{BorderType, Cube, CubeEdge, CubeRoom, HasFace, IsRoom, PlatonicSolid},
     Level,
 };
 use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};

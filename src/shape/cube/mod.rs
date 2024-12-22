@@ -18,7 +18,7 @@ use petgraph::Direction;
 use crate::Level;
 
 use self::{
-    maze::{BorderType, Cube, CubeMaze, CubeRoom, HasFace, IsRoom, PlatonicSolid},
+    maze::{BorderType, Cube, CubeRoom, HasFace, IsRoom, PlatonicSolid},
     mesh::EdgeMeshBuilder,
 };
 use itertools::Itertools;

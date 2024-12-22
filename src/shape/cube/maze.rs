@@ -167,12 +167,12 @@ pub trait PlatonicSolid: Resource + Sized {
         nodes: Vec<Self::Room>,
     ) -> TraversalGraph<Self::Room, CubeEdge>;
 
-    fn build(&self) -> CubeMaze<Self> {
+    fn build_maze(&self) -> Maze<Self::Room, CubeEdge> {
         let nodes = self.make_nodes();
         let traversal_graph = self.generate_traversal_graph(nodes.clone());
         let maze = Maze::build(traversal_graph);
 
-        CubeMaze::<Self>(maze)
+        maze
     }
 
     fn make_nodes(&self) -> Vec<Self::Room> {
@@ -183,9 +183,6 @@ pub trait PlatonicSolid: Resource + Sized {
 
     fn distance_between_nodes(&self) -> f32;
 }
-
-#[derive(Resource)]
-pub struct CubeMaze<P: PlatonicSolid>(pub Maze<P::Room, CubeEdge>);
 
 #[derive(Resource)]
 pub struct Cube {

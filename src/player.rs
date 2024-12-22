@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::{
     game_settings::GameSettings,
     load_maze,
-    shape::cube::maze::{Cube, CubeMaze, CubeRoom, HasFace, IsRoom, PlatonicSolid},
+    shape::cube::maze::{Cube, CubeRoom, HasFace, IsRoom, PlatonicSolid},
     Level,
 };
 use bevy::prelude::*;

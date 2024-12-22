@@ -10,7 +10,7 @@ use maze_generator::config::Maze;
 use player::PlayerPlugin;
 use shape::cube::{
     self,
-    maze::{Cube, CubeEdge, CubeMaze, PlatonicSolid},
+    maze::{Cube, CubeEdge, PlatonicSolid},
 };
 
 mod camera;
@@ -44,7 +44,7 @@ pub struct Level<P: PlatonicSolid> {
 
 fn load_maze(mut commands: Commands) {
     let platonic_solid = Cube::new(3, 2.0);
-    let CubeMaze(maze) = platonic_solid.build();
+    let maze = platonic_solid.build_maze();
     commands.insert_resource(Level::<Cube> {
         maze,
         platonic_solid,
