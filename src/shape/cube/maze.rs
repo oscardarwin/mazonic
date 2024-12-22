@@ -147,9 +147,10 @@ pub trait IsRoom<F: HasFace> {
     fn face(&self) -> F;
 }
 
-pub trait PlatonicSolid {
+pub trait PlatonicSolid: Sized {
     type Face: HasFace;
     type Room: Debug + Clone + Copy + Hash + Eq + Ord + PartialOrd + IsRoom<Self::Face>;
+    // type Generator: TraversalGraphGenerator<Self::Room, CubeEdge>;
 
     fn make_nodes_from_face(
         face: Self::Face,
@@ -161,6 +162,27 @@ pub trait PlatonicSolid {
         distance_between_nodes: f32,
         nodes: Vec<Self::Room>,
     ) -> TraversalGraph<Self::Room, CubeEdge>;
+
+    fn build(nodes_per_edge: u8, face_size: f32) -> CubeMaze<Self> {
+        let distance_between_nodes = face_size / ((1 + nodes_per_edge) as f32);
+        let nodes = Self::make_nodes(nodes_per_edge, distance_between_nodes);
+
+        let traversal_graph = Self::generate_traversal_graph(distance_between_nodes, nodes.clone());
+        let maze = Maze::build(traversal_graph);
+
+        CubeMaze::<Self> {
+            distance_between_nodes,
+            maze,
+        }
+    }
+
+    fn make_nodes(nodes_per_edge: u8, distance_between_nodes: f32) -> Vec<Self::Room> {
+        Self::Face::iter()
+            .flat_map(|face| {
+                Self::make_nodes_from_face(face, nodes_per_edge, distance_between_nodes)
+            })
+            .collect()
+    }
 }
 
 pub struct Cube;
@@ -216,27 +238,6 @@ impl PlatonicSolid for Cube {
 pub struct CubeMaze<P: PlatonicSolid> {
     pub distance_between_nodes: f32,
     pub maze: Maze<P::Room, CubeEdge>,
-}
-
-impl<P: PlatonicSolid> CubeMaze<P> {
-    pub fn build(nodes_per_edge: u8, face_size: f32) -> CubeMaze<P> {
-        let distance_between_nodes = face_size / ((1 + nodes_per_edge) as f32);
-        let nodes = Self::make_nodes(nodes_per_edge, distance_between_nodes);
-
-        let traversal_graph = P::generate_traversal_graph(distance_between_nodes, nodes.clone());
-        let maze = Maze::build(traversal_graph);
-
-        CubeMaze::<P> {
-            distance_between_nodes,
-            maze,
-        }
-    }
-
-    fn make_nodes(nodes_per_edge: u8, distance_between_nodes: f32) -> Vec<P::Room> {
-        P::Face::iter()
-            .flat_map(|face| P::make_nodes_from_face(face, nodes_per_edge, distance_between_nodes))
-            .collect()
-    }
 }
 
 struct CubeTraversalGraphGenerator {

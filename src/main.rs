@@ -9,7 +9,7 @@ use game_settings::GameSettingsPlugin;
 use player::PlayerPlugin;
 use shape::cube::{
     self,
-    maze::{Cube, CubeMaze},
+    maze::{Cube, CubeMaze, PlatonicSolid},
 };
 
 mod camera;
@@ -36,6 +36,6 @@ fn main() {
 }
 
 fn load_maze(mut commands: Commands) {
-    let maze = CubeMaze::<Cube>::build(3, 2.0);
+    let maze = Cube::build(3, 2.0);
     commands.insert_resource(maze);
 }
