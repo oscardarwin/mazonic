@@ -18,16 +18,16 @@ use petgraph::Direction;
 use crate::Level;
 
 use self::{
-    maze::{BorderType, Cube, CubeMaze, CubeNode, HasFace},
+    maze::{BorderType, Cube, CubeMaze, CubeNode, HasFace, IsRoom, PlatonicSolid},
     mesh::EdgeMeshBuilder,
 };
 use itertools::Itertools;
 
-pub fn spawn(
+pub fn spawn<P: PlatonicSolid>(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    level: Res<Level<Cube>>,
+    level: Res<Level<P>>,
 ) {
     let cyan = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);
@@ -51,14 +51,14 @@ pub fn spawn(
         let neighbors = incoming_neighbors
             .chain(outgoing_neighbors)
             .unique()
-            .collect::<Vec<CubeNode>>();
+            .collect::<Vec<P::Room>>();
 
         neighbors.len() != 2 || {
             let first_neighbor = neighbors[0];
             let second_neighbor = neighbors[1];
 
-            let node_to_first_vec = node.position - first_neighbor.position;
-            let node_to_second_vec = node.position - second_neighbor.position;
+            let node_to_first_vec = node.position() - first_neighbor.position();
+            let node_to_second_vec = node.position() - second_neighbor.position();
 
             node_to_first_vec.dot(node_to_second_vec).abs() < 0.1
         }
@@ -71,10 +71,10 @@ pub fn spawn(
 
         let transform = Transform::IDENTITY
             .looking_at(
-                -node.face.normal(),
-                node.face.normal().any_orthogonal_vector(),
+                -node.face().normal(),
+                node.face().normal().any_orthogonal_vector(),
             )
-            .with_translation(node.position + node.face.normal() * 0.002);
+            .with_translation(node.position() + node.face().normal() * 0.002);
 
         let radius = if node == *goal_node { 0.1 } else { 0.06 };
 
@@ -88,7 +88,7 @@ pub fn spawn(
 
     let face_angle = FRAC_PI_2;
     let edge_mesh_builder = EdgeMeshBuilder::new();
-    let distance_between_nodes = level.cube.distance_between_nodes;
+    let distance_between_nodes = level.platonic_solid.distance_between_nodes();
 
     let face_connection_mesh = meshes.add(edge_mesh_builder.line(distance_between_nodes));
     let face_arrow_mesh = meshes.add(edge_mesh_builder.dashed_arrow(distance_between_nodes));
@@ -105,7 +105,7 @@ pub fn spawn(
             continue;
         }
 
-        let Some(border_type) = source_node.face.border_type(&target_node.face) else {
+        let Some(border_type) = source_node.face().border_type(&target_node.face()) else {
             panic!["unknown edge type"];
         };
 
@@ -116,7 +116,7 @@ pub fn spawn(
             (BorderType::Connected, false) => edge_arrow_mesh.clone(),
         };
 
-        let transform = get_connection_transform(source_node, target_node, &border_type);
+        let transform = get_connection_transform::<P>(source_node, target_node, &border_type);
 
         commands.spawn(PbrBundle {
             mesh: Mesh3d(mesh_handle),
@@ -135,29 +135,33 @@ pub fn spawn(
     });
 }
 
-fn get_connection_transform(from: CubeNode, to: CubeNode, border_type: &BorderType) -> Transform {
+fn get_connection_transform<P: PlatonicSolid>(
+    from: P::Room,
+    to: P::Room,
+    border_type: &BorderType,
+) -> Transform {
     match border_type {
         BorderType::SameFace => {
-            let forward = from.position - to.position;
+            let forward = from.position() - to.position();
             Transform::IDENTITY
-                .looking_to(forward, from.face.normal())
-                .with_translation(from.position + from.face.normal() * 0.001)
+                .looking_to(forward, from.face().normal())
+                .with_translation(from.position() + from.face().normal() * 0.001)
         }
         BorderType::Connected => {
-            let from_normal = from.face.normal();
-            let to_normal = to.face.normal();
+            let from_normal = from.face().normal();
+            let to_normal = to.face().normal();
 
             let half_angle = from_normal.angle_between(to_normal) / 2.0;
 
             let average_normal = from_normal.lerp(to_normal, 0.5).normalize();
 
-            let edge_vec = to.position - from.position;
+            let edge_vec = to.position() - from.position();
 
-            let intersection_point = from.position
+            let intersection_point = from.position()
                 + (edge_vec + edge_vec.norm() * half_angle.tan() * average_normal) / 2.0;
 
             Transform::IDENTITY
-                .looking_to(intersection_point - to.position, to.face.normal())
+                .looking_to(intersection_point - to.position(), to.face().normal())
                 .with_translation(intersection_point + average_normal * 0.001)
         }
     }

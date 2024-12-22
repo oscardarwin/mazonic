@@ -32,18 +32,21 @@ fn main() {
         .add_plugins(PlatonicCamera::default())
         .add_plugins(PlayerPlugin::default())
         .add_plugins(ShapePlugin::default())
-        .add_systems(Startup, (load_maze, cube::spawn.after(load_maze)))
+        .add_systems(Startup, (load_maze, cube::spawn::<Cube>.after(load_maze)))
         .run();
 }
 
 #[derive(Resource)]
 pub struct Level<P: PlatonicSolid> {
-    pub cube: Cube,
+    pub platonic_solid: P,
     pub maze: Maze<P::Room, CubeEdge>,
 }
 
 fn load_maze(mut commands: Commands) {
-    let cube = Cube::new(3, 2.0);
-    let CubeMaze(maze) = cube.build();
-    commands.insert_resource(Level::<Cube> { maze, cube });
+    let platonic_solid = Cube::new(3, 2.0);
+    let CubeMaze(maze) = platonic_solid.build();
+    commands.insert_resource(Level::<Cube> {
+        maze,
+        platonic_solid,
+    });
 }

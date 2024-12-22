@@ -147,9 +147,18 @@ pub trait IsRoom<F: HasFace> {
     fn face(&self) -> F;
 }
 
-pub trait PlatonicSolid: Sized {
+pub trait PlatonicSolid: Resource + Sized {
     type Face: HasFace;
-    type Room: Debug + Clone + Copy + Hash + Eq + Ord + PartialOrd + IsRoom<Self::Face>;
+    type Room: Debug
+        + Clone
+        + Copy
+        + Hash
+        + Eq
+        + Ord
+        + PartialOrd
+        + Send
+        + Sync
+        + IsRoom<Self::Face>;
 
     fn make_nodes_from_face(&self, face: Self::Face) -> Vec<Self::Room>;
 
@@ -171,11 +180,14 @@ pub trait PlatonicSolid: Sized {
             .flat_map(|face| self.make_nodes_from_face(face))
             .collect()
     }
+
+    fn distance_between_nodes(&self) -> f32;
 }
 
 #[derive(Resource)]
 pub struct CubeMaze<P: PlatonicSolid>(pub Maze<P::Room, CubeEdge>);
 
+#[derive(Resource)]
 pub struct Cube {
     nodes_per_edge: u8,
     pub distance_between_nodes: f32,
@@ -228,6 +240,10 @@ impl PlatonicSolid for Cube {
         };
 
         traversal_graph_generator.generate(nodes.clone())
+    }
+
+    fn distance_between_nodes(&self) -> f32 {
+        self.distance_between_nodes
     }
 }
 
