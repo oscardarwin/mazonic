@@ -2,7 +2,7 @@ use crate::{
     game_settings::GameSettings,
     player::PlayerMazeState,
     shape::cube::maze::{BorderType, Cube, CubeEdge, CubeMaze, CubeNode, HasFace},
-    MazeLevel,
+    Level,
 };
 use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
 use bevy_rapier3d::{pipeline::QueryFilter, plugin::RapierContext};
@@ -95,7 +95,7 @@ fn solve(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<&mut PlayerMazeState>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    level: Res<MazeLevel<Cube>>,
+    level: Res<Level<Cube>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     game_settings: Res<GameSettings>,
 ) {
