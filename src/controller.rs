@@ -2,7 +2,7 @@ use crate::{
     game_settings::GameSettings,
     player::PlayerMazeState,
     shape::{
-        cube::{Cube, CubeRoom},
+        cube::Cube,
         platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid},
     },
     Level,

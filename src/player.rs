@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::{
     game_settings::GameSettings,
     load_maze,
-    shape::cube::{Cube, CubeRoom},
+    shape::cube::Cube,
     shape::platonic_solid::{HasFace, IsRoom, PlatonicSolid},
     Level,
 };

@@ -1,26 +1,15 @@
 use bevy::{
-    asset::Assets,
-    color::Color,
-    ecs::system::{Commands, ResMut},
-    math::NormedVectorSpace,
-    pbr::{PbrBundle, StandardMaterial},
     prelude::*,
     render::mesh::Mesh,
-    transform::components::Transform,
 };
 
 use std::f32::consts::{FRAC_PI_2, PI};
 
-use bevy::{
-    prelude::*,
-    render::{
+use bevy::render::{
         mesh::{Indices, PrimitiveTopology},
         render_asset::RenderAssetUsages,
-    },
-};
-use petgraph::Direction;
+    };
 
-use crate::Level;
 
 use itertools::Itertools;
 

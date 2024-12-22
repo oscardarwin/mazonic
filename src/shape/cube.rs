@@ -9,11 +9,9 @@ use std::{
 use bevy::{ecs::system::Resource, math::Vec3};
 use itertools::iproduct;
 use maze_generator::{
-    config::Maze,
-    model::{Door, TraversalGraph},
+    model::TraversalGraph,
     traversal_graph_generator::TraversalGraphGenerator,
 };
-use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::shape::platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid};

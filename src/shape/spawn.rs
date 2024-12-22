@@ -9,15 +9,7 @@ use bevy::{
     transform::components::Transform,
 };
 
-use std::f32::consts::{FRAC_PI_2, PI};
 
-use bevy::{
-    prelude::*,
-    render::{
-        mesh::{Indices, PrimitiveTopology},
-        render_asset::RenderAssetUsages,
-    },
-};
 use petgraph::Direction;
 
 use crate::Level;

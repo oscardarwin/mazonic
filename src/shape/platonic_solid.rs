@@ -1,19 +1,14 @@
 use std::{
-    cmp::Ordering,
     fmt::Debug,
     hash::{Hash, Hasher},
-    ops::Not,
 };
 
 use bevy::{ecs::system::Resource, math::Vec3};
-use itertools::iproduct;
 use maze_generator::{
     config::Maze,
     model::{Door, TraversalGraph},
-    traversal_graph_generator::TraversalGraphGenerator,
 };
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 
 use super::platonic_mesh_builder::PlatonicMeshBuilder;
 
