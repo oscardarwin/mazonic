@@ -15,7 +15,7 @@ use bevy::{
 };
 use petgraph::Direction;
 
-use crate::DummyCubeMaze;
+use crate::MazeLevel;
 
 use self::{
     maze::{BorderType, Cube, CubeMaze, CubeNode, HasFace},
@@ -27,7 +27,7 @@ pub fn spawn(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    cube_maze: Res<DummyCubeMaze>,
+    cube_maze: Res<MazeLevel<Cube>>,
 ) {
     let cyan = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);
@@ -37,15 +37,13 @@ pub fn spawn(
     let beige_material = materials.add(StandardMaterial::from_color(beige));
     let green_material = materials.add(StandardMaterial::from_color(green));
 
-    let goal_node = cube_maze.maze.maze.solution.last().unwrap();
-    for node in cube_maze.maze.maze.graph.nodes().filter(|node| {
+    let goal_node = cube_maze.maze.solution.last().unwrap();
+    for node in cube_maze.maze.graph.nodes().filter(|node| {
         let incoming_neighbors = cube_maze
-            .maze
             .maze
             .graph
             .neighbors_directed(*node, Direction::Incoming);
         let outgoing_neighbors = cube_maze
-            .maze
             .maze
             .graph
             .neighbors_directed(*node, Direction::Outgoing);
@@ -100,12 +98,8 @@ pub fn spawn(
     let edge_arrow_mesh =
         meshes.add(edge_mesh_builder.dashed_arrow_edge(distance_between_nodes / 2.0, face_angle));
 
-    for (source_node, target_node, _) in cube_maze.maze.maze.graph.all_edges() {
-        let bidirectional = cube_maze
-            .maze
-            .maze
-            .graph
-            .contains_edge(target_node, source_node);
+    for (source_node, target_node, _) in cube_maze.maze.graph.all_edges() {
+        let bidirectional = cube_maze.maze.graph.contains_edge(target_node, source_node);
 
         if bidirectional && source_node.cmp(&target_node).is_lt() {
             continue;

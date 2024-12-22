@@ -6,10 +6,11 @@ use bevy_vector_shapes::ShapePlugin;
 use camera::PlatonicCamera;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
+use maze_generator::config::Maze;
 use player::PlayerPlugin;
 use shape::cube::{
     self,
-    maze::{Cube, CubeMaze, PlatonicSolid},
+    maze::{Cube, CubeEdge, CubeMaze, PlatonicSolid},
 };
 
 mod camera;
@@ -36,13 +37,13 @@ fn main() {
 }
 
 #[derive(Resource)]
-pub struct DummyCubeMaze {
-    pub maze: CubeMaze<Cube>,
+pub struct MazeLevel<P: PlatonicSolid> {
     pub cube: Cube,
+    pub maze: Maze<P::Room, CubeEdge>,
 }
 
 fn load_maze(mut commands: Commands) {
     let cube = Cube::new(3, 2.0);
-    let maze = cube.build();
-    commands.insert_resource(DummyCubeMaze { maze, cube });
+    let CubeMaze(maze) = cube.build();
+    commands.insert_resource(MazeLevel::<Cube> { maze, cube });
 }

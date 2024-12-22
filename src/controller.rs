@@ -1,11 +1,12 @@
 use crate::{
     game_settings::GameSettings,
     player::PlayerMazeState,
-    shape::cube::maze::{BorderType, Cube, CubeMaze, CubeNode, HasFace},
-    DummyCubeMaze,
+    shape::cube::maze::{BorderType, Cube, CubeEdge, CubeMaze, CubeNode, HasFace},
+    MazeLevel,
 };
 use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
 use bevy_rapier3d::{pipeline::QueryFilter, plugin::RapierContext};
+use maze_generator::config::Maze;
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ControllerState {
@@ -94,7 +95,7 @@ fn solve(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<&mut PlayerMazeState>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    maze: Res<DummyCubeMaze>,
+    maze_level: Res<MazeLevel<Cube>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     game_settings: Res<GameSettings>,
 ) {
@@ -124,11 +125,10 @@ fn solve(
 
     // get plane for cuboid.
     let mut player_maze_state = player_query.single_mut();
-    let cube_maze = &maze.maze;
 
     if let Some(new_player_maze_state) = match player_maze_state.as_ref() {
         PlayerMazeState::Node(node) => {
-            move_player_on_node(&node, cube_maze, game_settings.player_elevation, ray)
+            move_player_on_node(&node, &maze_level.maze, game_settings.player_elevation, ray)
         }
         PlayerMazeState::Edge(from_node, to_node, _) => {
             move_player_on_edge(&from_node, &to_node, ray, game_settings.player_elevation)
@@ -156,7 +156,7 @@ fn project_point_to_plane(point: &Vec3, plane_position: Vec3, plane_normal: &Vec
 
 fn move_player_on_node(
     node: &CubeNode,
-    maze: &CubeMaze<Cube>,
+    maze: &Maze<CubeNode, CubeEdge>,
     player_elevation: f32,
     ray: Ray3d,
 ) -> Option<PlayerMazeState> {
@@ -173,8 +173,7 @@ fn move_player_on_node(
     let node_face_normal = node.face.normal();
     let node_player_plane_position = node.position + player_elevation * node_face_normal;
 
-    maze.maze
-        .graph
+    maze.graph
         .edges(node.clone())
         .map(|(_, to_node, _)| to_node)
         .min_by_key(|to_node| {

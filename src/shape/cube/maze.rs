@@ -163,7 +163,7 @@ pub trait PlatonicSolid: Sized {
         let traversal_graph = self.generate_traversal_graph(nodes.clone());
         let maze = Maze::build(traversal_graph);
 
-        CubeMaze::<Self> { maze }
+        CubeMaze::<Self>(maze)
     }
 
     fn make_nodes(&self) -> Vec<Self::Room> {
@@ -174,9 +174,7 @@ pub trait PlatonicSolid: Sized {
 }
 
 #[derive(Resource)]
-pub struct CubeMaze<P: PlatonicSolid> {
-    pub maze: Maze<P::Room, CubeEdge>,
-}
+pub struct CubeMaze<P: PlatonicSolid>(pub Maze<P::Room, CubeEdge>);
 
 pub struct Cube {
     nodes_per_edge: u8,

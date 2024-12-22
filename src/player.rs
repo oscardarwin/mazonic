@@ -4,7 +4,7 @@ use crate::{
     game_settings::GameSettings,
     load_maze,
     shape::cube::maze::{Cube, CubeMaze, CubeNode, HasFace},
-    DummyCubeMaze,
+    MazeLevel,
 };
 use bevy::prelude::*;
 use bevy_rapier3d::geometry::Collider;
@@ -33,13 +33,13 @@ pub fn setup_player(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     settings: Res<GameSettings>,
-    cube_maze: Res<DummyCubeMaze>,
+    cube_maze: Res<MazeLevel<Cube>>,
 ) {
     let white = Color::srgb_u8(247, 247, 0);
 
     let white_material = materials.add(StandardMaterial::from_color(white));
 
-    let initial_node = cube_maze.maze.maze.solution.first().unwrap().clone();
+    let initial_node = cube_maze.maze.solution.first().unwrap().clone();
     let player_transform =
         compute_initial_player_transform(initial_node, settings.player_elevation);
     let player_shape = Sphere::new(0.1);
