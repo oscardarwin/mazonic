@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::{
     game_settings::GameSettings,
     load_maze,
-    shape::cube::maze::{CubeMaze, CubeNode},
+    shape::cube::maze::{Cube, CubeMaze, CubeNode, Face},
 };
 use bevy::prelude::*;
 use bevy_rapier3d::geometry::Collider;
@@ -32,7 +32,7 @@ pub fn setup_player(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     settings: Res<GameSettings>,
-    cube_maze: Res<CubeMaze>,
+    cube_maze: Res<CubeMaze<Cube>>,
 ) {
     let white = Color::srgb_u8(247, 247, 0);
 

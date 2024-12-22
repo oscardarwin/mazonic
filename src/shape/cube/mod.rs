@@ -16,7 +16,7 @@ use bevy::{
 use petgraph::Direction;
 
 use self::{
-    maze::{BorderType, CubeMaze, CubeNode},
+    maze::{BorderType, Cube, CubeMaze, CubeNode, Face},
     mesh::EdgeMeshBuilder,
 };
 use itertools::Itertools;
@@ -25,7 +25,7 @@ pub fn spawn(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    cube_maze: Res<CubeMaze>,
+    cube_maze: Res<CubeMaze<Cube>>,
 ) {
     let cyan = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);

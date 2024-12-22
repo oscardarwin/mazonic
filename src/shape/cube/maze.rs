@@ -1,5 +1,6 @@
 use std::{
     cmp::Ordering,
+    fmt::Debug,
     hash::{Hash, Hasher},
     ops::Not,
 };
@@ -7,7 +8,9 @@ use std::{
 use bevy::{ecs::system::Resource, math::Vec3};
 use itertools::iproduct;
 use maze_generator::{
-    config::Maze, model::Door, traversal_graph_generator::TraversalGraphGenerator,
+    config::Maze,
+    model::{Door, TraversalGraph},
+    traversal_graph_generator::TraversalGraphGenerator,
 };
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -23,12 +26,6 @@ pub enum CubeFace {
 }
 
 impl CubeFace {
-    pub fn normal(&self) -> Vec3 {
-        let (vec_1, vec_2) = self.defining_vectors();
-
-        vec_1.cross(vec_2)
-    }
-
     fn defining_vectors(&self) -> (Vec3, Vec3) {
         match self {
             CubeFace::Right => (-Vec3::Y, Vec3::Z),
@@ -38,16 +35,6 @@ impl CubeFace {
             CubeFace::Up => (-Vec3::X, Vec3::Y),
             CubeFace::Down => (Vec3::X, Vec3::Y),
         }
-    }
-
-    pub fn border_type(&self, other: &CubeFace) -> Option<BorderType> {
-        self.is_disconnected_from(other).not().then(|| {
-            if self == other {
-                BorderType::SameFace
-            } else {
-                BorderType::Connected
-            }
-        })
     }
 
     fn is_disconnected_from(&self, other: &CubeFace) -> bool {
@@ -63,6 +50,24 @@ impl CubeFace {
     }
 }
 
+impl Face for CubeFace {
+    fn normal(&self) -> Vec3 {
+        let (vec_1, vec_2) = self.defining_vectors();
+
+        vec_1.cross(vec_2)
+    }
+
+    fn border_type(&self, other: &CubeFace) -> Option<BorderType> {
+        self.is_disconnected_from(other).not().then(|| {
+            if self == other {
+                BorderType::SameFace
+            } else {
+                BorderType::Connected
+            }
+        })
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum BorderType {
     SameFace,
@@ -75,16 +80,20 @@ pub struct CubeNode {
     pub face: CubeFace,
 }
 
-impl CubeNode {
-    fn compare_same_face(&self, other: &CubeNode) -> Ordering {
-        self.face_position.cmp(&other.face_position)
+impl Room<CubeFace> for CubeNode {
+    fn position(&self) -> Vec3 {
+        self.position
+    }
+
+    fn face(&self) -> CubeFace {
+        self.face
     }
 }
 
 impl Ord for CubeNode {
     fn cmp(&self, other: &CubeNode) -> Ordering {
         match self.face.cmp(&other.face) {
-            Ordering::Equal => self.compare_same_face(other),
+            Ordering::Equal => self.face_position.cmp(&other.face_position),
             ordering => ordering,
         }
     }
@@ -112,9 +121,9 @@ impl PartialEq for CubeNode {
 impl Eq for CubeNode {}
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Default)]
-pub struct Edge;
+pub struct CubeEdge;
 
-impl Door<CubeNode> for Edge {
+impl Door<CubeNode> for CubeEdge {
     fn is_directed(&self) -> bool {
         false
     }
@@ -124,56 +133,43 @@ impl Door<CubeNode> for Edge {
     }
 
     fn get_all_doors() -> Vec<Self> {
-        vec![Edge]
+        vec![CubeEdge]
     }
 }
 
-//pub trait FaceTrait {
-//    pub fn normal(&self) -> Vec3;
-//    pub fn border_type(&self, other: &Face) -> Option<BorderType>;
-//}
-//
-//pub trait Room {
-//    fn position(&self) -> Vec3;
-//    fn face(&self) -> Face;
-//}
-//
-//pub trait PlatonicSolid {
-//    type Face: FaceTrait;
-//    type MazeRoom: Debug + Clone + Copy;
-//}
-
-#[derive(Resource)]
-pub struct CubeMaze {
-    pub distance_between_nodes: f32,
-    pub maze: Maze<CubeNode, Edge>,
+pub trait Face: IntoEnumIterator {
+    fn normal(&self) -> Vec3;
+    fn border_type(&self, other: &Self) -> Option<BorderType>;
 }
 
-impl CubeMaze {
-    pub fn build(nodes_per_edge: u8, face_size: f32) -> CubeMaze {
-        let distance_between_nodes = face_size / ((1 + nodes_per_edge) as f32);
-        let nodes = Self::make_nodes(nodes_per_edge, distance_between_nodes);
+pub trait Room<F: Face> {
+    fn position(&self) -> Vec3;
+    fn face(&self) -> F;
+}
 
-        let traversal_graph_generator = CubeTraversalGraphGenerator {
-            distance_between_nodes,
-        };
+pub trait PlatonicSolid {
+    type MazeFace: Face;
+    type MazeRoom: Debug + Clone + Copy + Hash + Eq + Ord + PartialOrd + Room<Self::MazeFace>;
+    type MazeEdge: Door<Self::MazeRoom>;
 
-        let traversal_graph = traversal_graph_generator.generate(nodes.clone());
-        let maze = Maze::build(traversal_graph);
+    fn make_nodes_from_face(
+        face: Self::MazeFace,
+        nodes_per_edge: u8,
+        distance_between_nodes: f32,
+    ) -> Vec<Self::MazeRoom>;
 
-        CubeMaze {
-            distance_between_nodes,
-            maze,
-        }
-    }
+    fn generate_traversal_graph(
+        distance_between_nodes: f32,
+        nodes: Vec<Self::MazeRoom>,
+    ) -> TraversalGraph<Self::MazeRoom, Self::MazeEdge>;
+}
 
-    fn make_nodes(nodes_per_edge: u8, distance_between_nodes: f32) -> Vec<CubeNode> {
-        CubeFace::iter()
-            .flat_map(|face| {
-                Self::make_nodes_from_face(face, nodes_per_edge, distance_between_nodes)
-            })
-            .collect()
-    }
+pub struct Cube;
+
+impl PlatonicSolid for Cube {
+    type MazeFace = CubeFace;
+    type MazeRoom = CubeNode;
+    type MazeEdge = CubeEdge;
 
     fn make_nodes_from_face(
         face: CubeFace,
@@ -205,13 +201,51 @@ impl CubeMaze {
             })
             .collect::<Vec<CubeNode>>()
     }
+
+    fn generate_traversal_graph(
+        distance_between_nodes: f32,
+        nodes: Vec<CubeNode>,
+    ) -> TraversalGraph<CubeNode, CubeEdge> {
+        let traversal_graph_generator = CubeTraversalGraphGenerator {
+            distance_between_nodes,
+        };
+
+        traversal_graph_generator.generate(nodes.clone())
+    }
+}
+
+#[derive(Resource)]
+pub struct CubeMaze<P: PlatonicSolid> {
+    pub distance_between_nodes: f32,
+    pub maze: Maze<P::MazeRoom, P::MazeEdge>,
+}
+
+impl<P: PlatonicSolid> CubeMaze<P> {
+    pub fn build(nodes_per_edge: u8, face_size: f32) -> CubeMaze<P> {
+        let distance_between_nodes = face_size / ((1 + nodes_per_edge) as f32);
+        let nodes = Self::make_nodes(nodes_per_edge, distance_between_nodes);
+
+        let traversal_graph = P::generate_traversal_graph(distance_between_nodes, nodes.clone());
+        let maze = Maze::build(traversal_graph);
+
+        CubeMaze::<P> {
+            distance_between_nodes,
+            maze,
+        }
+    }
+
+    fn make_nodes(nodes_per_edge: u8, distance_between_nodes: f32) -> Vec<P::MazeRoom> {
+        P::MazeFace::iter()
+            .flat_map(|face| P::make_nodes_from_face(face, nodes_per_edge, distance_between_nodes))
+            .collect()
+    }
 }
 
 struct CubeTraversalGraphGenerator {
     pub distance_between_nodes: f32,
 }
 
-impl TraversalGraphGenerator<CubeNode, Edge> for CubeTraversalGraphGenerator {
+impl TraversalGraphGenerator<CubeNode, CubeEdge> for CubeTraversalGraphGenerator {
     fn can_connect(&self, from: &CubeNode, to: &CubeNode) -> bool {
         let distance = from.position.distance(to.position);
 

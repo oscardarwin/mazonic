@@ -1,7 +1,7 @@
 use crate::{
     game_settings::GameSettings,
     player::PlayerMazeState,
-    shape::cube::maze::{BorderType, CubeMaze, CubeNode},
+    shape::cube::maze::{BorderType, Cube, CubeMaze, CubeNode, Face},
 };
 use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
 use bevy_rapier3d::{pipeline::QueryFilter, plugin::RapierContext};
@@ -93,7 +93,7 @@ fn solve(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<&mut PlayerMazeState>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    maze: Res<CubeMaze>,
+    maze: Res<CubeMaze<Cube>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     game_settings: Res<GameSettings>,
 ) {
@@ -154,7 +154,7 @@ fn project_point_to_plane(point: &Vec3, plane_position: Vec3, plane_normal: &Vec
 
 fn move_player_on_node(
     node: &CubeNode,
-    maze: Res<CubeMaze>,
+    maze: Res<CubeMaze<Cube>>,
     player_elevation: f32,
     ray: Ray3d,
 ) -> Option<PlayerMazeState> {
