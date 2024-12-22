@@ -74,13 +74,13 @@ pub enum BorderType {
     Connected,
 }
 #[derive(Debug, Clone, Copy)]
-pub struct CubeNode {
+pub struct CubeRoom {
     pub position: Vec3,
     pub face_position: (u8, u8),
     pub face: CubeFace,
 }
 
-impl IsRoom<CubeFace> for CubeNode {
+impl IsRoom<CubeFace> for CubeRoom {
     fn position(&self) -> Vec3 {
         self.position
     }
@@ -90,8 +90,8 @@ impl IsRoom<CubeFace> for CubeNode {
     }
 }
 
-impl Ord for CubeNode {
-    fn cmp(&self, other: &CubeNode) -> Ordering {
+impl Ord for CubeRoom {
+    fn cmp(&self, other: &CubeRoom) -> Ordering {
         match self.face.cmp(&other.face) {
             Ordering::Equal => self.face_position.cmp(&other.face_position),
             ordering => ordering,
@@ -99,26 +99,26 @@ impl Ord for CubeNode {
     }
 }
 
-impl PartialOrd for CubeNode {
+impl PartialOrd for CubeRoom {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Hash for CubeNode {
+impl Hash for CubeRoom {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.face_position.hash(state);
         self.face.hash(state);
     }
 }
 
-impl PartialEq for CubeNode {
+impl PartialEq for CubeRoom {
     fn eq(&self, other: &Self) -> bool {
         self.position.distance(other.position) < 0.01
     }
 }
 
-impl Eq for CubeNode {}
+impl Eq for CubeRoom {}
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Default)]
 pub struct CubeEdge;
@@ -205,9 +205,9 @@ impl Cube {
 
 impl PlatonicSolid for Cube {
     type Face = CubeFace;
-    type Room = CubeNode;
+    type Room = CubeRoom;
 
-    fn make_nodes_from_face(&self, face: CubeFace) -> Vec<CubeNode> {
+    fn make_nodes_from_face(&self, face: CubeFace) -> Vec<CubeRoom> {
         let (vec_i, vec_j) = face.defining_vectors();
         let normal = face.normal();
 
@@ -225,16 +225,16 @@ impl PlatonicSolid for Cube {
                 let face_coord = face_coord_x + face_coord_y + nodes_per_edge_float * normal;
                 let position = face_coord * self.distance_between_nodes / 2.0;
 
-                CubeNode {
+                CubeRoom {
                     position,
                     face_position: (i, j),
                     face: face.clone(),
                 }
             })
-            .collect::<Vec<CubeNode>>()
+            .collect::<Vec<CubeRoom>>()
     }
 
-    fn generate_traversal_graph(&self, nodes: Vec<CubeNode>) -> TraversalGraph<CubeNode, CubeEdge> {
+    fn generate_traversal_graph(&self, nodes: Vec<CubeRoom>) -> TraversalGraph<CubeRoom, CubeEdge> {
         let traversal_graph_generator = CubeTraversalGraphGenerator {
             distance_between_nodes: self.distance_between_nodes,
         };
@@ -251,8 +251,8 @@ struct CubeTraversalGraphGenerator {
     pub distance_between_nodes: f32,
 }
 
-impl TraversalGraphGenerator<CubeNode, CubeEdge> for CubeTraversalGraphGenerator {
-    fn can_connect(&self, from: &CubeNode, to: &CubeNode) -> bool {
+impl TraversalGraphGenerator<CubeRoom, CubeEdge> for CubeTraversalGraphGenerator {
+    fn can_connect(&self, from: &CubeRoom, to: &CubeRoom) -> bool {
         let distance = from.position.distance(to.position);
 
         match from.face.border_type(&to.face) {
