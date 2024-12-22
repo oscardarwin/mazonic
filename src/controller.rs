@@ -3,7 +3,7 @@ use crate::{
     player::PlayerMazeState,
     shape::{
         cube::maze::{Cube, CubeRoom},
-        platonic_solid::{BorderType, CubeEdge, HasFace, IsRoom, PlatonicSolid},
+        platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid},
     },
     Level,
 };
@@ -162,7 +162,7 @@ fn project_point_to_plane(point: &Vec3, plane_position: Vec3, plane_normal: &Vec
 
 fn move_player_on_node<P: PlatonicSolid>(
     node: &P::Room,
-    maze: &Maze<P::Room, CubeEdge>,
+    maze: &Maze<P::Room, Edge>,
     player_elevation: f32,
     ray: Ray3d,
 ) -> Option<PlayerMazeState<P>> {

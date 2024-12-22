@@ -10,7 +10,7 @@ use maze_generator::config::Maze;
 use player::PlayerPlugin;
 use shape::{
     cube::{self, maze::Cube},
-    platonic_solid::{CubeEdge, PlatonicSolid},
+    platonic_solid::{Edge, PlatonicSolid},
 };
 
 mod camera;
@@ -39,7 +39,7 @@ fn main() {
 #[derive(Resource)]
 pub struct Level<P: PlatonicSolid> {
     pub platonic_solid: P,
-    pub maze: Maze<P::Room, CubeEdge>,
+    pub maze: Maze<P::Room, Edge>,
 }
 
 fn load_maze(mut commands: Commands) {

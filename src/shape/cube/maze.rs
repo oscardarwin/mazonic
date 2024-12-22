@@ -15,7 +15,7 @@ use maze_generator::{
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-use crate::shape::platonic_solid::{BorderType, CubeEdge, HasFace, IsRoom, PlatonicSolid};
+use crate::shape::platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid};
 
 #[derive(EnumIter, Debug, Clone, Hash, Eq, PartialEq, Copy, PartialOrd, Ord)]
 pub enum CubeFace {
@@ -164,7 +164,7 @@ impl PlatonicSolid for Cube {
             .collect::<Vec<CubeRoom>>()
     }
 
-    fn generate_traversal_graph(&self, nodes: Vec<CubeRoom>) -> TraversalGraph<CubeRoom, CubeEdge> {
+    fn generate_traversal_graph(&self, nodes: Vec<CubeRoom>) -> TraversalGraph<CubeRoom, Edge> {
         let traversal_graph_generator = CubeTraversalGraphGenerator {
             distance_between_nodes: self.distance_between_nodes,
         };
@@ -181,7 +181,7 @@ struct CubeTraversalGraphGenerator {
     pub distance_between_nodes: f32,
 }
 
-impl TraversalGraphGenerator<CubeRoom, CubeEdge> for CubeTraversalGraphGenerator {
+impl TraversalGraphGenerator<CubeRoom, Edge> for CubeTraversalGraphGenerator {
     fn can_connect(&self, from: &CubeRoom, to: &CubeRoom) -> bool {
         let distance = from.position.distance(to.position);
 
