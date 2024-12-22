@@ -147,7 +147,7 @@ pub trait IsRoom<F: HasFace> {
     fn face(&self) -> F;
 }
 
-pub trait Platonic {
+pub trait PlatonicSolid {
     type Face: HasFace;
     type Room: Debug + Clone + Copy + Hash + Eq + Ord + PartialOrd + IsRoom<Self::Face>;
 
@@ -165,7 +165,7 @@ pub trait Platonic {
 
 pub struct Cube;
 
-impl Platonic for Cube {
+impl PlatonicSolid for Cube {
     type Face = CubeFace;
     type Room = CubeNode;
 
@@ -213,12 +213,12 @@ impl Platonic for Cube {
 }
 
 #[derive(Resource)]
-pub struct CubeMaze<P: Platonic> {
+pub struct CubeMaze<P: PlatonicSolid> {
     pub distance_between_nodes: f32,
     pub maze: Maze<P::Room, CubeEdge>,
 }
 
-impl<P: Platonic> CubeMaze<P> {
+impl<P: PlatonicSolid> CubeMaze<P> {
     pub fn build(nodes_per_edge: u8, face_size: f32) -> CubeMaze<P> {
         let distance_between_nodes = face_size / ((1 + nodes_per_edge) as f32);
         let nodes = Self::make_nodes(nodes_per_edge, distance_between_nodes);
