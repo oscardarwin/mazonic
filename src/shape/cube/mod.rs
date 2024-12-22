@@ -18,10 +18,12 @@ use petgraph::Direction;
 use crate::Level;
 
 use self::{
-    maze::{BorderType, Cube, CubeRoom, HasFace, IsRoom, PlatonicSolid},
+    maze::{Cube, CubeRoom},
     mesh::EdgeMeshBuilder,
 };
 use itertools::Itertools;
+
+use super::platonic_solid::{BorderType, HasFace, IsRoom, PlatonicSolid};
 
 pub fn spawn<P: PlatonicSolid>(
     mut commands: Commands,

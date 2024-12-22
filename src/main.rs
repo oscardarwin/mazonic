@@ -8,9 +8,9 @@ use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use maze_generator::config::Maze;
 use player::PlayerPlugin;
-use shape::cube::{
-    self,
-    maze::{Cube, CubeEdge, PlatonicSolid},
+use shape::{
+    cube::{self, maze::Cube},
+    platonic_solid::{CubeEdge, PlatonicSolid},
 };
 
 mod camera;

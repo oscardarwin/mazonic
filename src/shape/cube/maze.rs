@@ -15,6 +15,8 @@ use maze_generator::{
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
+use crate::shape::platonic_solid::{BorderType, CubeEdge, HasFace, IsRoom, PlatonicSolid};
+
 #[derive(EnumIter, Debug, Clone, Hash, Eq, PartialEq, Copy, PartialOrd, Ord)]
 pub enum CubeFace {
     Front,
@@ -68,11 +70,6 @@ impl HasFace for CubeFace {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum BorderType {
-    SameFace,
-    Connected,
-}
 #[derive(Debug, Clone, Copy)]
 pub struct CubeRoom {
     pub position: Vec3,
@@ -119,70 +116,6 @@ impl PartialEq for CubeRoom {
 }
 
 impl Eq for CubeRoom {}
-
-#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Default)]
-pub struct CubeEdge;
-
-impl<R> Door<R> for CubeEdge {
-    fn is_directed(&self) -> bool {
-        false
-    }
-
-    fn door_path_weight(&self) -> u16 {
-        1
-    }
-
-    fn get_all_doors() -> Vec<Self> {
-        vec![CubeEdge]
-    }
-}
-
-pub trait HasFace: IntoEnumIterator {
-    fn normal(&self) -> Vec3;
-    fn border_type(&self, other: &Self) -> Option<BorderType>;
-}
-
-pub trait IsRoom<F: HasFace> {
-    fn position(&self) -> Vec3;
-    fn face(&self) -> F;
-}
-
-pub trait PlatonicSolid: Resource + Sized {
-    type Face: HasFace;
-    type Room: Debug
-        + Clone
-        + Copy
-        + Hash
-        + Eq
-        + Ord
-        + PartialOrd
-        + Send
-        + Sync
-        + IsRoom<Self::Face>;
-
-    fn make_nodes_from_face(&self, face: Self::Face) -> Vec<Self::Room>;
-
-    fn generate_traversal_graph(
-        &self,
-        nodes: Vec<Self::Room>,
-    ) -> TraversalGraph<Self::Room, CubeEdge>;
-
-    fn build_maze(&self) -> Maze<Self::Room, CubeEdge> {
-        let nodes = self.make_nodes();
-        let traversal_graph = self.generate_traversal_graph(nodes.clone());
-        let maze = Maze::build(traversal_graph);
-
-        maze
-    }
-
-    fn make_nodes(&self) -> Vec<Self::Room> {
-        Self::Face::iter()
-            .flat_map(|face| self.make_nodes_from_face(face))
-            .collect()
-    }
-
-    fn distance_between_nodes(&self) -> f32;
-}
 
 #[derive(Resource)]
 pub struct Cube {
