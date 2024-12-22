@@ -32,7 +32,13 @@ fn main() {
         .add_plugins(PlatonicCamera::default())
         .add_plugins(PlayerPlugin::default())
         .add_plugins(ShapePlugin::default())
-        .add_systems(Startup, (load_maze, cube::spawn::<Cube>.after(load_maze)))
+        .add_systems(
+            Startup,
+            (
+                load_maze,
+                shape::spawn_shape_meshes::<Cube>.after(load_maze),
+            ),
+        )
         .run();
 }
 
