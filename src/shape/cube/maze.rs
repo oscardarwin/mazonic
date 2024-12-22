@@ -13,7 +13,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 #[derive(EnumIter, Debug, Clone, Hash, Eq, PartialEq, Copy, PartialOrd, Ord)]
-pub enum Face {
+pub enum CubeFace {
     Front,
     Left,
     Right,
@@ -22,7 +22,7 @@ pub enum Face {
     Back,
 }
 
-impl Face {
+impl CubeFace {
     pub fn normal(&self) -> Vec3 {
         let (vec_1, vec_2) = self.defining_vectors();
 
@@ -31,16 +31,16 @@ impl Face {
 
     fn defining_vectors(&self) -> (Vec3, Vec3) {
         match self {
-            Face::Right => (-Vec3::Y, Vec3::Z),
-            Face::Left => (Vec3::Y, Vec3::Z),
-            Face::Back => (-Vec3::X, Vec3::Z),
-            Face::Front => (Vec3::X, Vec3::Z),
-            Face::Up => (-Vec3::X, Vec3::Y),
-            Face::Down => (Vec3::X, Vec3::Y),
+            CubeFace::Right => (-Vec3::Y, Vec3::Z),
+            CubeFace::Left => (Vec3::Y, Vec3::Z),
+            CubeFace::Back => (-Vec3::X, Vec3::Z),
+            CubeFace::Front => (Vec3::X, Vec3::Z),
+            CubeFace::Up => (-Vec3::X, Vec3::Y),
+            CubeFace::Down => (Vec3::X, Vec3::Y),
         }
     }
 
-    pub fn border_type(&self, other: &Face) -> Option<BorderType> {
+    pub fn border_type(&self, other: &CubeFace) -> Option<BorderType> {
         self.is_disconnected_from(other).not().then(|| {
             if self == other {
                 BorderType::SameFace
@@ -50,14 +50,14 @@ impl Face {
         })
     }
 
-    fn is_disconnected_from(&self, other: &Face) -> bool {
+    fn is_disconnected_from(&self, other: &CubeFace) -> bool {
         match (self, other) {
-            (Face::Front, Face::Back) => true,
-            (Face::Up, Face::Down) => true,
-            (Face::Left, Face::Right) => true,
-            (Face::Back, Face::Front) => true,
-            (Face::Down, Face::Up) => true,
-            (Face::Right, Face::Left) => true,
+            (CubeFace::Front, CubeFace::Back) => true,
+            (CubeFace::Up, CubeFace::Down) => true,
+            (CubeFace::Left, CubeFace::Right) => true,
+            (CubeFace::Back, CubeFace::Front) => true,
+            (CubeFace::Down, CubeFace::Up) => true,
+            (CubeFace::Right, CubeFace::Left) => true,
             _ => false,
         }
     }
@@ -72,7 +72,7 @@ pub enum BorderType {
 pub struct CubeNode {
     pub position: Vec3,
     pub face_position: (u8, u8),
-    pub face: Face,
+    pub face: CubeFace,
 }
 
 impl CubeNode {
@@ -128,6 +128,21 @@ impl Door<CubeNode> for Edge {
     }
 }
 
+//pub trait FaceTrait {
+//    pub fn normal(&self) -> Vec3;
+//    pub fn border_type(&self, other: &Face) -> Option<BorderType>;
+//}
+//
+//pub trait Room {
+//    fn position(&self) -> Vec3;
+//    fn face(&self) -> Face;
+//}
+//
+//pub trait PlatonicSolid {
+//    type Face: FaceTrait;
+//    type MazeRoom: Debug + Clone + Copy;
+//}
+
 #[derive(Resource)]
 pub struct CubeMaze {
     pub distance_between_nodes: f32,
@@ -153,7 +168,7 @@ impl CubeMaze {
     }
 
     fn make_nodes(nodes_per_edge: u8, distance_between_nodes: f32) -> Vec<CubeNode> {
-        Face::iter()
+        CubeFace::iter()
             .flat_map(|face| {
                 Self::make_nodes_from_face(face, nodes_per_edge, distance_between_nodes)
             })
@@ -161,7 +176,7 @@ impl CubeMaze {
     }
 
     fn make_nodes_from_face(
-        face: Face,
+        face: CubeFace,
         nodes_per_edge: u8,
         distance_between_nodes: f32,
     ) -> Vec<CubeNode> {
