@@ -123,7 +123,7 @@ impl Eq for CubeNode {}
 #[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Default)]
 pub struct CubeEdge;
 
-impl Door<CubeNode> for CubeEdge {
+impl<R> Door<R> for CubeEdge {
     fn is_directed(&self) -> bool {
         false
     }
@@ -150,7 +150,6 @@ pub trait Room<F: Face> {
 pub trait PlatonicSolid {
     type MazeFace: Face;
     type MazeRoom: Debug + Clone + Copy + Hash + Eq + Ord + PartialOrd + Room<Self::MazeFace>;
-    type MazeEdge: Door<Self::MazeRoom>;
 
     fn make_nodes_from_face(
         face: Self::MazeFace,
@@ -161,7 +160,7 @@ pub trait PlatonicSolid {
     fn generate_traversal_graph(
         distance_between_nodes: f32,
         nodes: Vec<Self::MazeRoom>,
-    ) -> TraversalGraph<Self::MazeRoom, Self::MazeEdge>;
+    ) -> TraversalGraph<Self::MazeRoom, CubeEdge>;
 }
 
 pub struct Cube;
@@ -169,7 +168,6 @@ pub struct Cube;
 impl PlatonicSolid for Cube {
     type MazeFace = CubeFace;
     type MazeRoom = CubeNode;
-    type MazeEdge = CubeEdge;
 
     fn make_nodes_from_face(
         face: CubeFace,
@@ -217,7 +215,7 @@ impl PlatonicSolid for Cube {
 #[derive(Resource)]
 pub struct CubeMaze<P: PlatonicSolid> {
     pub distance_between_nodes: f32,
-    pub maze: Maze<P::MazeRoom, P::MazeEdge>,
+    pub maze: Maze<P::MazeRoom, CubeEdge>,
 }
 
 impl<P: PlatonicSolid> CubeMaze<P> {
