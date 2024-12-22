@@ -16,7 +16,7 @@ use bevy::{
 use petgraph::Direction;
 
 use self::{
-    maze::{BorderType, Cube, CubeMaze, CubeNode, Face},
+    maze::{BorderType, Cube, CubeMaze, CubeNode, HasFace},
     mesh::EdgeMeshBuilder,
 };
 use itertools::Itertools;

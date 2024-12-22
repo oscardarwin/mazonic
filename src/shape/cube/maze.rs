@@ -50,7 +50,7 @@ impl CubeFace {
     }
 }
 
-impl Face for CubeFace {
+impl HasFace for CubeFace {
     fn normal(&self) -> Vec3 {
         let (vec_1, vec_2) = self.defining_vectors();
 
@@ -80,7 +80,7 @@ pub struct CubeNode {
     pub face: CubeFace,
 }
 
-impl Room<CubeFace> for CubeNode {
+impl IsRoom<CubeFace> for CubeNode {
     fn position(&self) -> Vec3 {
         self.position
     }
@@ -137,19 +137,19 @@ impl<R> Door<R> for CubeEdge {
     }
 }
 
-pub trait Face: IntoEnumIterator {
+pub trait HasFace: IntoEnumIterator {
     fn normal(&self) -> Vec3;
     fn border_type(&self, other: &Self) -> Option<BorderType>;
 }
 
-pub trait Room<F: Face> {
+pub trait IsRoom<F: HasFace> {
     fn position(&self) -> Vec3;
     fn face(&self) -> F;
 }
 
-pub trait PlatonicSolid {
-    type MazeFace: Face;
-    type MazeRoom: Debug + Clone + Copy + Hash + Eq + Ord + PartialOrd + Room<Self::MazeFace>;
+pub trait Platonic {
+    type MazeFace: HasFace;
+    type MazeRoom: Debug + Clone + Copy + Hash + Eq + Ord + PartialOrd + IsRoom<Self::MazeFace>;
 
     fn make_nodes_from_face(
         face: Self::MazeFace,
@@ -165,7 +165,7 @@ pub trait PlatonicSolid {
 
 pub struct Cube;
 
-impl PlatonicSolid for Cube {
+impl Platonic for Cube {
     type MazeFace = CubeFace;
     type MazeRoom = CubeNode;
 
@@ -213,12 +213,12 @@ impl PlatonicSolid for Cube {
 }
 
 #[derive(Resource)]
-pub struct CubeMaze<P: PlatonicSolid> {
+pub struct CubeMaze<P: Platonic> {
     pub distance_between_nodes: f32,
     pub maze: Maze<P::MazeRoom, CubeEdge>,
 }
 
-impl<P: PlatonicSolid> CubeMaze<P> {
+impl<P: Platonic> CubeMaze<P> {
     pub fn build(nodes_per_edge: u8, face_size: f32) -> CubeMaze<P> {
         let distance_between_nodes = face_size / ((1 + nodes_per_edge) as f32);
         let nodes = Self::make_nodes(nodes_per_edge, distance_between_nodes);

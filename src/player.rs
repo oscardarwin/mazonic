@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::{
     game_settings::GameSettings,
     load_maze,
-    shape::cube::maze::{Cube, CubeMaze, CubeNode, Face},
+    shape::cube::maze::{Cube, CubeMaze, CubeNode, HasFace},
 };
 use bevy::prelude::*;
 use bevy_rapier3d::geometry::Collider;

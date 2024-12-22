@@ -1,7 +1,7 @@
 use crate::{
     game_settings::GameSettings,
     player::PlayerMazeState,
-    shape::cube::maze::{BorderType, Cube, CubeMaze, CubeNode, Face},
+    shape::cube::maze::{BorderType, Cube, CubeMaze, CubeNode, HasFace},
 };
 use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
 use bevy_rapier3d::{pipeline::QueryFilter, plugin::RapierContext};
