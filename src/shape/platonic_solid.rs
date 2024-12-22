@@ -32,9 +32,9 @@ pub trait IsRoom<F: HasFace> {
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Default)]
-pub struct CubeEdge;
+pub struct Edge;
 
-impl<R> Door<R> for CubeEdge {
+impl<R> Door<R> for Edge {
     fn is_directed(&self) -> bool {
         false
     }
@@ -44,7 +44,7 @@ impl<R> Door<R> for CubeEdge {
     }
 
     fn get_all_doors() -> Vec<Self> {
-        vec![CubeEdge]
+        vec![Edge]
     }
 }
 
@@ -63,12 +63,9 @@ pub trait PlatonicSolid: Resource + Sized {
 
     fn make_nodes_from_face(&self, face: Self::Face) -> Vec<Self::Room>;
 
-    fn generate_traversal_graph(
-        &self,
-        nodes: Vec<Self::Room>,
-    ) -> TraversalGraph<Self::Room, CubeEdge>;
+    fn generate_traversal_graph(&self, nodes: Vec<Self::Room>) -> TraversalGraph<Self::Room, Edge>;
 
-    fn build_maze(&self) -> Maze<Self::Room, CubeEdge> {
+    fn build_maze(&self) -> Maze<Self::Room, Edge> {
         let nodes = self.make_nodes();
         let traversal_graph = self.generate_traversal_graph(nodes.clone());
         let maze = Maze::build(traversal_graph);
