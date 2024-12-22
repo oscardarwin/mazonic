@@ -6,12 +6,12 @@ use std::{
     ops::Not,
 };
 
-use bevy::{ecs::system::Resource, math::Vec3};
-use itertools::iproduct;
-use maze_generator::{
-    model::TraversalGraph,
-    traversal_graph_generator::TraversalGraphGenerator,
+use bevy::{
+    ecs::system::Resource,
+    math::{primitives::Cuboid, Vec3},
 };
+use itertools::iproduct;
+use maze_generator::{model::TraversalGraph, traversal_graph_generator::TraversalGraphGenerator};
 use strum_macros::EnumIter;
 
 use crate::shape::platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid};
@@ -122,14 +122,16 @@ impl Eq for CubeRoom {}
 pub struct Cube {
     nodes_per_edge: u8,
     pub distance_between_nodes: f32,
+    face_size: f32,
 }
 
 impl Cube {
     pub fn new(nodes_per_edge: u8, face_size: f32) -> Self {
-        let distance_between_nodes = face_size / ((1 + nodes_per_edge) as f32);
+        let distance_between_nodes = face_size / (nodes_per_edge as f32);
         Self {
             nodes_per_edge,
             distance_between_nodes,
+            face_size,
         }
     }
 }
@@ -149,12 +151,12 @@ impl PlatonicSolid for Cube {
                 let face_x = i as f32;
                 let face_y = j as f32;
 
-                let abs_max_face_coord = nodes_per_edge_float - 1.0;
-                let face_coord_x = (2.0 * face_x - abs_max_face_coord) * vec_i;
-                let face_coord_y = (2.0 * face_y - abs_max_face_coord) * vec_j;
+                let abs_max_face_coord = (nodes_per_edge_float - 1.0) / 2.0;
+                let face_coord_x = (face_x - abs_max_face_coord) * vec_i;
+                let face_coord_y = (face_y - abs_max_face_coord) * vec_j;
 
-                let face_coord = face_coord_x + face_coord_y + nodes_per_edge_float * normal;
-                let position = face_coord * self.distance_between_nodes / 2.0;
+                let face_coord = face_coord_x + face_coord_y + nodes_per_edge_float * normal / 2.0;
+                let position = face_coord * self.face_size / nodes_per_edge_float;
 
                 CubeRoom {
                     position,
@@ -170,11 +172,20 @@ impl PlatonicSolid for Cube {
             distance_between_nodes: self.distance_between_nodes,
         };
 
-        traversal_graph_generator.generate(nodes.clone())
+        let traversal_graph = traversal_graph_generator.generate(nodes.clone());
+
+        println!(
+            "Produced traversal graph with {:?} edges",
+            traversal_graph.all_edges().count()
+        );
+
+        traversal_graph
     }
 
     fn get_mesh_builder(&self) -> PlatonicMeshBuilder {
-        PlatonicMeshBuilder::new(self.distance_between_nodes, FRAC_PI_2)
+        let mesh = Cuboid::from_length(self.face_size);
+
+        PlatonicMeshBuilder::new(self.distance_between_nodes, FRAC_PI_2, mesh.into())
     }
 }
 

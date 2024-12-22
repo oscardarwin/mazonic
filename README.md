@@ -7,6 +7,19 @@ Octahedron
 Dodecahedron
 Icosahedron
 
+### Refactoring:
+
+relevant files:
+mod.rs
+cube.rs
+controller.rs
+player.rs
+
+
+filename / loader / metadata -> data / solid_type(maze) 
+
+
+
 ## Save levels as JSON
 
 ## Sort out GIT
@@ -17,7 +30,9 @@ Icosahedron
 
 ## Graphics
 Combine connected one way lines into a single dashed line.
-Shaders
+Shaders - slighly shiney.
+
+Rounded edges on the shapes?
 
 ## Levels selector should be a icosohedron.
 

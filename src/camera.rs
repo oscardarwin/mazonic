@@ -25,12 +25,12 @@ fn setup(mut commands: Commands) {
             clear_color: ClearColorConfig::Custom(charcoal),
             ..Default::default()
         },
-        transform: Transform::from_xyz(0.0, 0.0, 3.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
+        transform: Transform::from_xyz(0.0, 0.0, 4.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
         ..default()
     });
 
     commands.spawn(DirectionalLightBundle {
-        transform: Transform::from_xyz(0.0, 0.0, 5.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
+        transform: Transform::from_xyz(0.0, 0.0, 6.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
         ..default()
     });
 }

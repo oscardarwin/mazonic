@@ -9,7 +9,6 @@ use bevy::{
     transform::components::Transform,
 };
 
-
 use petgraph::Direction;
 
 use crate::Level;
@@ -117,7 +116,7 @@ pub fn spawn_shape_meshes<P: PlatonicSolid>(
         });
     }
 
-    let cuboid = meshes.add(Cuboid::from_length(1.5));
+    let cuboid = meshes.add(edge_mesh_builder.platonic_solid_mesh);
     commands.spawn(PbrBundle {
         mesh: Mesh3d(cuboid),
         material: MeshMaterial3d(green_material.clone()),

@@ -1,15 +1,11 @@
-use bevy::{
-    prelude::*,
-    render::mesh::Mesh,
-};
+use bevy::{prelude::*, render::mesh::Mesh};
 
 use std::f32::consts::{FRAC_PI_2, PI};
 
 use bevy::render::{
-        mesh::{Indices, PrimitiveTopology},
-        render_asset::RenderAssetUsages,
-    };
-
+    mesh::{Indices, PrimitiveTopology},
+    render_asset::RenderAssetUsages,
+};
 
 use itertools::Itertools;
 
@@ -21,10 +17,11 @@ pub struct PlatonicMeshBuilder {
     face_angle: f32,
     distance_between_nodes: f32,
     empty_mesh: Mesh,
+    pub platonic_solid_mesh: Mesh,
 }
 
 impl PlatonicMeshBuilder {
-    pub fn new(distance_between_nodes: f32, face_angle: f32) -> Self {
+    pub fn new(distance_between_nodes: f32, face_angle: f32, platonic_solid_mesh: Mesh) -> Self {
         let empty_mesh = Mesh::new(
             PrimitiveTopology::TriangleList,
             RenderAssetUsages::default(),
@@ -42,6 +39,7 @@ impl PlatonicMeshBuilder {
             face_angle,
             distance_between_nodes,
             empty_mesh,
+            platonic_solid_mesh,
         }
     }
 
