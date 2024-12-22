@@ -95,7 +95,7 @@ fn solve(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<&mut PlayerMazeState>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    maze_level: Res<MazeLevel<Cube>>,
+    level: Res<MazeLevel<Cube>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     game_settings: Res<GameSettings>,
 ) {
@@ -128,7 +128,7 @@ fn solve(
 
     if let Some(new_player_maze_state) = match player_maze_state.as_ref() {
         PlayerMazeState::Node(node) => {
-            move_player_on_node(&node, &maze_level.maze, game_settings.player_elevation, ray)
+            move_player_on_node(&node, &level.maze, game_settings.player_elevation, ray)
         }
         PlayerMazeState::Edge(from_node, to_node, _) => {
             move_player_on_edge(&from_node, &to_node, ray, game_settings.player_elevation)
