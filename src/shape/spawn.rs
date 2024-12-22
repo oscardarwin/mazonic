@@ -24,10 +24,7 @@ use crate::Level;
 
 use itertools::Itertools;
 
-use super::{
-    platonic_mesh_builder::PlatonicMeshBuilder,
-    platonic_solid::{BorderType, HasFace, IsRoom, PlatonicSolid},
-};
+use super::platonic_solid::{BorderType, HasFace, IsRoom, PlatonicSolid};
 
 pub fn spawn_shape_meshes<P: PlatonicSolid>(
     mut commands: Commands,
@@ -92,9 +89,7 @@ pub fn spawn_shape_meshes<P: PlatonicSolid>(
         });
     }
 
-    let face_angle = FRAC_PI_2;
-    let edge_mesh_builder =
-        PlatonicMeshBuilder::new(level.platonic_solid.distance_between_nodes(), face_angle);
+    let edge_mesh_builder = level.platonic_solid.get_mesh_builder();
 
     let face_connection_mesh = meshes.add(edge_mesh_builder.line());
     let face_arrow_mesh = meshes.add(edge_mesh_builder.dashed_arrow());

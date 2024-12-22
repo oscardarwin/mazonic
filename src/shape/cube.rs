@@ -1,5 +1,6 @@
 use std::{
     cmp::Ordering,
+    f32::consts::FRAC_PI_2,
     fmt::Debug,
     hash::{Hash, Hasher},
     ops::Not,
@@ -16,6 +17,8 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::shape::platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid};
+
+use super::platonic_mesh_builder::PlatonicMeshBuilder;
 
 #[derive(EnumIter, Debug, Clone, Hash, Eq, PartialEq, Copy, PartialOrd, Ord)]
 pub enum CubeFace {
@@ -172,8 +175,8 @@ impl PlatonicSolid for Cube {
         traversal_graph_generator.generate(nodes.clone())
     }
 
-    fn distance_between_nodes(&self) -> f32 {
-        self.distance_between_nodes
+    fn get_mesh_builder(&self) -> PlatonicMeshBuilder {
+        PlatonicMeshBuilder::new(self.distance_between_nodes, FRAC_PI_2)
     }
 }
 

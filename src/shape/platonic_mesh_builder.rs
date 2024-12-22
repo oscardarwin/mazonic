@@ -24,7 +24,7 @@ use crate::Level;
 
 use itertools::Itertools;
 
-pub struct EdgeMeshBuilder {
+pub struct PlatonicMeshBuilder {
     dash_width: f32,
     dash_length: f32,
     min_spacing: f32,
@@ -34,7 +34,7 @@ pub struct EdgeMeshBuilder {
     empty_mesh: Mesh,
 }
 
-impl EdgeMeshBuilder {
+impl PlatonicMeshBuilder {
     pub fn new(distance_between_nodes: f32, face_angle: f32) -> Self {
         let empty_mesh = Mesh::new(
             PrimitiveTopology::TriangleList,
@@ -45,7 +45,7 @@ impl EdgeMeshBuilder {
         .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<Vec3>::new())
         .with_inserted_indices(Indices::U32(vec![]));
 
-        EdgeMeshBuilder {
+        PlatonicMeshBuilder {
             dash_width: 0.06,
             dash_length: 0.09,
             min_spacing: 0.07,

@@ -15,6 +15,8 @@ use maze_generator::{
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
+use super::platonic_mesh_builder::PlatonicMeshBuilder;
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum BorderType {
     SameFace,
@@ -79,5 +81,5 @@ pub trait PlatonicSolid: Resource + Sized {
             .collect()
     }
 
-    fn distance_between_nodes(&self) -> f32;
+    fn get_mesh_builder(&self) -> PlatonicMeshBuilder;
 }
