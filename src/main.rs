@@ -11,6 +11,7 @@ use player::PlayerPlugin;
 use shape::{
     cube::Cube,
     platonic_solid::{Edge, PlatonicSolid},
+    tetrahedron::Tetrahedron,
 };
 
 mod camera;
@@ -36,7 +37,7 @@ fn main() {
             Startup,
             (
                 load_maze,
-                shape::spawn_shape_meshes::<Cube>.after(load_maze),
+                shape::spawn_shape_meshes::<Tetrahedron>.after(load_maze),
             ),
         )
         .run();
@@ -49,9 +50,9 @@ pub struct Level<P: PlatonicSolid> {
 }
 
 fn load_maze(mut commands: Commands) {
-    let platonic_solid = Cube::new(3, 2.0);
+    let platonic_solid = Tetrahedron::new(3, 2.0);
     let maze = platonic_solid.build_maze();
-    commands.insert_resource(Level::<Cube> {
+    commands.insert_resource(Level::<Tetrahedron> {
         maze,
         platonic_solid,
     });

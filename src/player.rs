@@ -3,8 +3,11 @@ use std::fmt::Debug;
 use crate::{
     game_settings::GameSettings,
     load_maze,
-    shape::cube::Cube,
-    shape::platonic_solid::{HasFace, IsRoom, PlatonicSolid},
+    shape::{
+        cube::Cube,
+        platonic_solid::{HasFace, IsRoom, PlatonicSolid},
+        tetrahedron::{Tetrahedron, TetrahedronRoom},
+    },
     Level,
 };
 use bevy::prelude::*;
@@ -24,8 +27,8 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, move_player::<Cube>)
-            .add_systems(Startup, setup_player::<Cube>.after(load_maze));
+        app.add_systems(Update, move_player::<Tetrahedron>)
+            .add_systems(Startup, setup_player::<Tetrahedron>.after(load_maze));
     }
 }
 

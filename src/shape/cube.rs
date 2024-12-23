@@ -121,7 +121,7 @@ impl Eq for CubeRoom {}
 #[derive(Resource)]
 pub struct Cube {
     nodes_per_edge: u8,
-    pub distance_between_nodes: f32,
+    distance_between_nodes: f32,
     face_size: f32,
 }
 

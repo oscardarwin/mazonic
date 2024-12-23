@@ -111,7 +111,7 @@ impl PlatonicMeshBuilder {
         let second_dashed_line = self
             .make_dashed_line(half_length)
             .rotated_by(Quat::from_rotation_z(PI))
-            .rotated_by(Quat::from_rotation_x(PI - self.face_angle));
+            .rotated_by(Quat::from_rotation_x(self.face_angle));
 
         first_dashed_line.merge(&second_dashed_line);
         first_dashed_line
@@ -124,7 +124,7 @@ impl PlatonicMeshBuilder {
         let second_line = self
             .make_line(half_length)
             .rotated_by(Quat::from_rotation_z(PI))
-            .rotated_by(Quat::from_rotation_x(PI - self.face_angle));
+            .rotated_by(Quat::from_rotation_x(self.face_angle));
 
         first_line.merge(&second_line);
         first_line

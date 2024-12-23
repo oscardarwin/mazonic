@@ -4,10 +4,20 @@ use crate::{
     shape::{
         cube::Cube,
         platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid},
+        tetrahedron::Tetrahedron,
     },
     Level,
 };
-use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
+use bevy::{
+    ecs::system::{Query, ResMut},
+    input::{mouse::MouseButton, ButtonInput},
+    math::{primitives::InfinitePlane3d, NormedVectorSpace, Ray3d, Vec3},
+    prelude::*,
+    render::camera::Camera,
+    state::state::NextState,
+    transform::components::GlobalTransform,
+    window::PrimaryWindow,
+};
 use bevy_rapier3d::{pipeline::QueryFilter, plugin::RapierContext};
 use maze_generator::config::Maze;
 
@@ -34,7 +44,7 @@ impl Plugin for Controller {
             .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)))
             .add_systems(
                 Update,
-                solve::<Cube>.run_if(in_state(ControllerState::Solving)),
+                solve::<Tetrahedron>.run_if(in_state(ControllerState::Solving)),
             );
     }
 }

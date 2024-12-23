@@ -65,9 +65,7 @@ pub trait PlatonicSolid: Resource + Sized {
     fn build_maze(&self) -> Maze<Self::Room, Edge> {
         let nodes = self.make_nodes();
         let traversal_graph = self.generate_traversal_graph(nodes.clone());
-        let maze = Maze::build(traversal_graph);
-
-        maze
+        Maze::build(traversal_graph)
     }
 
     fn make_nodes(&self) -> Vec<Self::Room> {
