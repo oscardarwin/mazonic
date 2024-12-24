@@ -20,8 +20,11 @@ use crate::{
     player::{Player, PlayerMazeState},
 };
 
-use super::platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid};
 use super::tetrahedron::Tetrahedron;
+use super::{
+    cube::Cube,
+    platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid},
+};
 
 #[derive(Default)]
 pub struct LoaderPlugin;
@@ -37,6 +40,11 @@ impl Plugin for LoaderPlugin {
             ),
         );
     }
+}
+
+enum PlatonicLoadData {
+    Cube(Cube),
+    Tetrahedron(Tetrahedron),
 }
 
 #[derive(Resource)]
