@@ -62,7 +62,6 @@ impl LoaderPlugin {
     }
 
     fn add_systems_for_solid_type<P: PlatonicSolid>(&self) -> SystemConfigs {
-        println!("First level: {:?}", std::any::type_name::<P>());
         (spawn_shape_meshes::<P>, setup_player::<P>).into_configs()
     }
 
@@ -85,14 +84,14 @@ impl Plugin for LoaderPlugin {
             app.add_systems(OnEnter(level_type), systems);
         }
         let levels = vec![
-            LevelLoadData::Cube(Cube::new(2, 1.5)),
+            LevelLoadData::Cube(Cube::new(2, 2.0)),
             LevelLoadData::Tetrahedron(Tetrahedron::new(4, 4.0)),
             LevelLoadData::Cube(Cube::new(3, 4.0)),
             LevelLoadData::Tetrahedron(Tetrahedron::new(6, 4.0)),
-            LevelLoadData::Cube(Cube::new(6, 4.0)),
+            LevelLoadData::Cube(Cube::new(6, 2.0)),
         ];
 
-        let first_level = levels[0].clone();
+        let first_level = levels[4].clone();
         self.setup_first_level(app, first_level.clone());
         app.insert_resource(Levels(levels));
     }
@@ -129,8 +128,6 @@ pub fn spawn_shape_meshes<P: PlatonicSolid>(
     mut materials: ResMut<Assets<StandardMaterial>>,
     level: Res<PlatonicLevelData<P>>,
 ) {
-    println!("spawn shape mesh");
-
     let cyan = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);
     let green = Color::srgb_u8(109, 152, 134);
@@ -138,6 +135,10 @@ pub fn spawn_shape_meshes<P: PlatonicSolid>(
     let cyan_material = materials.add(StandardMaterial::from_color(cyan));
     let beige_material = materials.add(StandardMaterial::from_color(beige));
     let green_material = materials.add(StandardMaterial::from_color(green));
+
+    let edge_mesh_builder = level.platonic_solid.get_mesh_builder();
+    let room_mesh_handle = meshes.add(edge_mesh_builder.room_mesh());
+    let goal_mesh_handle = meshes.add(edge_mesh_builder.goal_mesh());
 
     let goal_node = level.maze.solution.last().unwrap();
     for node in level.maze.graph.nodes().filter(|node| {
@@ -178,17 +179,19 @@ pub fn spawn_shape_meshes<P: PlatonicSolid>(
             )
             .with_translation(node.position() + node.face().normal() * 0.002);
 
-        let radius = if node == *goal_node { 0.1 } else { 0.06 };
+        let mesh_handle = if node == *goal_node {
+            goal_mesh_handle.clone()
+        } else {
+            room_mesh_handle.clone()
+        };
 
         commands.spawn(PbrBundle {
-            mesh: Mesh3d(meshes.add(Circle::new(radius))),
+            mesh: Mesh3d(mesh_handle),
             material: MeshMaterial3d(material_handle),
             transform,
             ..default()
         });
     }
-
-    let edge_mesh_builder = level.platonic_solid.get_mesh_builder();
 
     let face_connection_mesh = meshes.add(edge_mesh_builder.line());
     let face_arrow_mesh = meshes.add(edge_mesh_builder.dashed_arrow());
@@ -272,8 +275,6 @@ pub fn setup_player<P: PlatonicSolid>(
     settings: Res<GameSettings>,
     level: Res<PlatonicLevelData<P>>,
 ) {
-    println!["setup player"];
-
     let white = Color::srgb_u8(247, 247, 0);
 
     let white_material = materials.add(StandardMaterial::from_color(white));

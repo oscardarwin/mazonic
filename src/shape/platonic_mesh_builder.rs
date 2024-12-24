@@ -31,16 +31,31 @@ impl PlatonicMeshBuilder {
         .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<Vec3>::new())
         .with_inserted_indices(Indices::U32(vec![]));
 
+        println!("{:?}", distance_between_nodes);
+
+        let dash_width = distance_between_nodes / 7.0;
+        let arrow_head_width = dash_width * 1.7;
+        let dash_length = distance_between_nodes / 5.0;
+        let min_spacing = dash_length / 1.6;
+
         PlatonicMeshBuilder {
-            dash_width: 0.06,
-            dash_length: 0.09,
-            min_spacing: 0.07,
-            arrow_head_width: 0.12,
+            dash_width,
+            dash_length,
+            min_spacing,
+            arrow_head_width,
             face_angle,
             distance_between_nodes,
             empty_mesh,
             platonic_solid_mesh,
         }
+    }
+
+    pub fn room_mesh(&self) -> Mesh {
+        Circle::new(self.distance_between_nodes / 10.0).into()
+    }
+
+    pub fn goal_mesh(&self) -> Mesh {
+        Circle::new(self.distance_between_nodes / 8.0).into()
     }
 
     pub fn line(&self) -> Mesh {
