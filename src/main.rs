@@ -8,11 +8,7 @@ use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use maze_generator::config::Maze;
 use player::PlayerPlugin;
-use shape::{
-    cube::Cube,
-    platonic_solid::{Edge, PlatonicSolid},
-    tetrahedron::Tetrahedron,
-};
+use shape::loader::LoaderPlugin;
 
 mod camera;
 mod controller;
@@ -33,27 +29,6 @@ fn main() {
         .add_plugins(PlatonicCamera::default())
         .add_plugins(PlayerPlugin::default())
         .add_plugins(ShapePlugin::default())
-        .add_systems(
-            Startup,
-            (
-                load_maze,
-                shape::spawn_shape_meshes::<Tetrahedron>.after(load_maze),
-            ),
-        )
+        .add_plugins(LoaderPlugin::default())
         .run();
-}
-
-#[derive(Resource)]
-pub struct Level<P: PlatonicSolid> {
-    pub platonic_solid: P,
-    pub maze: Maze<P::Room, Edge>,
-}
-
-fn load_maze(mut commands: Commands) {
-    let platonic_solid = Tetrahedron::new(3, 2.0);
-    let maze = platonic_solid.build_maze();
-    commands.insert_resource(Level::<Tetrahedron> {
-        maze,
-        platonic_solid,
-    });
 }

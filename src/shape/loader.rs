@@ -9,13 +9,43 @@ use bevy::{
     transform::components::Transform,
 };
 
+use maze_generator::config::Maze;
 use petgraph::Direction;
-
-use crate::Level;
 
 use itertools::Itertools;
 
-use super::platonic_solid::{BorderType, HasFace, IsRoom, PlatonicSolid};
+use super::platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid};
+use super::tetrahedron::Tetrahedron;
+
+#[derive(Default)]
+pub struct LoaderPlugin;
+
+impl Plugin for LoaderPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Startup,
+            (
+                load_maze,
+                spawn_shape_meshes::<Tetrahedron>.after(load_maze),
+            ),
+        );
+    }
+}
+
+#[derive(Resource)]
+pub struct Level<P: PlatonicSolid> {
+    pub platonic_solid: P,
+    pub maze: Maze<P::Room, Edge>,
+}
+
+pub fn load_maze(mut commands: Commands) {
+    let platonic_solid = Tetrahedron::new(6, 4.0);
+    let maze = platonic_solid.build_maze();
+    commands.insert_resource(Level::<Tetrahedron> {
+        maze,
+        platonic_solid,
+    });
+}
 
 pub fn spawn_shape_meshes<P: PlatonicSolid>(
     mut commands: Commands,

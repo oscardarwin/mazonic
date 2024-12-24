@@ -3,10 +3,10 @@ use crate::{
     player::PlayerMazeState,
     shape::{
         cube::Cube,
+        loader::Level,
         platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid},
         tetrahedron::Tetrahedron,
     },
-    Level,
 };
 use bevy::{
     ecs::system::{Query, ResMut},

@@ -2,13 +2,12 @@ use std::fmt::Debug;
 
 use crate::{
     game_settings::GameSettings,
-    load_maze,
     shape::{
         cube::Cube,
+        loader::{load_maze, Level},
         platonic_solid::{HasFace, IsRoom, PlatonicSolid},
-        tetrahedron::{Tetrahedron, TetrahedronRoom},
+        tetrahedron::Tetrahedron,
     },
-    Level,
 };
 use bevy::prelude::*;
 use bevy_rapier3d::geometry::Collider;

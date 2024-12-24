@@ -1,30 +1,17 @@
 # TODO:
 
 
+## Save & Load levels as JSON
+
+## Sort out GIT
+
 ## More types of levels
-Tetrahedron
 Octahedron
 Dodecahedron
 Icosahedron
 
-### Refactoring:
-
-relevant files:
-mod.rs
-cube.rs
-controller.rs
-player.rs
-
-
-filename / loader / metadata -> data / solid_type(maze) 
-
-
-
-## Save levels as JSON
-
-## Sort out GIT
-
 ## Improve Maze Design
+- random walk based design rather than MST.
 - more back edges from stranded nodes.
 - make the solitary outgoing edge of a node (with a different incoming edge) one way.
 
