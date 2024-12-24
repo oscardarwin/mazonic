@@ -115,7 +115,7 @@ impl PartialEq for TetrahedronRoom {
 
 impl Eq for TetrahedronRoom {}
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct Tetrahedron {
     nodes_per_edge: u8,
     distance_between_nodes: f32,

@@ -118,7 +118,7 @@ impl PartialEq for CubeRoom {
 
 impl Eq for CubeRoom {}
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct Cube {
     nodes_per_edge: u8,
     distance_between_nodes: f32,

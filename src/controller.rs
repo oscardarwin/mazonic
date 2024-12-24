@@ -3,7 +3,7 @@ use crate::{
     player::PlayerMazeState,
     shape::{
         cube::Cube,
-        loader::Level,
+        loader::PlatonicLevelData,
         platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid},
         tetrahedron::Tetrahedron,
     },
@@ -44,7 +44,7 @@ impl Plugin for Controller {
             .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)))
             .add_systems(
                 Update,
-                solve::<Tetrahedron>.run_if(in_state(ControllerState::Solving)),
+                solve::<Cube>.run_if(in_state(ControllerState::Solving)),
             );
     }
 }
@@ -111,7 +111,7 @@ fn solve<P: PlatonicSolid>(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<&mut PlayerMazeState<P>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    level: Res<Level<P>>,
+    level: Res<PlatonicLevelData<P>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     game_settings: Res<GameSettings>,
 ) {

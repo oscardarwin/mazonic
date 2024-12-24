@@ -4,7 +4,7 @@ use crate::{
     game_settings::GameSettings,
     shape::{
         cube::Cube,
-        loader::{load_maze, Level},
+        loader::{load_maze, PlatonicLevelData},
         platonic_solid::{HasFace, IsRoom, PlatonicSolid},
         tetrahedron::Tetrahedron,
     },
@@ -26,7 +26,7 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, move_player::<Tetrahedron>);
+        app.add_systems(Update, move_player::<Cube>);
     }
 }
 

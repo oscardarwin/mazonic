@@ -45,7 +45,7 @@ impl<R> Door<R> for Edge {
     }
 }
 
-pub trait PlatonicSolid: Resource + Sized {
+pub trait PlatonicSolid: Resource + Sized + Clone {
     type Face: HasFace;
     type Room: Debug
         + Clone

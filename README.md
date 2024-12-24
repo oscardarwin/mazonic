@@ -3,6 +3,15 @@
 
 ## Save & Load levels as JSON
 
+List of levels stored in rust in a resource.
+
+## Menu
+
+Play
+Daily
+Settings
+Statistics
+
 ## Sort out GIT
 
 ## More types of levels

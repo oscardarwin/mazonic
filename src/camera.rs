@@ -21,7 +21,6 @@ fn setup(mut commands: Commands) {
 
     commands.spawn(Camera3dBundle {
         camera: Camera {
-            // clear the whole viewport with the given color
             clear_color: ClearColorConfig::Custom(charcoal),
             ..Default::default()
         },
@@ -49,7 +48,7 @@ fn follow_player(
     let player_translation = player_transform.translation;
     let camera_translation = camera_transform.translation;
 
-    // use faces for other types of shapes.
+    // TODO: use faces for other types of shapes.
     let target_camera_unit_position = iproduct!(-1..=1, -1..=1, -1..=1)
         .map(|(x, y, z)| Vec3::new(x as f32, y as f32, z as f32))
         .filter(|vec| vec.norm() > 0.5)

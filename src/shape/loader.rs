@@ -1,7 +1,12 @@
+use std::usize;
+
 use bevy::{
     asset::Assets,
     color::Color,
-    ecs::system::{Commands, ResMut},
+    ecs::{
+        schedule::SystemConfigs,
+        system::{Commands, ResMut},
+    },
     math::NormedVectorSpace,
     pbr::{PbrBundle, StandardMaterial},
     prelude::*,
@@ -14,6 +19,8 @@ use maze_generator::config::Maze;
 use petgraph::Direction;
 
 use itertools::Itertools;
+use strum::IntoEnumIterator;
+use strum_macros::{EnumDiscriminants, EnumIter};
 
 use crate::{
     game_settings::GameSettings,
@@ -26,39 +33,93 @@ use super::{
     platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid},
 };
 
-#[derive(Default)]
-pub struct LoaderPlugin;
-
-impl Plugin for LoaderPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            Startup,
-            (
-                load_maze,
-                spawn_shape_meshes::<Tetrahedron>.after(load_maze),
-                setup_player::<Tetrahedron>.after(load_maze),
-            ),
-        );
-    }
+#[derive(Resource)]
+pub struct PlatonicLevelData<P: PlatonicSolid> {
+    pub platonic_solid: P,
+    pub maze: Maze<P::Room, Edge>,
 }
 
-enum PlatonicLoadData {
+#[derive(Resource, EnumDiscriminants, Clone)]
+#[strum_discriminants(derive(EnumIter, Hash, States))]
+#[strum_discriminants(name(LevelType))]
+enum LevelLoadData {
     Cube(Cube),
     Tetrahedron(Tetrahedron),
 }
 
 #[derive(Resource)]
-pub struct Level<P: PlatonicSolid> {
-    pub platonic_solid: P,
-    pub maze: Maze<P::Room, Edge>,
+struct Levels(Vec<LevelLoadData>);
+
+#[derive(Default)]
+pub struct LoaderPlugin;
+
+impl LoaderPlugin {
+    fn get_systems_for_level_type(&self, level_type: LevelType) -> SystemConfigs {
+        match level_type {
+            LevelType::Cube => self.add_systems_for_solid_type::<Cube>(),
+            LevelType::Tetrahedron => self.add_systems_for_solid_type::<Tetrahedron>(),
+        }
+    }
+
+    fn add_systems_for_solid_type<P: PlatonicSolid>(&self) -> SystemConfigs {
+        println!("First level: {:?}", std::any::type_name::<P>());
+        (spawn_shape_meshes::<P>, setup_player::<P>).into_configs()
+    }
+
+    fn setup_first_level(&self, app: &mut App, first_level: LevelLoadData) {
+        let first_level_type = LevelType::from(&first_level);
+
+        let first_level_setup_systems = self.get_systems_for_level_type(first_level_type);
+        app.add_systems(Startup, first_level_setup_systems.after(load_maze));
+        app.insert_state(first_level_type);
+        app.insert_resource(first_level);
+    }
 }
 
-pub fn load_maze(mut commands: Commands) {
-    let platonic_solid = Tetrahedron::new(6, 4.0);
+impl Plugin for LoaderPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, load_maze);
+
+        for level_type in LevelType::iter() {
+            let systems = self.get_systems_for_level_type(level_type);
+            app.add_systems(OnEnter(level_type), systems);
+        }
+        let levels = vec![
+            LevelLoadData::Cube(Cube::new(2, 1.5)),
+            LevelLoadData::Tetrahedron(Tetrahedron::new(4, 4.0)),
+            LevelLoadData::Cube(Cube::new(3, 4.0)),
+            LevelLoadData::Tetrahedron(Tetrahedron::new(6, 4.0)),
+            LevelLoadData::Cube(Cube::new(6, 4.0)),
+        ];
+
+        let first_level = levels[0].clone();
+        self.setup_first_level(app, first_level.clone());
+        app.insert_resource(Levels(levels));
+    }
+}
+
+pub fn load_maze(
+    mut commands: Commands,
+    mut next_level_type: ResMut<NextState<LevelType>>,
+    level_resource: Res<LevelLoadData>,
+) {
+    let level: &LevelLoadData = level_resource.into_inner();
+
+    match level {
+        LevelLoadData::Cube(cube) => load_platonic_maze::<Cube>(commands, cube),
+        LevelLoadData::Tetrahedron(tetrahedron) => {
+            load_platonic_maze::<Tetrahedron>(commands, tetrahedron)
+        }
+    }
+    next_level_type.set(LevelType::from(level));
+}
+
+fn load_platonic_maze<P: PlatonicSolid>(mut commands: Commands, platonic_solid: &P) {
     let maze = platonic_solid.build_maze();
-    commands.insert_resource(Level::<Tetrahedron> {
+
+    commands.insert_resource(PlatonicLevelData::<P> {
         maze,
-        platonic_solid,
+        platonic_solid: platonic_solid.clone(),
     });
 }
 
@@ -66,8 +127,10 @@ pub fn spawn_shape_meshes<P: PlatonicSolid>(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    level: Res<Level<P>>,
+    level: Res<PlatonicLevelData<P>>,
 ) {
+    println!("spawn shape mesh");
+
     let cyan = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);
     let green = Color::srgb_u8(109, 152, 134);
@@ -207,8 +270,10 @@ pub fn setup_player<P: PlatonicSolid>(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     settings: Res<GameSettings>,
-    level: Res<Level<P>>,
+    level: Res<PlatonicLevelData<P>>,
 ) {
+    println!["setup player"];
+
     let white = Color::srgb_u8(247, 247, 0);
 
     let white_material = materials.add(StandardMaterial::from_color(white));
