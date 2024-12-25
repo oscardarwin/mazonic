@@ -23,8 +23,9 @@ use strum::IntoEnumIterator;
 use strum_macros::{EnumDiscriminants, EnumIter};
 
 use crate::{
+    controller::{solve, ControllerState},
     game_settings::GameSettings,
-    player::{Player, PlayerMazeState},
+    player::{move_player, Player, PlayerMazeState},
 };
 
 use super::tetrahedron::Tetrahedron;
@@ -50,58 +51,70 @@ enum LevelLoadData {
 #[derive(Resource)]
 struct Levels(Vec<LevelLoadData>);
 
+struct LevelSystems {
+    pub setup_systems: SystemConfigs,
+    pub update_systems: SystemConfigs,
+}
+
 #[derive(Default)]
 pub struct LoaderPlugin;
 
 impl LoaderPlugin {
-    fn get_systems_for_level_type(&self, level_type: LevelType) -> SystemConfigs {
+    fn get_systems_for_level_type(&self, level_type: LevelType) -> LevelSystems {
         match level_type {
-            LevelType::Cube => self.add_systems_for_solid_type::<Cube>(),
-            LevelType::Tetrahedron => self.add_systems_for_solid_type::<Tetrahedron>(),
+            LevelType::Cube => self.get_systems_for_solid_type::<Cube>(),
+            LevelType::Tetrahedron => self.get_systems_for_solid_type::<Tetrahedron>(),
         }
     }
 
-    fn add_systems_for_solid_type<P: PlatonicSolid>(&self) -> SystemConfigs {
-        (spawn_shape_meshes::<P>, setup_player::<P>).into_configs()
-    }
+    fn get_systems_for_solid_type<P: PlatonicSolid>(&self) -> LevelSystems {
+        let setup_systems = (spawn_shape_meshes::<P>, setup_player::<P>).into_configs();
+        let controller_solve_system = solve::<P>.run_if(in_state(ControllerState::Solving));
+        let update_systems = (move_player::<P>, controller_solve_system).into_configs();
 
-    fn setup_first_level(&self, app: &mut App, first_level: LevelLoadData) {
-        let first_level_type = LevelType::from(&first_level);
-
-        let first_level_setup_systems = self.get_systems_for_level_type(first_level_type);
-        app.add_systems(Startup, first_level_setup_systems.after(load_maze));
-        app.insert_state(first_level_type);
-        app.insert_resource(first_level);
+        LevelSystems {
+            setup_systems,
+            update_systems,
+        }
     }
 }
 
 impl Plugin for LoaderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, load_maze);
-
+        // app.add_systems(Startup, load_level);
         for level_type in LevelType::iter() {
-            let systems = self.get_systems_for_level_type(level_type);
-            app.add_systems(OnEnter(level_type), systems);
+            let level_systems = self.get_systems_for_level_type(level_type);
+
+            let LevelSystems {
+                setup_systems,
+                update_systems,
+            } = level_systems;
+
+            app.add_systems(
+                OnEnter(level_type),
+                (load_level, setup_systems.after(load_level)),
+            );
+            app.add_systems(Update, update_systems.run_if(in_state(level_type)));
         }
         let levels = vec![
+            LevelLoadData::Tetrahedron(Tetrahedron::new(4, 2.0)),
             LevelLoadData::Cube(Cube::new(2, 2.0)),
-            LevelLoadData::Tetrahedron(Tetrahedron::new(4, 4.0)),
-            LevelLoadData::Cube(Cube::new(3, 4.0)),
-            LevelLoadData::Tetrahedron(Tetrahedron::new(6, 4.0)),
+            LevelLoadData::Cube(Cube::new(3, 2.0)),
+            LevelLoadData::Tetrahedron(Tetrahedron::new(6, 2.0)),
             LevelLoadData::Cube(Cube::new(6, 2.0)),
         ];
 
-        let first_level = levels[4].clone();
-        self.setup_first_level(app, first_level.clone());
+        let first_level = levels[2].clone();
+
+        let first_level_type = LevelType::from(&first_level);
+        app.insert_state(first_level_type);
+
+        app.insert_resource(first_level);
         app.insert_resource(Levels(levels));
     }
 }
 
-pub fn load_maze(
-    mut commands: Commands,
-    mut next_level_type: ResMut<NextState<LevelType>>,
-    level_resource: Res<LevelLoadData>,
-) {
+pub fn load_level(mut commands: Commands, level_resource: Res<LevelLoadData>) {
     let level: &LevelLoadData = level_resource.into_inner();
 
     match level {
@@ -110,7 +123,6 @@ pub fn load_maze(
             load_platonic_maze::<Tetrahedron>(commands, tetrahedron)
         }
     }
-    next_level_type.set(LevelType::from(level));
 }
 
 fn load_platonic_maze<P: PlatonicSolid>(mut commands: Commands, platonic_solid: &P) {

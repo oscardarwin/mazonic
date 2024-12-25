@@ -4,7 +4,7 @@ use crate::{
     game_settings::GameSettings,
     shape::{
         cube::Cube,
-        loader::{load_maze, PlatonicLevelData},
+        loader::PlatonicLevelData,
         platonic_solid::{HasFace, IsRoom, PlatonicSolid},
         tetrahedron::Tetrahedron,
     },
@@ -21,16 +21,7 @@ pub enum PlayerMazeState<P: PlatonicSolid> {
     Edge(P::Room, P::Room, Vec3),
 }
 
-#[derive(Default)]
-pub struct PlayerPlugin;
-
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Update, move_player::<Cube>);
-    }
-}
-
-fn move_player<P: PlatonicSolid>(
+pub fn move_player<P: PlatonicSolid>(
     mut player_query: Query<(&mut Transform, &PlayerMazeState<P>)>,
     settings: Res<GameSettings>,
 ) {

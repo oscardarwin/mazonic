@@ -41,11 +41,7 @@ impl Plugin for Controller {
                 idle.run_if(in_state(ControllerState::IdlePostSolve)),
             )
             .add_systems(Update, idle.run_if(in_state(ControllerState::IdlePostView)))
-            .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)))
-            .add_systems(
-                Update,
-                solve::<Cube>.run_if(in_state(ControllerState::Solving)),
-            );
+            .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)));
     }
 }
 
@@ -106,7 +102,7 @@ fn view(
     }
 }
 
-fn solve<P: PlatonicSolid>(
+pub fn solve<P: PlatonicSolid>(
     camera_query: Query<(&GlobalTransform, &Camera)>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<&mut PlayerMazeState<P>>,

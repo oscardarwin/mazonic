@@ -19,10 +19,6 @@ pub struct GameSettingsPlugin;
 
 impl Plugin for GameSettingsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_settings);
+        app.init_resource::<GameSettings>();
     }
-}
-
-fn setup_settings(mut commands: Commands) {
-    commands.insert_resource(GameSettings::default());
 }

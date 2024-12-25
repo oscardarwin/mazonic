@@ -7,7 +7,6 @@ use camera::PlatonicCamera;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use maze_generator::config::Maze;
-use player::PlayerPlugin;
 use shape::loader::LoaderPlugin;
 
 mod camera;
@@ -24,11 +23,9 @@ fn main() {
             WireframePlugin,
         ))
         .add_plugins(GameSettingsPlugin::default())
+        .add_plugins(LoaderPlugin::default())
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(Controller::default())
         .add_plugins(PlatonicCamera::default())
-        .add_plugins(PlayerPlugin::default())
-        .add_plugins(ShapePlugin::default())
-        .add_plugins(LoaderPlugin::default())
         .run();
 }

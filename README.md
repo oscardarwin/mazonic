@@ -1,18 +1,8 @@
 # TODO:
 
+## Sort out GIT
 
 ## Save & Load levels as JSON
-
-List of levels stored in rust in a resource.
-
-## Menu
-
-Play
-Daily
-Settings
-Statistics
-
-## Sort out GIT
 
 ## More types of levels
 Octahedron
@@ -29,6 +19,14 @@ Combine connected one way lines into a single dashed line.
 Shaders - slighly shiney.
 
 Rounded edges on the shapes?
+
+## Menu
+
+Play
+Daily
+Settings
+Statistics
+
 
 ## Levels selector should be a icosohedron.
 
