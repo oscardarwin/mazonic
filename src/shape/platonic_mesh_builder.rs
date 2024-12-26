@@ -31,8 +31,6 @@ impl PlatonicMeshBuilder {
         .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<Vec3>::new())
         .with_inserted_indices(Indices::U32(vec![]));
 
-        println!("{:?}", distance_between_nodes);
-
         let dash_width = distance_between_nodes / 7.0;
         let arrow_head_width = dash_width * 1.7;
         let dash_length = distance_between_nodes / 5.0;

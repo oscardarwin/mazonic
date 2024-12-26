@@ -12,6 +12,7 @@ use bevy::{
 };
 use itertools::iproduct;
 use maze_generator::{model::TraversalGraph, traversal_graph_generator::TraversalGraphGenerator};
+use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::shape::platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid};
@@ -68,6 +69,10 @@ impl HasFace for CubeFace {
                 BorderType::Connected
             }
         })
+    }
+
+    fn all_faces() -> Vec<CubeFace> {
+        CubeFace::iter().collect::<Vec<CubeFace>>()
     }
 }
 
@@ -140,7 +145,7 @@ impl PlatonicSolid for Cube {
     type Face = CubeFace;
     type Room = CubeRoom;
 
-    fn make_nodes_from_face(&self, face: CubeFace) -> Vec<CubeRoom> {
+    fn make_nodes_from_face(&self, face: &CubeFace) -> Vec<CubeRoom> {
         let (vec_i, vec_j) = face.defining_vectors();
         let normal = face.normal();
 

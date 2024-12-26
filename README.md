@@ -7,7 +7,6 @@
 ## More types of levels
 Octahedron
 Dodecahedron
-Icosahedron
 
 ## Improve Maze Design
 - random walk based design rather than MST.

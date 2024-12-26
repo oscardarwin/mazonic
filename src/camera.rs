@@ -88,7 +88,6 @@ fn view(
     };
 
     let Some(cursor_position) = window.cursor_position() else {
-        // if the cursor is not inside the window, we can't do anything
         return;
     };
 
@@ -109,7 +108,6 @@ fn view(
         .normalize();
 
     if axis.norm() > 0.01 {
-        // println!("rotate_around: {:?} with delta: {:?}", axis, delta);
         let rotation = Quat::from_axis_angle(axis, delta.norm() / 150.0);
         let mut light_transform = light_query.single_mut();
 

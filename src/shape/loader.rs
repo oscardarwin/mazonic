@@ -28,11 +28,11 @@ use crate::{
     player::{move_player, Player, PlayerMazeState},
 };
 
-use super::tetrahedron::Tetrahedron;
 use super::{
     cube::Cube,
     platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid},
 };
+use super::{icosahedron::Icosahedron, tetrahedron::Tetrahedron};
 
 #[derive(Resource)]
 pub struct PlatonicLevelData<P: PlatonicSolid> {
@@ -46,6 +46,7 @@ pub struct PlatonicLevelData<P: PlatonicSolid> {
 enum LevelLoadData {
     Cube(Cube),
     Tetrahedron(Tetrahedron),
+    Icosahedron(Icosahedron),
 }
 
 #[derive(Resource)]
@@ -64,6 +65,7 @@ impl LoaderPlugin {
         match level_type {
             LevelType::Cube => self.get_systems_for_solid_type::<Cube>(),
             LevelType::Tetrahedron => self.get_systems_for_solid_type::<Tetrahedron>(),
+            LevelType::Icosahedron => self.get_systems_for_solid_type::<Icosahedron>(),
         }
     }
 
@@ -99,6 +101,7 @@ impl Plugin for LoaderPlugin {
         let levels = vec![
             LevelLoadData::Tetrahedron(Tetrahedron::new(4, 2.0)),
             LevelLoadData::Cube(Cube::new(2, 2.0)),
+            LevelLoadData::Icosahedron(Icosahedron::new(3, 2.0)),
             LevelLoadData::Cube(Cube::new(3, 2.0)),
             LevelLoadData::Tetrahedron(Tetrahedron::new(6, 2.0)),
             LevelLoadData::Cube(Cube::new(6, 2.0)),
@@ -121,6 +124,9 @@ pub fn load_level(mut commands: Commands, level_resource: Res<LevelLoadData>) {
         LevelLoadData::Cube(cube) => load_platonic_maze::<Cube>(commands, cube),
         LevelLoadData::Tetrahedron(tetrahedron) => {
             load_platonic_maze::<Tetrahedron>(commands, tetrahedron)
+        }
+        LevelLoadData::Icosahedron(icosahedron) => {
+            load_platonic_maze::<Icosahedron>(commands, icosahedron)
         }
     }
 }

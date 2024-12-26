@@ -14,6 +14,7 @@ use bevy::{
 use bevy::math::primitives::Tetrahedron as BevyTetrahedron;
 use itertools::iproduct;
 use maze_generator::{model::TraversalGraph, traversal_graph_generator::TraversalGraphGenerator};
+use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::shape::platonic_solid::{BorderType, Edge, HasFace, IsRoom, PlatonicSolid};
@@ -22,7 +23,7 @@ use super::platonic_mesh_builder::PlatonicMeshBuilder;
 
 const VERTICES: [Vec3; 4] = [
     Vec3::new(0.5, 0.5, 0.5),
-    Vec3::new(-0.5, 0.5, -0.5), // 3 / 36
+    Vec3::new(-0.5, 0.5, -0.5),
     Vec3::new(-0.5, -0.5, 0.5),
     Vec3::new(0.5, -0.5, -0.5),
 ];
@@ -65,6 +66,10 @@ impl HasFace for TetrahedronFace {
             BorderType::Connected
         };
         Some(border_type)
+    }
+
+    fn all_faces() -> Vec<TetrahedronFace> {
+        Self::iter().collect()
     }
 }
 
@@ -148,7 +153,7 @@ impl PlatonicSolid for Tetrahedron {
     type Face = TetrahedronFace;
     type Room = TetrahedronRoom;
 
-    fn make_nodes_from_face(&self, face: TetrahedronFace) -> Vec<TetrahedronRoom> {
+    fn make_nodes_from_face(&self, face: &TetrahedronFace) -> Vec<TetrahedronRoom> {
         let (vec_i, vec_j) = face.defining_vectors();
         let normal = face.normal();
 

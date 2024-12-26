@@ -18,9 +18,10 @@ pub enum BorderType {
     Connected,
 }
 
-pub trait HasFace: IntoEnumIterator {
+pub trait HasFace: Sized {
     fn normal(&self) -> Vec3;
     fn border_type(&self, other: &Self) -> Option<BorderType>;
+    fn all_faces() -> Vec<Self>;
 }
 
 pub trait IsRoom<F: HasFace> {
@@ -58,7 +59,7 @@ pub trait PlatonicSolid: Resource + Sized + Clone {
         + Sync
         + IsRoom<Self::Face>;
 
-    fn make_nodes_from_face(&self, face: Self::Face) -> Vec<Self::Room>;
+    fn make_nodes_from_face(&self, face: &Self::Face) -> Vec<Self::Room>;
 
     fn generate_traversal_graph(&self, nodes: Vec<Self::Room>) -> TraversalGraph<Self::Room, Edge>;
 
@@ -69,7 +70,8 @@ pub trait PlatonicSolid: Resource + Sized + Clone {
     }
 
     fn make_nodes(&self) -> Vec<Self::Room> {
-        Self::Face::iter()
+        Self::Face::all_faces()
+            .iter()
             .flat_map(|face| self.make_nodes_from_face(face))
             .collect()
     }
