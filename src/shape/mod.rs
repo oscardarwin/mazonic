@@ -1,4 +1,5 @@
 pub mod cube;
+pub mod dodecahedron;
 pub mod icosahedron;
 pub mod loader;
 pub mod octahedron;

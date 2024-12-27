@@ -4,10 +4,6 @@
 
 ## Save & Load levels as JSON
 
-## More types of levels
-Octahedron
-Dodecahedron
-
 ## Improve Maze Design
 - random walk based design rather than MST.
 - more back edges from stranded nodes.
@@ -32,6 +28,13 @@ Statistics
 ## Music
 
 ## Effects
+
+# Name Drafts
+
+Polymaze
+Mazonic
+Puzzlehedron
+
 
 # Build for Web:
 
