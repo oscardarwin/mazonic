@@ -1,19 +1,26 @@
 # TODO:
 
-## Sort out GIT
-
-## Save & Load levels as JSON
-
 ## Improve Maze Design
-- random walk based design rather than MST.
-- more back edges from stranded nodes.
-- make the solitary outgoing edge of a node (with a different incoming edge) one way.
+- both of these in "loops".
 
-## Graphics
+- Random sample edges with a loose node as "from" and not existing in graph yet.
+- From these the nodes must be "far apart in distance" and "big differences between their target node distance."
+
+- Random sample edges that are entering intersections (Neighbors of from node >= 2).
+- Check whether maze is still solvable from the "to node" using Astar with a massive weight on the edge. 
+- If so, remove the edge.
+
+## Controls
+- add arrow key indicators
+- make camera lock positions depend on the shape.
+- give the player a bit of velocity when you let go.
+
+## Graphicsal
 Combine connected one way lines into a single dashed line.
 Shaders - slighly shiney.
 
 Rounded edges on the shapes?
+Animation on level change?
 
 ## Menu
 
@@ -29,7 +36,11 @@ Statistics
 
 ## Effects
 
+## Save & Load levels as JSON
+
 # Name Drafts
+
+Hedron
 
 Polymaze
 Mazonic

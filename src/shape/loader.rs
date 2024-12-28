@@ -107,12 +107,12 @@ impl Plugin for LoaderPlugin {
         let levels = vec![
             LevelLoadData::Tetrahedron(Tetrahedron::new(4, 2.0)),
             LevelLoadData::Cube(Cube::new(2, 2.0)),
+            LevelLoadData::Cube(Cube::new(6, 2.0)),
             LevelLoadData::Dodecahedron(Dodecahedron::new(1.0)),
             LevelLoadData::Octahedron(Octahedron::new(3, 2.0)),
             LevelLoadData::Icosahedron(Icosahedron::new(3, 2.0)),
             LevelLoadData::Cube(Cube::new(3, 2.0)),
             LevelLoadData::Tetrahedron(Tetrahedron::new(6, 2.0)),
-            LevelLoadData::Cube(Cube::new(6, 2.0)),
         ];
 
         let first_level = levels[2].clone();
