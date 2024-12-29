@@ -14,7 +14,7 @@ use bevy::{
     transform::components::Transform,
 };
 
-use bevy_rapier3d::geometry::Collider;
+use bevy_rapier3d::{geometry::Collider, parry::shape::Shape};
 use maze_generator::config::Maze;
 use petgraph::Direction;
 
@@ -154,6 +154,9 @@ fn load_platonic_maze<P: PlatonicSolid>(mut commands: Commands, platonic_solid: 
     });
 }
 
+#[derive(Component)]
+pub struct PlatonicSolidComponent(pub Vec<Vec3>);
+
 pub fn spawn_shape_meshes<P: PlatonicSolid>(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -258,14 +261,26 @@ pub fn spawn_shape_meshes<P: PlatonicSolid>(
             ..default()
         });
     }
+    let platonic_mesh = edge_mesh_builder.platonic_solid_mesh;
+    let vertices = platonic_mesh
+        .attribute(Mesh::ATTRIBUTE_POSITION)
+        .unwrap()
+        .as_float3()
+        .unwrap()
+        .iter()
+        .map(|arr| Vec3::from_array(*arr))
+        .collect::<Vec<Vec3>>();
 
-    let cuboid = meshes.add(edge_mesh_builder.platonic_solid_mesh);
-    commands.spawn(PbrBundle {
-        mesh: Mesh3d(cuboid),
-        material: MeshMaterial3d(green_material.clone()),
-        transform: Transform::IDENTITY,
-        ..default()
-    });
+    let platonic_solid_mesh_handle = meshes.add(platonic_mesh);
+
+    commands
+        .spawn(PbrBundle {
+            mesh: Mesh3d(platonic_solid_mesh_handle),
+            material: MeshMaterial3d(green_material.clone()),
+            transform: Transform::IDENTITY,
+            ..default()
+        })
+        .insert(PlatonicSolidComponent(vertices));
 }
 
 fn get_connection_transform<P: PlatonicSolid>(

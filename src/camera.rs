@@ -1,5 +1,13 @@
-use crate::{controller::ControllerState, player::Player};
-use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
+use crate::{
+    controller::ControllerState,
+    player::Player,
+    shape::{loader::PlatonicSolidComponent, platonic_solid::PlatonicSolid},
+};
+use bevy::{
+    math::{NormedVectorSpace, VectorSpace},
+    prelude::*,
+    window::PrimaryWindow,
+};
 use itertools::iproduct;
 
 #[derive(Default)]
@@ -41,7 +49,10 @@ fn follow_player(
         (With<DirectionalLight>, Without<Player>, Without<Camera>),
     >,
     player_query: Query<&Transform, (With<Player>, Without<Camera>)>,
+    platonic_solid_component: Query<&PlatonicSolidComponent>,
 ) {
+    let PlatonicSolidComponent(vertices) = platonic_solid_component.single();
+
     let player_transform = player_query.single();
     let mut camera_transform = camera_query.single_mut();
 
@@ -49,23 +60,26 @@ fn follow_player(
     let camera_translation = camera_transform.translation;
 
     // TODO: use faces for other types of shapes.
-    let target_camera_unit_position = iproduct!(-1..=1, -1..=1, -1..=1)
-        .map(|(x, y, z)| Vec3::new(x as f32, y as f32, z as f32))
-        .filter(|vec| vec.norm() > 0.5)
+    let target_camera_vertex = vertices
+        .into_iter()
         .min_by_key(|camera_unit_position| {
-            (player_translation.angle_between(camera_unit_position.clone()) * 100.0) as i32
+            (player_translation.angle_between(camera_unit_position.clone().clone()) * 100.0) as i32
         })
         .unwrap();
 
-    let target_camera_angle = target_camera_unit_position.angle_between(camera_translation);
+    let target_camera_angle = target_camera_vertex.lerp(player_translation, 0.5);
 
-    if target_camera_angle < 0.15 {
+    println!("target camera angle: {:?}", target_camera_angle);
+
+    let step_camera_angle = target_camera_angle.angle_between(camera_translation);
+
+    if step_camera_angle < 0.15 {
         return;
     }
 
-    let target_angle = 0.01 * target_camera_angle;
+    let target_angle = 0.01 * step_camera_angle;
 
-    let player_camera_axis = camera_translation.cross(target_camera_unit_position);
+    let player_camera_axis = camera_translation.cross(target_camera_vertex.clone());
 
     let rotation = Quat::from_axis_angle(player_camera_axis, target_angle);
     camera_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);

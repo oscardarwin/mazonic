@@ -77,4 +77,6 @@ pub trait PlatonicSolid: Resource + Sized + Clone {
     }
 
     fn get_mesh_builder(&self) -> PlatonicMeshBuilder;
+
+    // fn vertices() -> Vec<Vec3>;
 }
