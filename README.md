@@ -1,15 +1,5 @@
 # TODO:
 
-## Improve Maze Design
-- both of these in "loops".
-
-- Random sample edges with a loose node as "from" and not existing in graph yet.
-- From these the nodes must be "far apart in distance" and "big differences between their target node distance."
-
-- Random sample edges that are entering intersections (Neighbors of from node >= 2).
-- Check whether maze is still solvable from the "to node" using Astar with a massive weight on the edge. 
-- If so, remove the edge.
-
 ## Controls
 - add arrow key indicators
 - make camera lock positions depend on the shape.

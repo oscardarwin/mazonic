@@ -102,13 +102,15 @@ fn view(
 
     let mut camera_transform = camera_query.single_mut();
     let delta = camera_transform.right() * delta_device_pixels.x
-        + camera_transform.up() * delta_device_pixels.y;
+        - camera_transform.up() * delta_device_pixels.y;
     let axis = delta
         .cross(camera_transform.forward().as_vec3())
         .normalize();
 
     if axis.norm() > 0.01 {
-        let rotation = Quat::from_axis_angle(axis, delta.norm() / 150.0);
+        let angle = delta.norm() / 150.0;
+
+        let rotation = Quat::from_axis_angle(axis, angle);
         let mut light_transform = light_query.single_mut();
 
         light_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), -rotation);

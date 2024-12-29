@@ -115,7 +115,7 @@ impl Plugin for LoaderPlugin {
             LevelLoadData::Tetrahedron(Tetrahedron::new(6, 2.0)),
         ];
 
-        let first_level = levels[2].clone();
+        let first_level = levels[3].clone();
 
         let first_level_type = LevelType::from(&first_level);
         app.insert_state(first_level_type);
