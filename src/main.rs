@@ -6,7 +6,7 @@ use bevy_vector_shapes::ShapePlugin;
 use camera::PlatonicCameraPlugin;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
-use game_state::GameStatePlugin;
+use game_systems::GameSystemsPlugin;
 use maze_generator::config::Maze;
 use shape::loader::LoaderPlugin;
 use ui::UiPlugin;
@@ -15,6 +15,7 @@ mod camera;
 mod controller;
 mod game_settings;
 mod game_state;
+mod game_systems;
 mod player;
 mod shape;
 mod ui;
@@ -32,6 +33,6 @@ fn main() {
         .add_plugins(Controller::default())
         .add_plugins(PlatonicCameraPlugin::default())
         .add_plugins(UiPlugin::default())
-        .add_plugins(GameStatePlugin::default())
+        .add_plugins(GameSystemsPlugin::default())
         .run();
 }

@@ -25,7 +25,6 @@ use strum_macros::{EnumDiscriminants, EnumIter};
 use crate::{
     controller::{solve, ControllerState},
     game_settings::GameSettings,
-    game_state::{victory_transition, GameState},
     player::{move_player, Player, PlayerMazeState},
 };
 
