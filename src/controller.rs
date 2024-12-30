@@ -1,4 +1,5 @@
 use crate::{
+    camera::MainCamera,
     game_settings::GameSettings,
     player::PlayerMazeState,
     shape::{
@@ -46,7 +47,7 @@ impl Plugin for Controller {
 }
 
 fn idle(
-    camera_query: Query<(&GlobalTransform, &Camera)>,
+    camera_query: Query<(&GlobalTransform, &Camera), With<MainCamera>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     rapier_context_query: Query<&RapierContext>,

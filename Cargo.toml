@@ -11,8 +11,9 @@ strum_macros = "0.26.4"
 layout-rs = "0.1.2"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
-bevy = { version = "0.15.0", features = ["dynamic_linking"] }
+bevy = { version = "0.15.0", features = ["dynamic_linking", "bevy_dev_tools"] }
 bevy_rapier3d = { version = "0.28.0", features = [ "wasm-bindgen" ] }
+#bevy_dev_tools = { version = "0.15.0"}
 maze_generator = { path = "../maze_generator" }
 bevy_vector_shapes = "0.9.3"
 

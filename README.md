@@ -1,11 +1,12 @@
 # TODO:
 
-## Controls
-- add arrow key indicators
-- make camera lock positions depend on the shape.
-- give the player a bit of velocity when you let go.
+## Difficulty Test
+Make levels flow into each other.
+Record player actions
+    - time
+    - path
 
-## Graphicsal
+## Graphics
 Combine connected one way lines into a single dashed line.
 Shaders - slighly shiney.
 
@@ -25,6 +26,9 @@ Statistics
 ## Music
 
 ## Effects
+
+## Controls
+- add arrow key indicators
 
 ## Save & Load levels as JSON
 

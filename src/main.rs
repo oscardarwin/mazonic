@@ -3,17 +3,19 @@ use bevy::pbr::wireframe::WireframePlugin;
 use bevy::prelude::*;
 use bevy_rapier3d::plugin::{NoUserData, RapierPhysicsPlugin};
 use bevy_vector_shapes::ShapePlugin;
-use camera::PlatonicCamera;
+use camera::PlatonicCameraPlugin;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use maze_generator::config::Maze;
 use shape::loader::LoaderPlugin;
+use ui::UiPlugin;
 
 mod camera;
 mod controller;
 mod game_settings;
 mod player;
 mod shape;
+mod ui;
 
 fn main() {
     App::new()
@@ -26,6 +28,7 @@ fn main() {
         .add_plugins(LoaderPlugin::default())
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(Controller::default())
-        .add_plugins(PlatonicCamera::default())
+        .add_plugins(PlatonicCameraPlugin::default())
+        .add_plugins(UiPlugin::default())
         .run();
 }

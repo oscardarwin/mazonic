@@ -11,9 +11,9 @@ use bevy::{
 use itertools::iproduct;
 
 #[derive(Default)]
-pub struct PlatonicCamera;
+pub struct PlatonicCameraPlugin;
 
-impl Plugin for PlatonicCamera {
+impl Plugin for PlatonicCameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
@@ -24,17 +24,24 @@ impl Plugin for PlatonicCamera {
     }
 }
 
+#[derive(Component)]
+pub struct MainCamera;
+
 fn setup(mut commands: Commands) {
     let charcoal = Color::srgb_u8(57, 62, 70);
 
-    commands.spawn(Camera3dBundle {
-        camera: Camera {
-            clear_color: ClearColorConfig::Custom(charcoal),
-            ..Default::default()
-        },
-        transform: Transform::from_xyz(0.0, 0.0, 4.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
-        ..default()
-    });
+    commands
+        .spawn(Camera3dBundle {
+            camera: Camera {
+                clear_color: ClearColorConfig::Custom(charcoal),
+                ..Default::default()
+            },
+            transform: Transform::from_xyz(0.0, 0.0, 4.0)
+                .looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
+            ..default()
+        })
+        .insert(IsDefaultUiCamera)
+        .insert(MainCamera);
 
     commands.spawn(DirectionalLightBundle {
         transform: Transform::from_xyz(0.0, 0.0, 6.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
@@ -43,12 +50,12 @@ fn setup(mut commands: Commands) {
 }
 
 fn follow_player(
-    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut camera_query: Query<&mut Transform, With<MainCamera>>,
     mut light_query: Query<
         &mut Transform,
-        (With<DirectionalLight>, Without<Player>, Without<Camera>),
+        (With<DirectionalLight>, Without<Player>, Without<MainCamera>),
     >,
-    player_query: Query<&Transform, (With<Player>, Without<Camera>)>,
+    player_query: Query<&Transform, (With<Player>, Without<MainCamera>)>,
     platonic_solid_component: Query<&PlatonicSolidComponent>,
 ) {
     let PlatonicSolidComponent(vertices) = platonic_solid_component.single();
@@ -69,8 +76,6 @@ fn follow_player(
 
     let target_camera_angle = target_camera_vertex.lerp(player_translation, 0.5);
 
-    println!("target camera angle: {:?}", target_camera_angle);
-
     let step_camera_angle = target_camera_angle.angle_between(camera_translation);
 
     if step_camera_angle < 0.15 {
@@ -89,10 +94,10 @@ fn follow_player(
 }
 
 fn view(
-    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut camera_query: Query<&mut Transform, With<MainCamera>>,
     mut light_query: Query<
         &mut Transform,
-        (With<DirectionalLight>, Without<Player>, Without<Camera>),
+        (With<DirectionalLight>, Without<Player>, Without<MainCamera>),
     >,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut last_pos: Local<Option<Vec2>>,
