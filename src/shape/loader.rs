@@ -44,9 +44,10 @@ pub struct PlatonicLevelData<P: PlatonicSolid> {
 }
 
 #[derive(Resource, EnumDiscriminants, Clone)]
+#[strum_discriminants(vis(pub))]
 #[strum_discriminants(derive(EnumIter, Hash, States))]
 #[strum_discriminants(name(LevelType))]
-enum LevelLoadData {
+pub enum LevelLoadData {
     Cube(Cube),
     Tetrahedron(Tetrahedron),
     Icosahedron(Icosahedron),
@@ -57,56 +58,11 @@ enum LevelLoadData {
 #[derive(Resource)]
 struct Levels(Vec<LevelLoadData>);
 
-struct LevelSystems {
-    pub setup_systems: SystemConfigs,
-    pub update_systems: SystemConfigs,
-}
-
 #[derive(Default)]
 pub struct LoaderPlugin;
 
-impl LoaderPlugin {
-    fn get_systems_for_level_type(&self, level_type: LevelType) -> LevelSystems {
-        match level_type {
-            LevelType::Cube => self.get_systems_for_solid_type::<Cube>(),
-            LevelType::Tetrahedron => self.get_systems_for_solid_type::<Tetrahedron>(),
-            LevelType::Icosahedron => self.get_systems_for_solid_type::<Icosahedron>(),
-            LevelType::Octahedron => self.get_systems_for_solid_type::<Octahedron>(),
-            LevelType::Dodecahedron => self.get_systems_for_solid_type::<Dodecahedron>(),
-        }
-    }
-
-    fn get_systems_for_solid_type<P: PlatonicSolid>(&self) -> LevelSystems {
-        let setup_systems = (spawn_shape_meshes::<P>, setup_player::<P>).into_configs();
-        let controller_solve_system = solve::<P>.run_if(in_state(ControllerState::Solving));
-        let victory_ui_system = victory_transition::<P>.run_if(in_state(GameState::Playing));
-        let update_systems =
-            (move_player::<P>, controller_solve_system, victory_ui_system).into_configs();
-
-        LevelSystems {
-            setup_systems,
-            update_systems,
-        }
-    }
-}
-
 impl Plugin for LoaderPlugin {
     fn build(&self, app: &mut App) {
-        // app.add_systems(Startup, load_level);
-        for level_type in LevelType::iter() {
-            let level_systems = self.get_systems_for_level_type(level_type);
-
-            let LevelSystems {
-                setup_systems,
-                update_systems,
-            } = level_systems;
-
-            app.add_systems(
-                OnEnter(level_type),
-                (load_level, setup_systems.after(load_level)),
-            );
-            app.add_systems(Update, update_systems.run_if(in_state(level_type)));
-        }
         let levels = vec![
             LevelLoadData::Tetrahedron(Tetrahedron::new(4, 2.0)),
             LevelLoadData::Cube(Cube::new(2, 2.0)),
