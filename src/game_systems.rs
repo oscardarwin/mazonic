@@ -15,7 +15,8 @@ use crate::{
         tetrahedron::Tetrahedron,
     },
     ui::{
-        despawn_level_complete_ui, next_level, spawn_level_complete_ui, update_level_complete_ui,
+        despawn_level_complete_ui, next_level, previous_level, replay_level,
+        spawn_level_complete_ui, update_level_complete_ui,
     },
 };
 
@@ -83,7 +84,13 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(OnExit(GameState::Victory), despawn_level_complete_ui)
             .add_systems(
                 Update,
-                (update_level_complete_ui, next_level).run_if(in_state(GameState::Victory)),
+                (
+                    update_level_complete_ui,
+                    next_level,
+                    replay_level,
+                    previous_level,
+                )
+                    .run_if(in_state(GameState::Victory)),
             );
 
         app.add_systems(

@@ -215,7 +215,20 @@ pub fn previous_level(
         &Interaction,
         (Changed<Interaction>, With<Button>, With<ReplayLevelButton>),
     >,
+    mut level_index: ResMut<LevelIndex>,
+    mut game_state: ResMut<NextState<GameState>>,
 ) {
+    let Ok(interaction) = interaction_query.get_single() else {
+        return;
+    };
+
+    if *interaction == Interaction::Pressed && level_index.0 > 0 {
+        println!("previous level");
+
+        let LevelIndex(index) = level_index.clone();
+        level_index.0 -= 1;
+        game_state.set(GameState::Loading);
+    }
 }
 
 pub fn replay_level(
@@ -223,7 +236,16 @@ pub fn replay_level(
         &Interaction,
         (Changed<Interaction>, With<Button>, With<ReplayLevelButton>),
     >,
+    mut game_state: ResMut<NextState<GameState>>,
 ) {
+    let Ok(interaction) = interaction_query.get_single() else {
+        return;
+    };
+
+    if *interaction == Interaction::Pressed {
+        println!("replay level");
+        game_state.set(GameState::Loading);
+    }
 }
 
 pub fn next_level(
