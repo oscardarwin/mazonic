@@ -1,5 +1,15 @@
 # TODO:
 
+## Game States
+Playing
+Victory
+    - show UI
+Pause
+
+## Ui
+Load next level.
+Restart Level.
+
 ## Difficulty Test
 Make levels flow into each other.
 Record player actions

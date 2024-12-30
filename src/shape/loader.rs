@@ -25,6 +25,7 @@ use strum_macros::{EnumDiscriminants, EnumIter};
 use crate::{
     controller::{solve, ControllerState},
     game_settings::GameSettings,
+    game_state::{victory_transition, GameState},
     player::{move_player, Player, PlayerMazeState},
 };
 
@@ -78,7 +79,9 @@ impl LoaderPlugin {
     fn get_systems_for_solid_type<P: PlatonicSolid>(&self) -> LevelSystems {
         let setup_systems = (spawn_shape_meshes::<P>, setup_player::<P>).into_configs();
         let controller_solve_system = solve::<P>.run_if(in_state(ControllerState::Solving));
-        let update_systems = (move_player::<P>, controller_solve_system).into_configs();
+        let victory_ui_system = victory_transition::<P>.run_if(in_state(GameState::Playing));
+        let update_systems =
+            (move_player::<P>, controller_solve_system, victory_ui_system).into_configs();
 
         LevelSystems {
             setup_systems,
