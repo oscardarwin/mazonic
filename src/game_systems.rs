@@ -9,12 +9,14 @@ use crate::{
         cube::Cube,
         dodecahedron::Dodecahedron,
         icosahedron::Icosahedron,
-        loader::{load_level, setup_player, spawn_shape_meshes, LevelType, PlatonicLevelData},
+        loader::{load_level, spawn_level_meshes, LevelType, PlatonicLevelData},
         octahedron::Octahedron,
         platonic_solid::PlatonicSolid,
         tetrahedron::Tetrahedron,
     },
-    ui::{spawn_level_complete_ui, update_level_complete_ui},
+    ui::{
+        despawn_level_complete_ui, next_level, spawn_level_complete_ui, update_level_complete_ui,
+    },
 };
 
 use strum::IntoEnumIterator;
@@ -39,7 +41,7 @@ impl GameSystemsPlugin {
     }
 
     fn get_systems_for_solid_type<P: PlatonicSolid>(&self) -> LevelSystems {
-        let setup_systems = (spawn_shape_meshes::<P>, setup_player::<P>).into_configs();
+        let setup_systems = spawn_level_meshes::<P>.into_configs();
         let controller_solve_system = solve::<P>.run_if(in_state(ControllerState::Solving));
         let victory_ui_system = victory_transition::<P>.run_if(in_state(GameState::Playing));
         let update_systems =
@@ -54,6 +56,8 @@ impl GameSystemsPlugin {
 
 impl Plugin for GameSystemsPlugin {
     fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(GameState::Loading), load_level);
+
         for level_type in LevelType::iter() {
             let level_systems = self.get_systems_for_level_type(level_type);
 
@@ -63,17 +67,23 @@ impl Plugin for GameSystemsPlugin {
             } = level_systems;
 
             app.add_systems(
-                OnEnter(level_type),
-                (load_level, setup_systems.after(load_level)),
+                OnEnter(GameState::Playing),
+                setup_systems.run_if(in_state(level_type)),
             );
-            app.add_systems(Update, update_systems.run_if(in_state(level_type)));
+            app.add_systems(
+                Update,
+                update_systems
+                    .run_if(in_state(level_type))
+                    .run_if(in_state(GameState::Playing)),
+            );
         }
 
         app.init_state::<GameState>()
             .add_systems(OnEnter(GameState::Victory), spawn_level_complete_ui)
+            .add_systems(OnExit(GameState::Victory), despawn_level_complete_ui)
             .add_systems(
                 Update,
-                update_level_complete_ui.run_if(in_state(GameState::Victory)),
+                (update_level_complete_ui, next_level).run_if(in_state(GameState::Victory)),
             );
 
         app.add_systems(

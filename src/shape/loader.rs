@@ -7,6 +7,7 @@ use bevy::{
         schedule::SystemConfigs,
         system::{Commands, ResMut},
     },
+    log::Level,
     math::NormedVectorSpace,
     pbr::{PbrBundle, StandardMaterial},
     prelude::*,
@@ -25,6 +26,7 @@ use strum_macros::{EnumDiscriminants, EnumIter};
 use crate::{
     controller::{solve, ControllerState},
     game_settings::GameSettings,
+    game_state::GameState,
     player::{move_player, Player, PlayerMazeState},
 };
 
@@ -54,8 +56,11 @@ pub enum LevelLoadData {
     Dodecahedron(Dodecahedron),
 }
 
+#[derive(Resource, Clone)]
+pub struct LevelIndex(pub usize);
+
 #[derive(Resource)]
-struct Levels(Vec<LevelLoadData>);
+pub struct Levels(pub Vec<LevelLoadData>);
 
 #[derive(Default)]
 pub struct LoaderPlugin;
@@ -63,7 +68,8 @@ pub struct LoaderPlugin;
 impl Plugin for LoaderPlugin {
     fn build(&self, app: &mut App) {
         let levels = vec![
-            LevelLoadData::Tetrahedron(Tetrahedron::new(4, 2.0)),
+            LevelLoadData::Cube(Cube::new(1, 2.0)),
+            LevelLoadData::Tetrahedron(Tetrahedron::new(4, 3.0)),
             LevelLoadData::Cube(Cube::new(2, 2.0)),
             LevelLoadData::Cube(Cube::new(6, 2.0)),
             LevelLoadData::Dodecahedron(Dodecahedron::new(1.0)),
@@ -73,18 +79,32 @@ impl Plugin for LoaderPlugin {
             LevelLoadData::Tetrahedron(Tetrahedron::new(6, 2.0)),
         ];
 
-        let first_level = levels[3].clone();
+        let first_level = levels[0].clone();
 
         let first_level_type = LevelType::from(&first_level);
         app.insert_state(first_level_type);
 
-        app.insert_resource(first_level);
+        app.insert_resource(LevelIndex(0));
         app.insert_resource(Levels(levels));
     }
 }
 
-pub fn load_level(mut commands: Commands, level_resource: Res<LevelLoadData>) {
-    let level: &LevelLoadData = level_resource.into_inner();
+pub fn load_level(
+    mut commands: Commands,
+    level_resource: Res<LevelIndex>,
+    levels: Res<Levels>,
+    mut level_type_state: ResMut<NextState<LevelType>>,
+    mut game_state: ResMut<NextState<GameState>>,
+    current_level_entities: Query<Entity, With<LevelMesh>>,
+) {
+    for entity in current_level_entities.iter() {
+        commands.entity(entity).despawn();
+    }
+
+    let LevelIndex(index) = level_resource.into_inner();
+    let Levels(levels) = levels.into_inner();
+
+    let level = levels.get(*index).unwrap();
 
     match level {
         LevelLoadData::Cube(cube) => load_platonic_maze::<Cube>(commands, cube),
@@ -101,25 +121,37 @@ pub fn load_level(mut commands: Commands, level_resource: Res<LevelLoadData>) {
             load_platonic_maze::<Dodecahedron>(commands, dodecahedron)
         }
     }
+
+    println!("Loaded level {index}");
+    let level_type = LevelType::from(level);
+
+    level_type_state.set(level_type);
+    game_state.set(GameState::Playing);
 }
 
 fn load_platonic_maze<P: PlatonicSolid>(mut commands: Commands, platonic_solid: &P) {
     let maze = platonic_solid.build_maze();
 
-    commands.insert_resource(PlatonicLevelData::<P> {
+    let level_data = PlatonicLevelData::<P> {
         maze,
         platonic_solid: platonic_solid.clone(),
-    });
+    };
+
+    commands.insert_resource(level_data);
 }
 
 #[derive(Component)]
 pub struct PlatonicSolidComponent(pub Vec<Vec3>);
 
-pub fn spawn_shape_meshes<P: PlatonicSolid>(
+#[derive(Component)]
+pub struct LevelMesh;
+
+pub fn spawn_level_meshes<P: PlatonicSolid>(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     level: Res<PlatonicLevelData<P>>,
+    settings: Res<GameSettings>,
 ) {
     let cyan = Color::srgb_u8(247, 247, 0);
     let beige = Color::srgb_u8(242, 231, 213);
@@ -178,12 +210,14 @@ pub fn spawn_shape_meshes<P: PlatonicSolid>(
             room_mesh_handle.clone()
         };
 
-        commands.spawn(PbrBundle {
-            mesh: Mesh3d(mesh_handle),
-            material: MeshMaterial3d(material_handle),
-            transform,
-            ..default()
-        });
+        commands
+            .spawn(PbrBundle {
+                mesh: Mesh3d(mesh_handle),
+                material: MeshMaterial3d(material_handle),
+                transform,
+                ..default()
+            })
+            .insert(LevelMesh);
     }
 
     let face_connection_mesh = meshes.add(edge_mesh_builder.line());
@@ -212,12 +246,14 @@ pub fn spawn_shape_meshes<P: PlatonicSolid>(
 
         let transform = get_connection_transform::<P>(source_node, target_node, &border_type);
 
-        commands.spawn(PbrBundle {
-            mesh: Mesh3d(mesh_handle),
-            material: MeshMaterial3d(beige_material.clone()),
-            transform,
-            ..default()
-        });
+        commands
+            .spawn(PbrBundle {
+                mesh: Mesh3d(mesh_handle),
+                material: MeshMaterial3d(beige_material.clone()),
+                transform,
+                ..default()
+            })
+            .insert(LevelMesh);
     }
     let platonic_mesh = edge_mesh_builder.platonic_solid_mesh;
     let vertices = platonic_mesh
@@ -238,7 +274,26 @@ pub fn spawn_shape_meshes<P: PlatonicSolid>(
             transform: Transform::IDENTITY,
             ..default()
         })
-        .insert(PlatonicSolidComponent(vertices));
+        .insert(PlatonicSolidComponent(vertices))
+        .insert(LevelMesh);
+
+    let initial_node = level.maze.solution.first().unwrap().clone();
+    let player_transform =
+        compute_initial_player_transform::<P>(initial_node, settings.player_elevation);
+    let player_shape = Sphere::new(0.1);
+    let player_mesh = meshes.add(player_shape);
+
+    commands
+        .spawn(PbrBundle {
+            mesh: Mesh3d(player_mesh),
+            material: MeshMaterial3d(cyan_material.clone()),
+            transform: player_transform,
+            ..default()
+        })
+        .insert(Player)
+        .insert(PlayerMazeState::<P>::Node(initial_node))
+        .insert(Collider::ball(player_shape.radius))
+        .insert(LevelMesh);
 }
 
 fn get_connection_transform<P: PlatonicSolid>(
@@ -271,35 +326,6 @@ fn get_connection_transform<P: PlatonicSolid>(
                 .with_translation(intersection_point + average_normal * 0.001)
         }
     }
-}
-
-pub fn setup_player<P: PlatonicSolid>(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    settings: Res<GameSettings>,
-    level: Res<PlatonicLevelData<P>>,
-) {
-    let white = Color::srgb_u8(247, 247, 0);
-
-    let white_material = materials.add(StandardMaterial::from_color(white));
-
-    let initial_node = level.maze.solution.first().unwrap().clone();
-    let player_transform =
-        compute_initial_player_transform::<P>(initial_node, settings.player_elevation);
-    let player_shape = Sphere::new(0.1);
-    let player_mesh = meshes.add(player_shape);
-
-    commands
-        .spawn(PbrBundle {
-            mesh: Mesh3d(player_mesh),
-            material: MeshMaterial3d(white_material.clone()),
-            transform: player_transform,
-            ..default()
-        })
-        .insert(Player)
-        .insert(PlayerMazeState::<P>::Node(initial_node))
-        .insert(Collider::ball(player_shape.radius));
 }
 
 fn compute_initial_player_transform<P: PlatonicSolid>(

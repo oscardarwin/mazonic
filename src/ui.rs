@@ -1,5 +1,10 @@
 use bevy::prelude::*;
 
+use crate::{
+    game_state::GameState,
+    shape::loader::{LevelIndex, LevelType, Levels},
+};
+
 #[derive(Default)]
 pub struct UiPlugin;
 
@@ -12,6 +17,15 @@ impl Plugin for UiPlugin {
         }
     }
 }
+
+#[derive(Component)]
+pub struct PreviousLevelButton;
+
+#[derive(Component)]
+pub struct ReplayLevelButton;
+
+#[derive(Component)]
+pub struct NextLevelButton;
 
 const FONT_PATH: &str = "fonts/Slimamifbold.ttf";
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
@@ -69,6 +83,7 @@ pub fn spawn_level_complete_ui(mut commands: Commands, asset_server: Res<AssetSe
                                     BorderRadius::MAX,
                                     BackgroundColor(NORMAL_BUTTON),
                                 ))
+                                .insert(PreviousLevelButton)
                                 .with_child((
                                     Text::new("←"),
                                     TextFont {
@@ -109,6 +124,7 @@ pub fn spawn_level_complete_ui(mut commands: Commands, asset_server: Res<AssetSe
                                     BorderRadius::MAX,
                                     BackgroundColor(NORMAL_BUTTON),
                                 ))
+                                .insert(ReplayLevelButton)
                                 .with_child((
                                     Text::new("↻"),
                                     TextFont {
@@ -136,6 +152,7 @@ pub fn spawn_level_complete_ui(mut commands: Commands, asset_server: Res<AssetSe
                                     BorderRadius::MAX,
                                     BackgroundColor(NORMAL_BUTTON),
                                 ))
+                                .insert(NextLevelButton)
                                 .with_child((
                                     Text::new("→"),
                                     TextFont {
@@ -148,6 +165,13 @@ pub fn spawn_level_complete_ui(mut commands: Commands, asset_server: Res<AssetSe
                         });
                 });
         });
+}
+
+pub fn despawn_level_complete_ui(mut commands: Commands, ui_entities: Query<Entity, With<Node>>) {
+    println!("despawn_level_complete_ui");
+    for entity in ui_entities.iter() {
+        commands.entity(entity).despawn();
+    }
 }
 
 #[cfg(feature = "bevy_dev_tools")]
@@ -164,16 +188,11 @@ fn toggle_overlay(
 
 pub fn update_level_complete_ui(
     mut interaction_query: Query<
-        (
-            &Interaction,
-            &mut BackgroundColor,
-            &mut BorderColor,
-            &Children,
-        ),
+        (&Interaction, &mut BackgroundColor, &mut BorderColor),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
-    for (interaction, mut color, mut border_color, children) in &mut interaction_query {
+    for (interaction, mut color, mut border_color) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
                 *color = PRESSED_BUTTON.into();
@@ -188,5 +207,42 @@ pub fn update_level_complete_ui(
                 border_color.0 = Color::BLACK;
             }
         }
+    }
+}
+
+pub fn previous_level(
+    interaction_query: Query<
+        &Interaction,
+        (Changed<Interaction>, With<Button>, With<ReplayLevelButton>),
+    >,
+) {
+}
+
+pub fn replay_level(
+    interaction_query: Query<
+        &Interaction,
+        (Changed<Interaction>, With<Button>, With<ReplayLevelButton>),
+    >,
+) {
+}
+
+pub fn next_level(
+    interaction_query: Query<
+        &Interaction,
+        (Changed<Interaction>, With<Button>, With<NextLevelButton>),
+    >,
+    mut level_index: ResMut<LevelIndex>,
+    mut game_state: ResMut<NextState<GameState>>,
+) {
+    let Ok(interaction) = interaction_query.get_single() else {
+        return;
+    };
+
+    if *interaction == Interaction::Pressed {
+        println!("next level");
+
+        let LevelIndex(index) = level_index.clone();
+        level_index.0 += 1;
+        game_state.set(GameState::Loading);
     }
 }
