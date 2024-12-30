@@ -36,17 +36,11 @@ pub struct Controller;
 
 impl Plugin for Controller {
     fn build(&self, app: &mut App) {
-        app.init_state::<ControllerState>()
-            .add_systems(
-                Update,
-                idle.run_if(in_state(ControllerState::IdlePostSolve)),
-            )
-            .add_systems(Update, idle.run_if(in_state(ControllerState::IdlePostView)))
-            .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)));
+        app.init_state::<ControllerState>();
     }
 }
 
-fn idle(
+pub fn idle(
     camera_query: Query<(&GlobalTransform, &Camera), With<MainCamera>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
@@ -93,7 +87,7 @@ fn idle(
     }
 }
 
-fn view(
+pub fn view(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
 ) {

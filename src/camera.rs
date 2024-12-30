@@ -10,24 +10,10 @@ use bevy::{
 };
 use itertools::iproduct;
 
-#[derive(Default)]
-pub struct PlatonicCameraPlugin;
-
-impl Plugin for PlatonicCameraPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            follow_player.run_if(in_state(ControllerState::IdlePostSolve)),
-        )
-        .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)))
-        .add_systems(Startup, setup);
-    }
-}
-
 #[derive(Component)]
 pub struct MainCamera;
 
-fn setup(mut commands: Commands) {
+pub fn camera_setup(mut commands: Commands) {
     let charcoal = Color::srgb_u8(57, 62, 70);
 
     commands
@@ -49,7 +35,7 @@ fn setup(mut commands: Commands) {
     });
 }
 
-fn follow_player(
+pub fn camera_follow_player(
     mut camera_query: Query<&mut Transform, With<MainCamera>>,
     mut light_query: Query<
         &mut Transform,
@@ -93,7 +79,7 @@ fn follow_player(
     light_transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), rotation);
 }
 
-fn view(
+pub fn camera_dolly(
     mut camera_query: Query<&mut Transform, With<MainCamera>>,
     mut light_query: Query<
         &mut Transform,

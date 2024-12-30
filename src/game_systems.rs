@@ -1,7 +1,8 @@
 use bevy::{ecs::schedule::SystemConfigs, prelude::*};
 
 use crate::{
-    controller::{solve, ControllerState},
+    camera::{camera_dolly, camera_follow_player, camera_setup},
+    controller::{idle, solve, view, ControllerState},
     game_state::{victory_transition, GameState},
     player::{move_player, PlayerMazeState},
     shape::{
@@ -74,5 +75,22 @@ impl Plugin for GameSystemsPlugin {
                 Update,
                 ui_button_system.run_if(in_state(GameState::Victory)),
             );
+
+        app.add_systems(
+            Update,
+            idle.run_if(in_state(ControllerState::IdlePostSolve)),
+        )
+        .add_systems(Update, idle.run_if(in_state(ControllerState::IdlePostView)))
+        .add_systems(Update, view.run_if(in_state(ControllerState::Viewing)));
+
+        app.add_systems(
+            Update,
+            camera_follow_player.run_if(in_state(ControllerState::IdlePostSolve)),
+        )
+        .add_systems(
+            Update,
+            camera_dolly.run_if(in_state(ControllerState::Viewing)),
+        )
+        .add_systems(Startup, camera_setup);
     }
 }

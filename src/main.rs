@@ -3,7 +3,6 @@ use bevy::pbr::wireframe::WireframePlugin;
 use bevy::prelude::*;
 use bevy_rapier3d::plugin::{NoUserData, RapierPhysicsPlugin};
 use bevy_vector_shapes::ShapePlugin;
-use camera::PlatonicCameraPlugin;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use game_systems::GameSystemsPlugin;
@@ -31,7 +30,6 @@ fn main() {
         .add_plugins(LoaderPlugin::default())
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(Controller::default())
-        .add_plugins(PlatonicCameraPlugin::default())
         .add_plugins(UiPlugin::default())
         .add_plugins(GameSystemsPlugin::default())
         .run();

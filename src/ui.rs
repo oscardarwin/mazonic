@@ -5,7 +5,7 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        //#[cfg(feature = "bevy_dev_tools")]
+        #[cfg(feature = "bevy_dev_tools")]
         {
             app.add_plugins(bevy::dev_tools::ui_debug_overlay::DebugUiPlugin)
                 .add_systems(Update, toggle_overlay);
@@ -150,7 +150,7 @@ pub fn level_complete(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 }
 
-//#[cfg(feature = "bevy_dev_tools")]
+#[cfg(feature = "bevy_dev_tools")]
 fn toggle_overlay(
     input: Res<ButtonInput<KeyCode>>,
     mut options: ResMut<bevy::dev_tools::ui_debug_overlay::UiDebugOptions>,
