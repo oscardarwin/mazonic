@@ -14,7 +14,7 @@ use crate::{
         platonic_solid::PlatonicSolid,
         tetrahedron::Tetrahedron,
     },
-    ui::{level_complete, ui_button_system},
+    ui::{spawn_level_complete_ui, update_level_complete_ui},
 };
 
 use strum::IntoEnumIterator;
@@ -70,10 +70,10 @@ impl Plugin for GameSystemsPlugin {
         }
 
         app.init_state::<GameState>()
-            .add_systems(OnEnter(GameState::Victory), level_complete)
+            .add_systems(OnEnter(GameState::Victory), spawn_level_complete_ui)
             .add_systems(
                 Update,
-                ui_button_system.run_if(in_state(GameState::Victory)),
+                update_level_complete_ui.run_if(in_state(GameState::Victory)),
             );
 
         app.add_systems(

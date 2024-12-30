@@ -18,7 +18,7 @@ const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.65, 0.65, 0.65);
 
-pub fn level_complete(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn spawn_level_complete_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn(Node {
             width: Val::Percent(100.0),
@@ -162,7 +162,7 @@ fn toggle_overlay(
     }
 }
 
-pub fn ui_button_system(
+pub fn update_level_complete_ui(
     mut interaction_query: Query<
         (
             &Interaction,
