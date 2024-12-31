@@ -25,7 +25,9 @@ pub fn move_player<P: PlatonicSolid>(
     mut player_query: Query<(&mut Transform, &PlayerMazeState<P>)>,
     settings: Res<GameSettings>,
 ) {
-    let (mut player_transform, player_maze_state) = player_query.single_mut();
+    let Ok((mut player_transform, player_maze_state)) = player_query.get_single_mut() else {
+        return;
+    };
 
     let target_position = match player_maze_state {
         PlayerMazeState::<P>::Node(node) => {

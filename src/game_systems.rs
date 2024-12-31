@@ -43,10 +43,17 @@ impl GameSystemsPlugin {
 
     fn get_systems_for_solid_type<P: PlatonicSolid>(&self) -> LevelSystems {
         let setup_systems = spawn_level_meshes::<P>.into_configs();
-        let controller_solve_system = solve::<P>.run_if(in_state(ControllerState::Solving));
-        let victory_ui_system = victory_transition::<P>.run_if(in_state(GameState::Playing));
-        let update_systems =
-            (move_player::<P>, controller_solve_system, victory_ui_system).into_configs();
+        let controller_solve_system = solve::<P>
+            .run_if(in_state(ControllerState::Solving))
+            .run_if(in_state(GameState::Playing));
+        let victory_ui_transition = victory_transition::<P>.run_if(in_state(GameState::Playing));
+
+        let update_systems = (
+            move_player::<P>,
+            controller_solve_system,
+            victory_ui_transition,
+        )
+            .into_configs();
 
         LevelSystems {
             setup_systems,
@@ -71,12 +78,7 @@ impl Plugin for GameSystemsPlugin {
                 OnEnter(GameState::Playing),
                 setup_systems.run_if(in_state(level_type)),
             );
-            app.add_systems(
-                Update,
-                update_systems
-                    .run_if(in_state(level_type))
-                    .run_if(in_state(GameState::Playing)),
-            );
+            app.add_systems(Update, update_systems.run_if(in_state(level_type)));
         }
 
         app.init_state::<GameState>()
