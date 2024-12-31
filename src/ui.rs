@@ -32,7 +32,15 @@ const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.65, 0.65, 0.65);
 
-pub fn spawn_level_complete_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn spawn_level_complete_ui(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    level_index: Res<LevelIndex>,
+    levels: Res<Levels>,
+) {
+    let max_level = levels.into_inner().0.len();
+    let LevelIndex(current_level) = level_index.into_inner();
+
     commands
         .spawn(Node {
             width: Val::Percent(100.0),
@@ -66,33 +74,35 @@ pub fn spawn_level_complete_ui(mut commands: Commands, asset_server: Res<AssetSe
                             BackgroundColor(Color::srgb(0.95, 0.85, 0.85)),
                         ))
                         .with_children(|parent| {
-                            parent
-                                .spawn((
-                                    Button,
-                                    Node {
-                                        width: Val::Percent(25.),
-                                        height: Val::Percent(100.),
-                                        border: UiRect::all(Val::Px(5.0)),
-                                        // horizontally center child text
-                                        justify_content: JustifyContent::Center,
-                                        // vertically center child text
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    BorderColor(Color::BLACK),
-                                    BorderRadius::MAX,
-                                    BackgroundColor(NORMAL_BUTTON),
-                                ))
-                                .insert(PreviousLevelButton)
-                                .with_child((
-                                    Text::new("←"),
-                                    TextFont {
-                                        font: asset_server.load(FONT_PATH),
-                                        font_size: 33.0,
-                                        ..default()
-                                    },
-                                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                                ));
+                            if *current_level > 0 {
+                                parent
+                                    .spawn((
+                                        Button,
+                                        Node {
+                                            width: Val::Percent(25.),
+                                            height: Val::Percent(100.),
+                                            border: UiRect::all(Val::Px(5.0)),
+                                            // horizontally center child text
+                                            justify_content: JustifyContent::Center,
+                                            // vertically center child text
+                                            align_items: AlignItems::Center,
+                                            ..default()
+                                        },
+                                        BorderColor(Color::BLACK),
+                                        BorderRadius::MAX,
+                                        BackgroundColor(NORMAL_BUTTON),
+                                    ))
+                                    .insert(PreviousLevelButton)
+                                    .with_child((
+                                        Text::new("←"),
+                                        TextFont {
+                                            font: asset_server.load(FONT_PATH),
+                                            font_size: 33.0,
+                                            ..default()
+                                        },
+                                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                                    ));
+                            }
                             parent.spawn((
                                 Node {
                                     width: Val::Percent(25.),
@@ -134,34 +144,35 @@ pub fn spawn_level_complete_ui(mut commands: Commands, asset_server: Res<AssetSe
                                     },
                                     TextColor(Color::srgb(0.9, 0.9, 0.9)),
                                 ));
-
-                            parent
-                                .spawn((
-                                    Button,
-                                    Node {
-                                        width: Val::Percent(25.),
-                                        height: Val::Percent(100.),
-                                        border: UiRect::all(Val::Px(5.0)),
-                                        // horizontally center child text
-                                        justify_content: JustifyContent::Center,
-                                        // vertically center child text
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    BorderColor(Color::BLACK),
-                                    BorderRadius::MAX,
-                                    BackgroundColor(NORMAL_BUTTON),
-                                ))
-                                .insert(NextLevelButton)
-                                .with_child((
-                                    Text::new("→"),
-                                    TextFont {
-                                        font: asset_server.load(FONT_PATH),
-                                        font_size: 33.0,
-                                        ..default()
-                                    },
-                                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                                ));
+                            if current_level + 1 < max_level {
+                                parent
+                                    .spawn((
+                                        Button,
+                                        Node {
+                                            width: Val::Percent(25.),
+                                            height: Val::Percent(100.),
+                                            border: UiRect::all(Val::Px(5.0)),
+                                            // horizontally center child text
+                                            justify_content: JustifyContent::Center,
+                                            // vertically center child text
+                                            align_items: AlignItems::Center,
+                                            ..default()
+                                        },
+                                        BorderColor(Color::BLACK),
+                                        BorderRadius::MAX,
+                                        BackgroundColor(NORMAL_BUTTON),
+                                    ))
+                                    .insert(NextLevelButton)
+                                    .with_child((
+                                        Text::new("→"),
+                                        TextFont {
+                                            font: asset_server.load(FONT_PATH),
+                                            font_size: 33.0,
+                                            ..default()
+                                        },
+                                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                                    ));
+                            }
                         });
                 });
         });
