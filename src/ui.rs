@@ -213,7 +213,11 @@ pub fn update_level_complete_ui(
 pub fn previous_level(
     interaction_query: Query<
         &Interaction,
-        (Changed<Interaction>, With<Button>, With<ReplayLevelButton>),
+        (
+            Changed<Interaction>,
+            With<Button>,
+            With<PreviousLevelButton>,
+        ),
     >,
     mut level_index: ResMut<LevelIndex>,
     mut game_state: ResMut<NextState<GameState>>,
