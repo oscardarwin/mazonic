@@ -5,6 +5,8 @@ Record player actions
     - time
     - path
 
+can't move back on first level?
+
 ## Graphics
 Combine connected one way lines into a single dashed line.
 Shaders - slighly shiney.

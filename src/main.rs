@@ -17,6 +17,7 @@ mod game_state;
 mod game_systems;
 mod player;
 mod shape;
+mod statistics;
 mod ui;
 
 fn main() {
