@@ -3,7 +3,7 @@
 ## Difficulty Test
 add skip button to level.
 
-Show total player path length in victory dialogue.
+camera gets out of sync. On the update method, perhaps just make sure you are snapped to the right camera distance.
 
 Record player actions
     - time
