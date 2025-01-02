@@ -26,6 +26,7 @@ use strum::IntoEnumIterator;
 struct LevelSystems {
     pub setup_systems: SystemConfigs,
     pub update_systems: SystemConfigs,
+    pub on_victory_systems: SystemConfigs,
 }
 
 #[derive(Default)]
@@ -58,9 +59,12 @@ impl GameSystemsPlugin {
         )
             .into_configs();
 
+        let on_victory_systems = spawn_level_complete_ui::<P>.into_configs();
+
         LevelSystems {
             setup_systems,
             update_systems,
+            on_victory_systems,
         }
     }
 }
@@ -75,6 +79,7 @@ impl Plugin for GameSystemsPlugin {
             let LevelSystems {
                 setup_systems,
                 update_systems,
+                on_victory_systems,
             } = level_systems;
 
             app.add_systems(
@@ -82,10 +87,14 @@ impl Plugin for GameSystemsPlugin {
                 setup_systems.run_if(in_state(level_type)),
             );
             app.add_systems(Update, update_systems.run_if(in_state(level_type)));
+
+            app.add_systems(
+                OnEnter(GameState::Victory),
+                on_victory_systems.run_if(in_state(level_type)),
+            );
         }
 
         app.init_state::<GameState>()
-            .add_systems(OnEnter(GameState::Victory), spawn_level_complete_ui)
             .add_systems(OnExit(GameState::Victory), despawn_level_complete_ui)
             .add_systems(
                 Update,

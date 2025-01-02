@@ -2,7 +2,11 @@ use bevy::prelude::*;
 
 use crate::{
     game_state::GameState,
-    shape::loader::{LevelIndex, LevelType, Levels},
+    shape::{
+        loader::{LevelIndex, LevelType, Levels, PlatonicLevelData},
+        platonic_solid::PlatonicSolid,
+    },
+    statistics::PlayerPath,
 };
 
 #[derive(Default)]
@@ -32,16 +36,23 @@ const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.65, 0.65, 0.65);
 
-pub fn spawn_level_complete_ui(
+pub fn spawn_level_complete_ui<P: PlatonicSolid>(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     level_index: Res<LevelIndex>,
     levels: Res<Levels>,
+    player_path_resource: Res<PlayerPath<P>>,
+    level: Res<PlatonicLevelData<P>>,
 ) {
     let max_level = levels.into_inner().0.len();
     let LevelIndex(current_level) = level_index.into_inner();
+    let PlayerPath(path) = player_path_resource.into_inner();
+    let path_length = path.len();
 
-    commands
+    let solution_length = level.into_inner().maze.solution.len();
+    let solution_text = format!("Solution\n{}/{}", path_length, solution_length);
+
+    let optimal_solution_length = commands
         .spawn(Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
@@ -103,19 +114,29 @@ pub fn spawn_level_complete_ui(
                                         TextColor(Color::srgb(0.9, 0.9, 0.9)),
                                     ));
                             }
-                            parent.spawn((
-                                Node {
-                                    width: Val::Percent(25.),
-                                    height: Val::Percent(100.),
-                                    border: UiRect::all(Val::Px(5.0)),
-                                    // horizontally center child text
-                                    justify_content: JustifyContent::Center,
-                                    // vertically center child text
-                                    align_items: AlignItems::Center,
-                                    ..default()
-                                },
-                                BackgroundColor(NORMAL_BUTTON),
-                            ));
+                            parent
+                                .spawn((
+                                    Node {
+                                        width: Val::Percent(25.),
+                                        height: Val::Percent(100.),
+                                        border: UiRect::all(Val::Px(5.0)),
+                                        // horizontally center child text
+                                        justify_content: JustifyContent::Center,
+                                        // vertically center child text
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
+                                    BackgroundColor(NORMAL_BUTTON),
+                                ))
+                                .with_child((
+                                    Text::new(solution_text),
+                                    TextFont {
+                                        font: asset_server.load(FONT_PATH),
+                                        font_size: 12.0,
+                                        ..default()
+                                    },
+                                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                                ));
 
                             parent
                                 .spawn((

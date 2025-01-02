@@ -1,6 +1,10 @@
 # TODO:
 
 ## Difficulty Test
+add skip button to level.
+
+Show total player path length in victory dialogue.
+
 Record player actions
     - time
     - path
