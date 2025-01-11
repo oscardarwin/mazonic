@@ -9,7 +9,7 @@ use crate::{
     },
     game_state::{victory_transition, GameState},
     light::{light_follow_camera, setup_light},
-    player::move_player,
+    player::{despawn_player_halo, move_player, player_halo_follow_player, spawn_player_halo},
     shape::loader::{load_level, spawn_level_meshes, spawn_player},
     statistics::{setup_statistics, update_player_path},
     ui::{
@@ -34,6 +34,10 @@ impl Plugin for GameSystemsPlugin {
         let camera_follow_player_system =
             (camera_follow_player.run_if(in_state(ControllerState::IdlePostSolve)),)
                 .run_if(in_state(GameState::Playing));
+
+        app.add_systems(OnExit(ControllerState::Solving), spawn_player_halo);
+        app.add_systems(OnEnter(ControllerState::Solving), despawn_player_halo);
+        app.add_systems(Update, player_halo_follow_player);
 
         let update_systems = (
             move_player,

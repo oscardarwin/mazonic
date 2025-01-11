@@ -92,6 +92,7 @@ impl FaceMaterialHandles {
 
 #[derive(Resource)]
 pub struct GameAssetHandles {
+    pub player_halo_material: Handle<StandardMaterial>,
     pub player_material: Handle<StandardMaterial>,
     pub line_material: Handle<StandardMaterial>,
     pub dashed_arrow_material: Handle<ExtendedMaterial<StandardMaterial, DashedArrowMaterial>>,
@@ -129,7 +130,14 @@ pub fn setup_game_assets(
         .colors
         .map(|color| materials.add(StandardMaterial::from_color(color)));
 
+    let player_halo_material = materials.add(StandardMaterial {
+        base_color: game_settings.palette.player_color.with_alpha(0.5),
+        alpha_mode: AlphaMode::Blend,
+        ..Default::default()
+    });
+
     commands.insert_resource(GameAssetHandles {
+        player_halo_material,
         player_material,
         line_material,
         dashed_arrow_material,

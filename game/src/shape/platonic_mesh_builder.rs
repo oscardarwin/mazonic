@@ -52,6 +52,10 @@ impl MazeMeshBuilder {
         Sphere::new(self.distance_between_nodes / 6.0)
     }
 
+    pub fn player_halo_mesh(&self) -> Sphere {
+        Sphere::new(self.distance_between_nodes / 4.0)
+    }
+
     pub fn intersection_room_mesh(&self) -> Mesh {
         Circle::new(self.distance_between_nodes / 10.0).into()
     }

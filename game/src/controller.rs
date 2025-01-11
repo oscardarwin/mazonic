@@ -1,6 +1,7 @@
 use crate::{
     camera::MainCamera,
     game_settings::GameSettings,
+    game_state::GameState,
     player::{Player, PlayerMazeState},
     room::SolidRoom,
     shape::{
@@ -21,11 +22,12 @@ use bevy::{
 use bevy_rapier3d::{pipeline::QueryFilter, plugin::RapierContext};
 use petgraph::{graphmap::GraphMap, Directed};
 
-#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
+#[source(GameState = GameState::Playing)]
 pub enum ControllerState {
-    #[default]
     IdlePostSolve,
     IdlePostView,
+    #[default]
     Solving,
     Viewing,
 }

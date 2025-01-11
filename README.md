@@ -3,19 +3,14 @@
 ## Github Pages page
 
 ## Graphics
-Camera adjust to screen size.
-loading animation.
-
-Combine connected one way lines into a single dashed line.
-Shaders - slighly shiney.
-
-Rounded edges on the shapes?
+Glow on player
 Animation on level change?
 
-Different colours on each side as a difficulty heuristic.
+Make global shader with discrete
+
+Shaders - slighly shiney.
 
 ## Menu
-
 Play
 Daily
 Settings
