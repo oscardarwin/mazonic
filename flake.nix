@@ -19,6 +19,7 @@
             gdb
             openssl
             libGL
+            rust-analyzer
 
             wayland
             udev

@@ -1,0 +1,24 @@
+[package]
+name = "mazonic"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+petgraph = "^0.6.5"
+itertools = "0.13.0"
+strum = "0.26.3"
+strum_macros = "0.26.4"
+layout-rs = "0.1.2"
+rand = "0.8.5"
+rand_chacha = "0.3.1"
+bevy = { version = "0.15.0", features = ["dynamic_linking", "bevy_dev_tools"] }
+bevy_rapier3d = { version = "0.28.0", features = [ "wasm-bindgen" ] }
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.135"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+

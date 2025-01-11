@@ -1,26 +1,18 @@
 # TODO:
 
-## Improve Maze Design
-- both of these in "loops".
+## Github Pages page
 
-- Random sample edges with a loose node as "from" and not existing in graph yet.
-- From these the nodes must be "far apart in distance" and "big differences between their target node distance."
+## Graphics
+Camera adjust to screen size.
+loading animation.
 
-- Random sample edges that are entering intersections (Neighbors of from node >= 2).
-- Check whether maze is still solvable from the "to node" using Astar with a massive weight on the edge. 
-- If so, remove the edge.
-
-## Controls
-- add arrow key indicators
-- make camera lock positions depend on the shape.
-- give the player a bit of velocity when you let go.
-
-## Graphicsal
 Combine connected one way lines into a single dashed line.
 Shaders - slighly shiney.
 
 Rounded edges on the shapes?
 Animation on level change?
+
+Different colours on each side as a difficulty heuristic.
 
 ## Menu
 
@@ -29,23 +21,16 @@ Daily
 Settings
 Statistics
 
-
 ## Levels selector should be a icosohedron.
 
 ## Music
+Ping sound effect
 
 ## Effects
 
-## Save & Load levels as JSON
 
 # Name Drafts
-
 Hedron
-
-Polymaze
-Mazonic
-Puzzlehedron
-
 
 # Build for Web:
 
