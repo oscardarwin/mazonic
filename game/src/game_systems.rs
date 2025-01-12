@@ -9,7 +9,10 @@ use crate::{
     },
     game_state::{victory_transition, GameState},
     light::{light_follow_camera, setup_light},
-    player::{despawn_player_halo, move_player, player_halo_follow_player, spawn_player_halo},
+    player::{
+        move_player, spawn_player_halo, turn_off_player_halo, turn_on_player_halo,
+        update_halo_follow_player,
+    },
     shape::loader::{load_level, spawn_level_meshes, spawn_player},
     statistics::{setup_statistics, update_player_path},
     ui::{
@@ -24,7 +27,13 @@ pub struct GameSystemsPlugin;
 impl Plugin for GameSystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Loading), load_level);
-        let setup_systems = (spawn_level_meshes, setup_statistics, spawn_player).into_configs();
+        let setup_systems = (
+            spawn_level_meshes,
+            setup_statistics,
+            spawn_player,
+            spawn_player_halo.after(spawn_player),
+        )
+            .into_configs();
         let controller_solve_system = solve
             .run_if(in_state(ControllerState::Solving))
             .run_if(in_state(GameState::Playing));
@@ -35,9 +44,9 @@ impl Plugin for GameSystemsPlugin {
             (camera_follow_player.run_if(in_state(ControllerState::IdlePostSolve)),)
                 .run_if(in_state(GameState::Playing));
 
-        app.add_systems(OnExit(ControllerState::Solving), spawn_player_halo);
-        app.add_systems(OnEnter(ControllerState::Solving), despawn_player_halo);
-        app.add_systems(Update, player_halo_follow_player);
+        app.add_systems(OnExit(ControllerState::Solving), turn_on_player_halo);
+        app.add_systems(OnEnter(ControllerState::Solving), turn_off_player_halo);
+        app.add_systems(Update, update_halo_follow_player);
 
         let update_systems = (
             move_player,

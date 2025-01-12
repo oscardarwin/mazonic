@@ -5,16 +5,22 @@ use crate::camera::MainCamera;
 const LERP_FACTOR: f32 = 0.2;
 const CAMERA_OFFSET_FACTOR: f32 = 1.2;
 
+#[derive(Component)]
+pub struct MainLight;
+
 pub fn setup_light(mut commands: Commands) {
-    commands.spawn(DirectionalLightBundle {
-        transform: Transform::from_xyz(0.0, 0.0, 20.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
-        ..default()
-    });
+    commands
+        .spawn(DirectionalLight {
+            illuminance: 8_000.,
+            ..Default::default()
+        })
+        .insert(Transform::from_xyz(0.0, 0.0, 20.0).looking_at(Vec3::new(0., 0., 0.), Vec3::Y))
+        .insert(MainLight);
 }
 
 pub fn light_follow_camera(
     mut camera_query: Query<&Transform, With<MainCamera>>,
-    mut light_query: Query<&mut Transform, (With<DirectionalLight>, Without<MainCamera>)>,
+    mut light_query: Query<&mut Transform, (With<MainLight>, Without<MainCamera>)>,
 ) {
     let Ok(camera_transform) = camera_query.get_single() else {
         return;

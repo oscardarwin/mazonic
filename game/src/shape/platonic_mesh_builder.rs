@@ -53,7 +53,7 @@ impl MazeMeshBuilder {
     }
 
     pub fn player_halo_mesh(&self) -> Sphere {
-        Sphere::new(self.distance_between_nodes / 4.0)
+        Sphere::new(self.distance_between_nodes / 5.4)
     }
 
     pub fn intersection_room_mesh(&self) -> Mesh {

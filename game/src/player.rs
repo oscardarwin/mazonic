@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 
 use crate::{
-    assets::GameAssetHandles,
+    assets::{GameAssetHandles, PlayerHaloMaterial},
     game_settings::GameSettings,
     room::SolidRoom,
     shape::{loader::LevelData, platonic_mesh_builder::MazeMeshBuilder},
 };
-use bevy::prelude::*;
+use bevy::{math::NormedVectorSpace, pbr::ExtendedMaterial, prelude::*};
 
 #[derive(Component)]
 pub struct Player {
@@ -41,7 +41,9 @@ pub fn move_player(
 }
 
 #[derive(Component)]
-pub struct PlayerHalo;
+pub struct PlayerHalo {
+    visible: bool,
+}
 
 pub fn spawn_player_halo(
     mut commands: Commands,
@@ -63,21 +65,35 @@ pub fn spawn_player_halo(
     let player_mesh_handle = meshes.add(player_halo_mesh);
 
     commands
-        .spawn(PbrBundle {
-            mesh: Mesh3d(player_mesh_handle),
-            material: MeshMaterial3d(asset_handles.player_halo_material.clone()),
-            transform: *player_transform,
-            ..default()
-        })
+        .spawn(Mesh3d(player_mesh_handle))
+        .insert(MeshMaterial3d(asset_handles.player_halo_material.clone()))
+        .insert(*player_transform)
         .insert(LevelData)
-        .insert(PlayerHalo);
+        .insert(PlayerHalo { visible: true });
 }
 
-pub fn player_halo_follow_player(
-    mut player_halo_query: Query<&mut Transform, With<PlayerHalo>>,
+pub fn turn_on_player_halo(mut player_halo_query: Query<&mut PlayerHalo>) {
+    if let Ok(mut player_halo) = player_halo_query.get_single_mut() {
+        player_halo.visible = true;
+    }
+}
+
+pub fn turn_off_player_halo(mut player_halo_query: Query<&mut PlayerHalo>) {
+    if let Ok(mut player_halo) = player_halo_query.get_single_mut() {
+        player_halo.visible = false;
+    }
+}
+
+pub fn update_halo_follow_player(
+    mut player_halo_query: Query<(&mut Transform, &PlayerHalo)>,
     player_query: Query<&Transform, (With<Player>, Without<PlayerHalo>)>,
+    mut player_halo_materials: ResMut<
+        Assets<ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>>,
+    >,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_handles: Res<GameAssetHandles>,
 ) {
-    let Ok(mut player_halo_transform) = player_halo_query.get_single_mut() else {
+    let Ok((mut player_halo_transform, halo)) = player_halo_query.get_single_mut() else {
         return;
     };
 
@@ -86,15 +102,41 @@ pub fn player_halo_follow_player(
     };
 
     player_halo_transform.translation = player_transform.translation.clone();
-}
 
-pub fn despawn_player_halo(
-    mut commands: Commands,
-    player_halo_query: Query<Entity, With<PlayerHalo>>,
-) {
-    let Ok(player_halo_entity) = player_halo_query.get_single() else {
-        return;
-    };
+    let mut player_material = materials.get_mut(&asset_handles.player_material).unwrap();
+    let target_luminance_factor = if halo.visible { 2.0 } else { 0.003 };
+    let luminance_rate = if halo.visible { 0.005 } else { 0.2 };
 
-    commands.entity(player_halo_entity).despawn();
+    let target_color = Color::linear_rgb(
+        1.0 * target_luminance_factor,
+        0.81 * target_luminance_factor,
+        0.4 * target_luminance_factor,
+    );
+    let new_color = player_material
+        .emissive
+        .mix(&target_color.into(), luminance_rate);
+
+    if target_color
+        .to_linear()
+        .to_vec4()
+        .distance(new_color.to_vec4())
+        > 0.1
+    {
+        player_material.emissive = new_color;
+    }
+
+    let mut player_halo_material = player_halo_materials
+        .get_mut(&asset_handles.player_halo_material)
+        .unwrap();
+
+    let target_alpha = if halo.visible { 0.8 } else { -0.1 };
+    let halo_alpha_rate = if halo.visible { 0.006 } else { 0.2 };
+    let current_alpha = player_halo_material.base.base_color.alpha();
+    let delta_alpha = target_alpha - current_alpha;
+    let mut new_alpha = current_alpha + delta_alpha * halo_alpha_rate;
+
+    if delta_alpha.abs() > 0.01 {
+        let new_color = player_halo_material.base.base_color.with_alpha(new_alpha);
+        player_halo_material.base.base_color = new_color;
+    }
 }

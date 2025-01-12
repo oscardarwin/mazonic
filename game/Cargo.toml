@@ -15,6 +15,7 @@ bevy = { version = "0.15.0", features = ["dynamic_linking", "bevy_dev_tools"] }
 bevy_rapier3d = { version = "0.28.0", features = [ "wasm-bindgen" ] }
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"
+noisy_bevy = "0.8.0"
 
 [profile.dev]
 opt-level = 1

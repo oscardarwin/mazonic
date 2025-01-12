@@ -1,5 +1,5 @@
 #![allow(warnings)]
-use assets::DashedArrowMaterial;
+use assets::{DashedArrowMaterial, PlayerHaloMaterial, ShapeFaceMaterial};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::pbr::wireframe::WireframePlugin;
 use bevy::{pbr::ExtendedMaterial, prelude::*};
@@ -7,6 +7,7 @@ use bevy_rapier3d::prelude::*;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use game_systems::GameSystemsPlugin;
+use noisy_bevy::NoisyShaderPlugin;
 use shape::loader::{GameLevel, LoaderPlugin};
 
 mod assets;
@@ -30,7 +31,12 @@ pub fn save_level(name: &str, level: GameLevel) {}
 pub fn run() {
     App::new()
         .add_plugins((
-            DefaultPlugins.set(ImagePlugin::default_nearest()),
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(AssetPlugin {
+                    mode: AssetMode::Processed,
+                    ..default()
+                }),
             #[cfg(not(target_arch = "wasm32"))]
             WireframePlugin,
         ))
@@ -42,5 +48,12 @@ pub fn run() {
         .add_plugins(MaterialPlugin::<
             ExtendedMaterial<StandardMaterial, DashedArrowMaterial>,
         >::default())
+        .add_plugins(MaterialPlugin::<
+            ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>,
+        >::default())
+        .add_plugins(MaterialPlugin::<
+            ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>,
+        >::default())
+        .add_plugins(NoisyShaderPlugin)
         .run();
 }

@@ -6,15 +6,20 @@ use bevy::{
 };
 
 pub struct FaceMaterialHandles {
-    pub materials: [Handle<StandardMaterial>; 6],
+    pub materials: [Handle<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>; 6],
 }
 
 impl FaceMaterialHandles {
-    fn get_material(&self, index: usize) -> Handle<StandardMaterial> {
+    fn get_material(
+        &self,
+        index: usize,
+    ) -> Handle<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>> {
         self.materials[index].clone()
     }
 
-    pub fn tetrahedron(&self) -> [Handle<StandardMaterial>; 4] {
+    pub fn tetrahedron(
+        &self,
+    ) -> [Handle<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>; 4] {
         [
             self.get_material(0),
             self.get_material(1),
@@ -23,7 +28,7 @@ impl FaceMaterialHandles {
         ]
     }
 
-    pub fn cube(&self) -> [Handle<StandardMaterial>; 6] {
+    pub fn cube(&self) -> [Handle<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>; 6] {
         [
             self.get_material(0),
             self.get_material(1),
@@ -34,7 +39,7 @@ impl FaceMaterialHandles {
         ]
     }
 
-    pub fn octahedron(&self) -> [Handle<StandardMaterial>; 8] {
+    pub fn octahedron(&self) -> [Handle<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>; 8] {
         [
             self.get_material(0),
             self.get_material(1),
@@ -47,7 +52,9 @@ impl FaceMaterialHandles {
         ]
     }
 
-    pub fn dodecahedron(&self) -> [Handle<StandardMaterial>; 12] {
+    pub fn dodecahedron(
+        &self,
+    ) -> [Handle<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>; 12] {
         [
             self.get_material(1),
             self.get_material(3),
@@ -64,7 +71,9 @@ impl FaceMaterialHandles {
         ]
     }
 
-    pub fn icosahedron(&self) -> [Handle<StandardMaterial>; 20] {
+    pub fn icosahedron(
+        &self,
+    ) -> [Handle<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>; 20] {
         [
             self.get_material(0),
             self.get_material(1),
@@ -92,7 +101,7 @@ impl FaceMaterialHandles {
 
 #[derive(Resource)]
 pub struct GameAssetHandles {
-    pub player_halo_material: Handle<StandardMaterial>,
+    pub player_halo_material: Handle<ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>>,
     pub player_material: Handle<StandardMaterial>,
     pub line_material: Handle<StandardMaterial>,
     pub dashed_arrow_material: Handle<ExtendedMaterial<StandardMaterial, DashedArrowMaterial>>,
@@ -105,12 +114,20 @@ pub fn setup_game_assets(
     mut dashed_arrow_materials: ResMut<
         Assets<ExtendedMaterial<StandardMaterial, DashedArrowMaterial>>,
     >,
+    mut player_halo_materials: ResMut<
+        Assets<ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>>,
+    >,
+    mut shape_face_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>>,
     asset_server: Res<AssetServer>,
     game_settings: Res<GameSettings>,
 ) {
-    let player_material = materials.add(StandardMaterial::from_color(
-        game_settings.palette.player_color,
-    ));
+    let player_color = &game_settings.palette.player_color;
+    let player_material = materials.add(StandardMaterial {
+        base_color: *player_color,
+        emissive: (*player_color).into(),
+        reflectance: 0.1,
+        ..Default::default()
+    });
     let line_material = materials.add(StandardMaterial::from_color(
         game_settings.palette.line_color,
     ));
@@ -124,16 +141,32 @@ pub fn setup_game_assets(
         extension: DashedArrowMaterial {},
     });
 
-    let face_materials = game_settings
-        .palette
-        .face_colors
-        .colors
-        .map(|color| materials.add(StandardMaterial::from_color(color)));
+    let face_materials = game_settings.palette.face_colors.colors.map(|color| {
+        shape_face_materials.add(ExtendedMaterial {
+            base: StandardMaterial {
+                base_color: color,
+                reflectance: 0.1,
+                ..Default::default()
+            },
+            extension: ShapeFaceMaterial {},
+        })
+    });
 
-    let player_halo_material = materials.add(StandardMaterial {
-        base_color: game_settings.palette.player_color.with_alpha(0.5),
-        alpha_mode: AlphaMode::Blend,
-        ..Default::default()
+    let bright_player_color = player_color.to_linear().to_vec3() * 2.0;
+    let player_halo_material = player_halo_materials.add(ExtendedMaterial {
+        base: StandardMaterial {
+            base_color: game_settings.palette.player_color,
+            emissive: LinearRgba::from_vec3(bright_player_color),
+            alpha_mode: AlphaMode::Blend,
+            diffuse_transmission: 1.0,
+            //attenuation_distance: 10.0,
+            thickness: 0.17,
+            metallic: 0.2,
+            fog_enabled: true,
+            double_sided: true,
+            ..Default::default()
+        },
+        extension: PlayerHaloMaterial {},
     });
 
     commands.insert_resource(GameAssetHandles {
@@ -153,5 +186,23 @@ pub struct DashedArrowMaterial {}
 impl MaterialExtension for DashedArrowMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/dashed_line.wgsl".into()
+    }
+}
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct PlayerHaloMaterial {}
+
+impl MaterialExtension for PlayerHaloMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/halo.wgsl".into()
+    }
+}
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct ShapeFaceMaterial {}
+
+impl MaterialExtension for ShapeFaceMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/face_material.wgsl".into()
     }
 }

@@ -10,7 +10,7 @@ use bevy::{
     color::Color,
     ecs::system::{Commands, ResMut},
     math::NormedVectorSpace,
-    pbr::{PbrBundle, StandardMaterial},
+    pbr::{ExtendedMaterial, PbrBundle, StandardMaterial},
     prelude::*,
     render::mesh::Mesh,
     transform::components::Transform,
@@ -20,7 +20,7 @@ use bevy_rapier3d::geometry::Collider;
 use petgraph::{graphmap::GraphMap, Directed};
 
 use crate::{
-    assets::FaceMaterialHandles,
+    assets::{FaceMaterialHandles, ShapeFaceMaterial},
     game_settings::{FaceColorPalette, GameSettings},
     game_state::GameState,
     is_room_junction::is_junction,
@@ -115,7 +115,7 @@ impl GameLevel {
     pub fn get_face_materials(
         &self,
         face_materials_handles: &FaceMaterialHandles,
-    ) -> Vec<Handle<StandardMaterial>> {
+    ) -> Vec<Handle<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>> {
         match &self.shape {
             Shape::Cube(_) => face_materials_handles.cube().into_iter().collect(),
             Shape::Tetrahedron(_) => face_materials_handles.tetrahedron().into_iter().collect(),
@@ -340,12 +340,8 @@ pub fn spawn_level_meshes(
         let face_mesh_handle = meshes.add(face_mesh);
 
         commands
-            .spawn(PbrBundle {
-                mesh: Mesh3d(face_mesh_handle),
-                material: MeshMaterial3d(face_material_handle),
-                transform: Transform::IDENTITY,
-                ..default()
-            })
+            .spawn(Mesh3d(face_mesh_handle))
+            .insert(MeshMaterial3d(face_material_handle))
             .insert(LevelData);
     }
 }
@@ -381,7 +377,6 @@ fn get_connection_transform(from: SolidRoom, to: SolidRoom, border_type: &Border
 pub fn spawn_player(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: Res<Assets<StandardMaterial>>,
     level_query: Query<(&MazeMeshBuilder, &SolutionComponent)>,
     settings: Res<GameSettings>,
     asset_handles: Res<GameAssetHandles>,
