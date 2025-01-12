@@ -37,7 +37,6 @@
             lld_18
             rustup
             nodejs_22
-            wasm-bindgen-cli
             xsel
           ];
           shellHook = ''
