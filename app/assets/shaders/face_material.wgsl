@@ -23,10 +23,5 @@ fn fragment(
     // note this does not include fullscreen postprocessing effects like bloom.
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
     
-    let sine_sample = sin(40.0 * in.uv.y - globals.time);
-    let arrow_chunk = floor(1.5 * (sine_sample + 1.0));
-    let in_arrow_head = floor(in.uv.y + 0.5);
-    out.color = out.color * max(min(arrow_chunk, 1.0), in_arrow_head);
-
     return out;
 }

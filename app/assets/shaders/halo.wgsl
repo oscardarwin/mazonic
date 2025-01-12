@@ -4,6 +4,7 @@
     forward_io::{VertexOutput, FragmentOutput},
     pbr_functions::{apply_pbr_lighting, alpha_discard, main_pass_post_lighting_processing},
 }
+#import noisy_bevy::simplex_noise_3d
 
 @fragment
 fn fragment(
@@ -16,17 +17,14 @@ fn fragment(
     pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
 
     var out: FragmentOutput;
-    // apply lighting
     out.color = apply_pbr_lighting(pbr_input);
-
-    // apply in-shader post processing (fog, alpha-premultiply, and also tonemapping, debanding if the camera is non-hdr)
-    // note this does not include fullscreen postprocessing effects like bloom.
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
     
-    let sine_sample = sin(40.0 * in.uv.y - globals.time);
-    let arrow_chunk = floor(1.5 * (sine_sample + 1.0));
-    let in_arrow_head = floor(in.uv.y + 0.5);
-    out.color = out.color * max(min(arrow_chunk, 1.0), in_arrow_head);
+    let world_position = vec3(in.world_position.x, in.world_position.y, in.world_position.z);
+    let noise_value = simplex_noise_3d(world_position + vec3(5.0 * sin(0.05 * globals.time)));
+    let sigmoid_noise_value = 0.5 + (atan(1000 * (noise_value - 0.5)) / 3.1416 / 4.0);
+
+    out.color.a *= noise_value;
 
     return out;
 }
