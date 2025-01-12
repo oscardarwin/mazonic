@@ -1,10 +1,3 @@
-use std::{
-    f32::consts::FRAC_PI_2,
-    fs::{self, File},
-    hash::{DefaultHasher, Hash, Hasher},
-    usize,
-};
-
 use bevy::{
     asset::Assets,
     color::Color,
@@ -14,6 +7,13 @@ use bevy::{
     prelude::*,
     render::mesh::Mesh,
     transform::components::Transform,
+};
+
+use std::{
+    f32::consts::FRAC_PI_2,
+    fs::{self, File},
+    hash::{DefaultHasher, Hash, Hasher},
+    usize,
 };
 
 use bevy_rapier3d::geometry::Collider;
@@ -45,7 +45,7 @@ pub struct GraphComponent(pub GraphMap<SolidRoom, Edge, Directed>);
 #[derive(Component)]
 pub struct SolutionComponent(pub Vec<SolidRoom>);
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Asset, TypePath)]
 pub struct MazeSaveData(pub GraphMap<SolidRoom, Edge, Directed>, pub Vec<SolidRoom>);
 
 #[derive(Component)]
@@ -188,7 +188,7 @@ pub struct LoaderPlugin;
 impl Plugin for LoaderPlugin {
     fn build(&self, app: &mut App) {
         let levels = get_levels();
-        app.insert_resource(LevelIndex(1));
+        app.insert_resource(LevelIndex(0));
         app.insert_resource(Levels(levels));
     }
 }
@@ -208,57 +208,80 @@ pub fn get_levels() -> Vec<GameLevel> {
     ]
 }
 
-pub fn load_level(
+#[derive(Component)]
+pub struct MazeSaveDataHandle(Handle<MazeSaveData>);
+
+pub fn load_level_asset(
     mut commands: Commands,
     level_resource: Res<LevelIndex>,
     levels: Res<Levels>,
     mut game_state: ResMut<NextState<GameState>>,
     current_level_entities: Query<Entity, With<LevelData>>,
+    asset_server: Res<AssetServer>,
 ) {
+    let LevelIndex(index) = level_resource.into_inner();
+    let Levels(levels) = levels.into_inner();
+
     for entity in current_level_entities.iter() {
         commands.entity(entity).despawn();
     }
-
-    let LevelIndex(index) = level_resource.into_inner();
-    let Levels(levels) = levels.into_inner();
 
     let level = levels.get(*index).unwrap();
 
     let file_path = level.filename();
 
-    let level_str = fs::read_to_string(file_path.clone())
-        .expect(&format!("unable to read level file: {}", file_path));
-
-    let MazeSaveData(graph, solution) = serde_json::from_str::<MazeSaveData>(&level_str).unwrap();
+    let maze_save_data_handle = asset_server.load::<MazeSaveData>(file_path);
 
     let mesh_builder = level.get_maze_mesh_builder();
 
     commands.spawn((
         level.clone(),
         mesh_builder,
+        MazeSaveDataHandle(maze_save_data_handle),
         LevelData,
-        GraphComponent(graph),
-        SolutionComponent(solution),
     ));
-    game_state.set(GameState::Playing);
+}
+
+pub fn spawn_level_data_components(
+    mut commands: Commands,
+    mut game_state: ResMut<NextState<GameState>>,
+    current_level_entities: Query<Entity, With<LevelData>>,
+    mut maze_save_data_event: EventReader<AssetEvent<MazeSaveData>>,
+    maze_save_data_assets: Res<Assets<MazeSaveData>>,
+) {
+    for ev in maze_save_data_event.read() {
+        let AssetEvent::Added { id } = ev else {
+            continue;
+        };
+
+        let Some(MazeSaveData(graph, solution)) = maze_save_data_assets.get(*id) else {
+            continue;
+        };
+
+        // TODO: perhaps think about how not to duplicate the data here.
+        commands.spawn((
+            LevelData,
+            GraphComponent(graph.clone()),
+            SolutionComponent(solution.clone()),
+        ));
+        game_state.set(GameState::Playing);
+    }
 }
 
 pub fn spawn_level_meshes(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: Res<Assets<StandardMaterial>>,
-    level_query: Query<(
-        &GraphComponent,
-        &MazeMeshBuilder,
-        &GameLevel,
-        &SolutionComponent,
-    )>,
+    level_query: Query<(&MazeMeshBuilder, &GameLevel)>,
+    maze_query: Query<(&GraphComponent, &SolutionComponent)>,
     settings: Res<GameSettings>,
     asset_handles: Res<GameAssetHandles>,
 ) {
-    let Ok((GraphComponent(graph), mesh_builder, level, SolutionComponent(solution))) =
-        level_query.get_single()
-    else {
+    let Ok((mesh_builder, level)) = level_query.get_single() else {
+        return;
+    };
+
+    let Ok((GraphComponent(graph), SolutionComponent(solution))) = maze_query.get_single() else {
         return;
     };
 
@@ -377,11 +400,15 @@ fn get_connection_transform(from: SolidRoom, to: SolidRoom, border_type: &Border
 pub fn spawn_player(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    level_query: Query<(&MazeMeshBuilder, &SolutionComponent)>,
+    mesh_builder_query: Query<&MazeMeshBuilder>,
+    solution_query: Query<&SolutionComponent>,
     settings: Res<GameSettings>,
     asset_handles: Res<GameAssetHandles>,
 ) {
-    let Ok((mesh_builder, SolutionComponent(solution))) = level_query.get_single() else {
+    let Ok(mesh_builder) = mesh_builder_query.get_single() else {
+        return;
+    };
+    let Ok(SolutionComponent(solution)) = solution_query.get_single() else {
         return;
     };
 

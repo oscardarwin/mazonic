@@ -103,12 +103,17 @@ pub fn solve(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<(&mut PlayerMazeState, &Player)>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    level: Query<(&GameLevel, &GraphComponent)>,
+    level: Query<&GameLevel>,
+    graph_query: Query<&GraphComponent>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     game_settings: Res<GameSettings>,
     mut previous_cursor_position: Local<Option<Vec2>>,
 ) {
-    let Ok((shape, GraphComponent(graph))) = level.get_single() else {
+    let Ok(shape) = level.get_single() else {
+        return;
+    };
+
+    let Ok(GraphComponent(graph)) = graph_query.get_single() else {
         return;
     };
 
@@ -122,7 +127,6 @@ pub fn solve(
     };
 
     let Some(cursor_position) = window.cursor_position() else {
-        // if the cursor is not inside the window, we can't do anything
         return;
     };
 

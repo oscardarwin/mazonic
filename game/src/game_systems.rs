@@ -13,7 +13,9 @@ use crate::{
         move_player, spawn_player_halo, turn_off_player_halo, turn_on_player_halo,
         update_halo_follow_player,
     },
-    shape::loader::{load_level, spawn_level_meshes, spawn_player},
+    shape::loader::{
+        load_level_asset, spawn_level_data_components, spawn_level_meshes, spawn_player,
+    },
     statistics::{setup_statistics, update_player_path},
     ui::{
         despawn_level_complete_ui, next_level, previous_level, replay_level,
@@ -26,7 +28,7 @@ pub struct GameSystemsPlugin;
 
 impl Plugin for GameSystemsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Loading), load_level);
+        app.add_systems(OnEnter(GameState::Loading), load_level_asset);
         let setup_systems = (
             spawn_level_meshes,
             setup_statistics,
@@ -52,7 +54,7 @@ impl Plugin for GameSystemsPlugin {
             move_player,
             controller_solve_system,
             victory_ui_transition,
-            update_statistics,
+            update_statistics.run_if(in_state(GameState::Playing)),
             camera_follow_player_system,
             spawn_node_arrival_particles,
         )
@@ -82,6 +84,8 @@ impl Plugin for GameSystemsPlugin {
             view.run_if(in_state(ControllerState::Viewing)),
             camera_dolly.run_if(in_state(ControllerState::Viewing)),
         );
+
+        app.add_systems(Update, spawn_level_data_components);
 
         app.add_systems(
             Update,

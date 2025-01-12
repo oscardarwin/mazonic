@@ -3,12 +3,13 @@ use assets::{DashedArrowMaterial, PlayerHaloMaterial, ShapeFaceMaterial};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::pbr::wireframe::WireframePlugin;
 use bevy::{pbr::ExtendedMaterial, prelude::*};
+use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_rapier3d::prelude::*;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use game_systems::GameSystemsPlugin;
 use noisy_bevy::NoisyShaderPlugin;
-use shape::loader::{GameLevel, LoaderPlugin};
+use shape::loader::{GameLevel, LoaderPlugin, MazeSaveData};
 
 mod assets;
 mod camera;
@@ -31,15 +32,11 @@ pub fn save_level(name: &str, level: GameLevel) {}
 pub fn run() {
     App::new()
         .add_plugins((
-            DefaultPlugins
-                .set(ImagePlugin::default_nearest())
-                .set(AssetPlugin {
-                    mode: AssetMode::Processed,
-                    ..default()
-                }),
+            DefaultPlugins.set(ImagePlugin::default_nearest()),
             #[cfg(not(target_arch = "wasm32"))]
             WireframePlugin,
         ))
+        .add_plugins(JsonAssetPlugin::<MazeSaveData>::new(&[".json"]))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(GameSettingsPlugin::default())
         .add_plugins(LoaderPlugin::default())

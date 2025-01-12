@@ -18,14 +18,13 @@ pub fn victory_transition(
         return;
     };
 
-    let player_state = player_state_query.single();
+    let Ok(PlayerMazeState::Node(room)) = player_state_query.get_single() else {
+        return;
+    };
 
     let final_room = solution.last().unwrap();
 
-    match player_state {
-        PlayerMazeState::Node(room) if room == final_room => {
-            next_controller_state.set(GameState::Victory)
-        }
-        _ => {}
+    if room == final_room {
+        next_controller_state.set(GameState::Victory)
     }
 }

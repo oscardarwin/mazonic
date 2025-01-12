@@ -30,7 +30,10 @@ pub fn camera_follow_player(
     player_query: Query<&PlayerMazeState, (With<Player>, Without<MainCamera>)>,
     game_settings: Res<GameSettings>,
 ) {
-    let player_maze_state = player_query.single();
+    let Ok(player_maze_state) = player_query.get_single() else {
+        return;
+    };
+
     let mut camera_transform = camera_query.single_mut();
 
     let camera_translation = camera_transform.translation;
