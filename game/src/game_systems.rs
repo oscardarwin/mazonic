@@ -10,12 +10,11 @@ use crate::{
     game_state::{victory_transition, GameState},
     light::{light_follow_camera, setup_light},
     player::{
-        move_player, spawn_player_halo, turn_off_player_halo, turn_on_player_halo,
+        move_player, spawn_player, spawn_player_halo, turn_off_player_halo, turn_on_player_halo,
         update_halo_follow_player,
     },
-    shape::loader::{
-        load_level_asset, spawn_level_data_components, spawn_level_meshes, spawn_player,
-    },
+    shape::loader::{load_level_asset, spawn_level_data_components, spawn_level_meshes},
+    sound::play_note,
     statistics::{setup_statistics, update_player_path},
     ui::{
         despawn_level_complete_ui, next_level, previous_level, replay_level,
@@ -55,6 +54,7 @@ impl Plugin for GameSystemsPlugin {
             controller_solve_system,
             victory_ui_transition,
             update_statistics.run_if(in_state(GameState::Playing)),
+            play_note.run_if(in_state(GameState::Playing)),
             camera_follow_player_system,
             spawn_node_arrival_particles,
         )

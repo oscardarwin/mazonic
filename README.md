@@ -3,12 +3,7 @@
 ## Github Pages page
 
 ## Graphics
-Glow on player
 Animation on level change?
-
-Make global shader with discrete
-
-Shaders - slighly shiney.
 
 ## Menu
 Play

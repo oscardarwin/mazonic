@@ -7,7 +7,9 @@ use bevy::{
     prelude::*,
     render::mesh::Mesh,
     transform::components::Transform,
+    utils::HashMap,
 };
+use bevy_rustysynth::{MidiAudio, MidiNote};
 
 use std::{
     f32::consts::FRAC_PI_2,
@@ -16,7 +18,6 @@ use std::{
     usize,
 };
 
-use bevy_rapier3d::geometry::Collider;
 use petgraph::{graphmap::GraphMap, Directed};
 
 use crate::{
@@ -26,6 +27,7 @@ use crate::{
     is_room_junction::is_junction,
     player::{Player, PlayerMazeState},
     room::{SolidFace, SolidRoom},
+    sound::NoteMapping,
 };
 
 use super::{
@@ -46,7 +48,12 @@ pub struct GraphComponent(pub GraphMap<SolidRoom, Edge, Directed>);
 pub struct SolutionComponent(pub Vec<SolidRoom>);
 
 #[derive(Serialize, Deserialize, Asset, TypePath)]
-pub struct MazeSaveData(pub GraphMap<SolidRoom, Edge, Directed>, pub Vec<SolidRoom>);
+pub struct MazeLevelData {
+    pub graph: GraphMap<SolidRoom, Edge, Directed>,
+    pub solution: Vec<SolidRoom>,
+    //pub encrypted_song: Vec<u8>,
+    //pub song_melody_length: u8,
+}
 
 #[derive(Component)]
 pub struct LevelData;
@@ -209,7 +216,7 @@ pub fn get_levels() -> Vec<GameLevel> {
 }
 
 #[derive(Component)]
-pub struct MazeSaveDataHandle(Handle<MazeSaveData>);
+pub struct MazeSaveDataHandle(Handle<MazeLevelData>);
 
 pub fn load_level_asset(
     mut commands: Commands,
@@ -230,7 +237,7 @@ pub fn load_level_asset(
 
     let file_path = level.filename();
 
-    let maze_save_data_handle = asset_server.load::<MazeSaveData>(file_path);
+    let maze_save_data_handle = asset_server.load::<MazeLevelData>(file_path);
 
     let mesh_builder = level.get_maze_mesh_builder();
 
@@ -246,23 +253,39 @@ pub fn spawn_level_data_components(
     mut commands: Commands,
     mut game_state: ResMut<NextState<GameState>>,
     current_level_entities: Query<Entity, With<LevelData>>,
-    mut maze_save_data_event: EventReader<AssetEvent<MazeSaveData>>,
-    maze_save_data_assets: Res<Assets<MazeSaveData>>,
+    mut maze_save_data_event: EventReader<AssetEvent<MazeLevelData>>,
+    maze_save_data_assets: Res<Assets<MazeLevelData>>,
+    asset_server: Res<AssetServer>,
 ) {
     for ev in maze_save_data_event.read() {
         let AssetEvent::Added { id } = ev else {
             continue;
         };
 
-        let Some(MazeSaveData(graph, solution)) = maze_save_data_assets.get(*id) else {
+        let Some(MazeLevelData { graph, solution }) = maze_save_data_assets.get(*id) else {
             continue;
         };
+
+        let mut note_mapping = HashMap::<u64, MidiNote>::new();
+        for node in graph.nodes() {
+            note_mapping.insert(node.id, MidiNote::default());
+        }
+
+        let note_midi_handle = note_mapping
+            .into_iter()
+            .map(|(node_id, midi_note)| {
+                let audio = MidiAudio::Sequence(vec![midi_note]);
+                let audio_handle = asset_server.add::<MidiAudio>(audio);
+                (node_id, audio_handle)
+            })
+            .collect::<HashMap<u64, Handle<MidiAudio>>>();
 
         // TODO: perhaps think about how not to duplicate the data here.
         commands.spawn((
             LevelData,
             GraphComponent(graph.clone()),
             SolutionComponent(solution.clone()),
+            NoteMapping(note_midi_handle),
         ));
         game_state.set(GameState::Playing);
     }
@@ -395,49 +418,4 @@ fn get_connection_transform(from: SolidRoom, to: SolidRoom, border_type: &Border
                 .with_translation(intersection_point + average_normal * 0.001)
         }
     }
-}
-
-pub fn spawn_player(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mesh_builder_query: Query<&MazeMeshBuilder>,
-    solution_query: Query<&SolutionComponent>,
-    settings: Res<GameSettings>,
-    asset_handles: Res<GameAssetHandles>,
-) {
-    let Ok(mesh_builder) = mesh_builder_query.get_single() else {
-        return;
-    };
-    let Ok(SolutionComponent(solution)) = solution_query.get_single() else {
-        return;
-    };
-
-    let initial_node = solution.first().unwrap().clone();
-    let player_mesh = mesh_builder.player_mesh();
-    let player_mesh_handle = meshes.add(player_mesh);
-
-    let height_above_node = settings.player_elevation + player_mesh.radius;
-    let player_transform = compute_initial_player_transform(initial_node, height_above_node);
-
-    commands
-        .spawn(PbrBundle {
-            mesh: Mesh3d(player_mesh_handle),
-            material: MeshMaterial3d(asset_handles.player_material.clone()),
-            transform: player_transform,
-            ..default()
-        })
-        .insert(Player {
-            size: player_mesh.radius,
-        })
-        .insert(PlayerMazeState::Node(initial_node))
-        .insert(Collider::ball(player_mesh.radius))
-        .insert(LevelData);
-}
-
-fn compute_initial_player_transform(start_node: SolidRoom, player_elevation: f32) -> Transform {
-    let face_normal = start_node.face().normal();
-
-    Transform::IDENTITY
-        .looking_at(face_normal.any_orthogonal_vector(), face_normal)
-        .with_translation(start_node.position() + player_elevation * face_normal)
 }

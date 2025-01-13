@@ -1,15 +1,18 @@
 #![allow(warnings)]
+use std::io::Cursor;
+
 use assets::{DashedArrowMaterial, PlayerHaloMaterial, ShapeFaceMaterial};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::pbr::wireframe::WireframePlugin;
 use bevy::{pbr::ExtendedMaterial, prelude::*};
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_rapier3d::prelude::*;
+use bevy_rustysynth::RustySynthPlugin;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use game_systems::GameSystemsPlugin;
 use noisy_bevy::NoisyShaderPlugin;
-use shape::loader::{GameLevel, LoaderPlugin, MazeSaveData};
+use shape::loader::{GameLevel, LoaderPlugin, MazeLevelData};
 
 mod assets;
 mod camera;
@@ -24,6 +27,7 @@ mod light;
 mod player;
 pub mod room;
 pub mod shape;
+mod sound;
 mod statistics;
 mod ui;
 
@@ -36,7 +40,7 @@ pub fn run() {
             #[cfg(not(target_arch = "wasm32"))]
             WireframePlugin,
         ))
-        .add_plugins(JsonAssetPlugin::<MazeSaveData>::new(&[".json"]))
+        .add_plugins(JsonAssetPlugin::<MazeLevelData>::new(&[".json"]))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(GameSettingsPlugin::default())
         .add_plugins(LoaderPlugin::default())
@@ -52,5 +56,8 @@ pub fn run() {
             ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>,
         >::default())
         .add_plugins(NoisyShaderPlugin)
+        .add_plugins(RustySynthPlugin {
+            soundfont: Cursor::new(include_bytes!("../../app/assets/marimba_chiapaneca.sf2")),
+        })
         .run();
 }

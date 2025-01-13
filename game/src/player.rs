@@ -4,9 +4,14 @@ use crate::{
     assets::{GameAssetHandles, PlayerHaloMaterial},
     game_settings::GameSettings,
     room::SolidRoom,
-    shape::{loader::LevelData, platonic_mesh_builder::MazeMeshBuilder},
+    shape::{
+        loader::{LevelData, SolutionComponent},
+        platonic_mesh_builder::MazeMeshBuilder,
+    },
 };
 use bevy::{math::NormedVectorSpace, pbr::ExtendedMaterial, prelude::*};
+
+use bevy_rapier3d::geometry::Collider;
 
 #[derive(Component)]
 pub struct Player {
@@ -139,4 +144,49 @@ pub fn update_halo_follow_player(
         let new_color = player_halo_material.base.base_color.with_alpha(new_alpha);
         player_halo_material.base.base_color = new_color;
     }
+}
+
+pub fn spawn_player(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mesh_builder_query: Query<&MazeMeshBuilder>,
+    solution_query: Query<&SolutionComponent>,
+    settings: Res<GameSettings>,
+    asset_handles: Res<GameAssetHandles>,
+) {
+    let Ok(mesh_builder) = mesh_builder_query.get_single() else {
+        return;
+    };
+    let Ok(SolutionComponent(solution)) = solution_query.get_single() else {
+        return;
+    };
+
+    let initial_node = solution.first().unwrap().clone();
+    let player_mesh = mesh_builder.player_mesh();
+    let player_mesh_handle = meshes.add(player_mesh);
+
+    let height_above_node = settings.player_elevation + player_mesh.radius;
+    let player_transform = compute_initial_player_transform(initial_node, height_above_node);
+
+    commands
+        .spawn(PbrBundle {
+            mesh: Mesh3d(player_mesh_handle),
+            material: MeshMaterial3d(asset_handles.player_material.clone()),
+            transform: player_transform,
+            ..default()
+        })
+        .insert(Player {
+            size: player_mesh.radius,
+        })
+        .insert(PlayerMazeState::Node(initial_node))
+        .insert(Collider::ball(player_mesh.radius))
+        .insert(LevelData);
+}
+
+fn compute_initial_player_transform(start_node: SolidRoom, player_elevation: f32) -> Transform {
+    let face_normal = start_node.face().normal();
+
+    Transform::IDENTITY
+        .looking_at(face_normal.any_orthogonal_vector(), face_normal)
+        .with_translation(start_node.position() + player_elevation * face_normal)
 }

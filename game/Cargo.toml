@@ -17,6 +17,7 @@ serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"
 noisy_bevy = "0.8.0"
 bevy_common_assets = { version = "0.12.0", features = ["json"] }
+bevy_rustysynth = "0.3.0"
 
 [profile.dev]
 opt-level = 1
