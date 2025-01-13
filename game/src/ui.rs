@@ -38,7 +38,12 @@ pub fn spawn_level_complete_ui(
     let path_length = path.len();
 
     let solution_length = solution.len();
-    let solution_text = format!("Solution\n{}/{}", path_length, solution_length);
+    let solution_text = format!(
+        "Level {}\nScore {}\nSolution {}",
+        current_level + 1,
+        path_length,
+        solution_length
+    );
 
     commands
         .spawn(Node {
@@ -51,7 +56,7 @@ pub fn spawn_level_complete_ui(
         .with_children(|parent| {
             parent
                 .spawn(Node {
-                    width: Val::Px(256.),
+                    width: Val::Px(384.),
                     height: Val::Percent(100.),
                     flex_direction: FlexDirection::Column,
                     justify_content: JustifyContent::End,
@@ -64,7 +69,7 @@ pub fn spawn_level_complete_ui(
                         .spawn((
                             Node {
                                 width: Val::Percent(100.),
-                                height: Val::Px(64.),
+                                height: Val::Px(96.),
                                 flex_direction: FlexDirection::Row,
                                 padding: UiRect::all(Val::Px(5.)),
                                 row_gap: Val::Px(5.),
