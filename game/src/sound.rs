@@ -1,18 +1,61 @@
+use std::time::Duration;
+
 use bevy::{audio::AddAudioSource, prelude::*, utils::HashMap};
 use bevy_rustysynth::{MidiAudio, MidiNote};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     is_room_junction::is_junction, player::PlayerMazeState, room::SolidRoom,
     shape::loader::GraphComponent, statistics::PlayerPath,
 };
 
-// MazeSaveData has a secret length and encrypted song title.
+const CROTCHET_DURATION: f32 = 0.8;
 
-struct AudioPlugin;
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Note {
+    pub key: i32,
+    pub velocity: i32,
+    pub duration: Duration,
+}
 
-impl Plugin for AudioPlugin {
-    fn build(&self, app: &mut App) {
-        //app.add_audio_source();
+impl Note {
+    pub fn new(key: i32, duration: Duration) -> Self {
+        Note {
+            key,
+            velocity: 100,
+            duration,
+        }
+    }
+
+    pub fn quaver(key: i32) -> Self {
+        Self::new(key, Duration::from_secs_f32(CROTCHET_DURATION * 0.5))
+    }
+
+    pub fn crotchet(key: i32) -> Self {
+        Self::new(key, Duration::from_secs_f32(CROTCHET_DURATION))
+    }
+
+    pub fn minim(key: i32) -> Self {
+        Self::new(key, Duration::from_secs_f32(CROTCHET_DURATION * 2.0))
+    }
+
+    pub fn dotted_minim(key: i32) -> Self {
+        Self::new(key, Duration::from_secs_f32(CROTCHET_DURATION * 3.0))
+    }
+
+    pub fn semibreve(key: i32) -> Self {
+        Self::new(key, Duration::from_secs_f32(CROTCHET_DURATION * 4.0))
+    }
+}
+
+impl Into<MidiNote> for Note {
+    fn into(self) -> MidiNote {
+        MidiNote {
+            key: self.key,
+            velocity: self.velocity,
+            duration: self.duration,
+            ..Default::default()
+        }
     }
 }
 

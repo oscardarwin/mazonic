@@ -22,12 +22,12 @@ mod effects;
 mod game_settings;
 mod game_state;
 mod game_systems;
-mod is_room_junction;
+pub mod is_room_junction;
 mod light;
 mod player;
 pub mod room;
 pub mod shape;
-mod sound;
+pub mod sound;
 mod statistics;
 mod ui;
 

@@ -27,7 +27,7 @@ use crate::{
     is_room_junction::is_junction,
     player::{Player, PlayerMazeState},
     room::{SolidFace, SolidRoom},
-    sound::NoteMapping,
+    sound::{Note, NoteMapping},
 };
 
 use super::{
@@ -51,6 +51,7 @@ pub struct SolutionComponent(pub Vec<SolidRoom>);
 pub struct MazeLevelData {
     pub graph: GraphMap<SolidRoom, Edge, Directed>,
     pub solution: Vec<SolidRoom>,
+    pub node_id_to_note: HashMap<u64, Note>,
     //pub encrypted_song: Vec<u8>,
     //pub song_melody_length: u8,
 }
@@ -262,21 +263,22 @@ pub fn spawn_level_data_components(
             continue;
         };
 
-        let Some(MazeLevelData { graph, solution }) = maze_save_data_assets.get(*id) else {
+        let Some(MazeLevelData {
+            graph,
+            solution,
+            node_id_to_note: node_id_note_mapping,
+        }) = maze_save_data_assets.get(*id)
+        else {
             continue;
         };
 
-        let mut note_mapping = HashMap::<u64, MidiNote>::new();
-        for node in graph.nodes() {
-            note_mapping.insert(node.id, MidiNote::default());
-        }
-
-        let note_midi_handle = note_mapping
+        let note_midi_handle = node_id_note_mapping
             .into_iter()
-            .map(|(node_id, midi_note)| {
+            .map(|(node_id, note)| {
+                let midi_note = note.clone().into();
                 let audio = MidiAudio::Sequence(vec![midi_note]);
                 let audio_handle = asset_server.add::<MidiAudio>(audio);
-                (node_id, audio_handle)
+                (*node_id, audio_handle)
             })
             .collect::<HashMap<u64, Handle<MidiAudio>>>();
 
