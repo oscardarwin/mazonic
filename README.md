@@ -11,16 +11,15 @@ Daily
 Settings
 Statistics
 
-## Levels selector should be a icosohedron.
+## Higher Level Navigation
+Menu
+- Play
+- Settings
+- Daily
+- Credits
 
-## Music
-Ping sound effect
-
-## Effects
-
-
-# Name Drafts
-Hedron
+Play 
+- 20 levels
 
 # Build for Web:
 

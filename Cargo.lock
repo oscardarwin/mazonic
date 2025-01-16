@@ -2798,9 +2798,14 @@ dependencies = [
 name = "mazonic_level_generator"
 version = "0.1.0"
 dependencies = [
+ "bevy",
+ "bevy_rustysynth",
+ "itertools",
  "maze_generator",
  "mazonic",
  "petgraph",
+ "rand",
+ "rand_chacha",
  "serde_json",
 ]
 
