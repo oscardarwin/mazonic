@@ -7,12 +7,12 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct SolidFace {
+pub struct Face {
     pub id: usize,
     pub normal: Vec3,
 }
 
-impl SolidFace {
+impl Face {
     pub fn normal(&self) -> Vec3 {
         self.normal
     }
@@ -25,7 +25,7 @@ impl SolidFace {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SolidRoom {
     pub position: Vec3,
-    pub face: SolidFace,
+    pub face: Face,
     pub id: u64,
 }
 
@@ -34,7 +34,7 @@ impl SolidRoom {
         self.position
     }
 
-    pub fn face(&self) -> SolidFace {
+    pub fn face(&self) -> Face {
         self.face.clone()
     }
 
