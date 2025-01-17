@@ -16,8 +16,8 @@ use itertools::repeat_n;
 
 use crate::{
     constants::PHI,
-    room::{SolidFace, SolidRoom},
-    shape::shape_loader::ShapeLoader,
+    room::{Face, SolidRoom},
+    shape::shape_loader::ShapeMeshLoader,
 };
 
 const DODECAHEDRON_VERTICES: [[f32; 3]; 20] = [
@@ -61,30 +61,28 @@ const DODECAHEDRON_FACES: [[usize; 5]; 12] = [
 #[derive(Resource, Component, Clone, Debug)]
 pub struct Dodecahedron {
     pub distance_between_nodes: f32,
-    face_size: f32,
     node_from_edge_lerp_factor: f32,
 }
 
 impl Dodecahedron {
-    pub fn new(face_size: f32) -> Self {
+    pub fn new() -> Self {
         let tan_27 = (0.15 * PI).tan();
-        let distance_between_nodes = face_size * tan_27;
+        let distance_between_nodes = tan_27;
 
         let tan_54 = (0.3 * PI).tan();
         let node_from_edge_lerp_factor = tan_27 / tan_54;
         Self {
             distance_between_nodes,
-            face_size,
             node_from_edge_lerp_factor,
         }
     }
 }
 
-impl ShapeLoader<20, 12, 5> for Dodecahedron {
+impl ShapeMeshLoader<20, 12, 5> for Dodecahedron {
     const VERTICES: [[f32; 3]; 20] = DODECAHEDRON_VERTICES;
     const FACES: [[usize; 5]; 12] = DODECAHEDRON_FACES;
 
-    fn make_nodes_from_face(&self, face: &SolidFace) -> Vec<SolidRoom> {
+    fn make_nodes_from_face(&self, face: &Face) -> Vec<SolidRoom> {
         let vertex_indices = DODECAHEDRON_FACES[face.id()];
         let vertices = Self::vertices(&vertex_indices).map(|vertex| vertex * PHI / 2.0);
 
@@ -118,7 +116,7 @@ impl ShapeLoader<20, 12, 5> for Dodecahedron {
     }
 
     fn get_face_mesh(&self, vertices: [Vec3; 5]) -> Mesh {
-        let scaling_factor = self.face_size * PHI / 2.0;
+        let scaling_factor = PHI / 2.0;
         let uvs = vec![
             [0.0_f32, 0.0],
             [1.0, 0.0],

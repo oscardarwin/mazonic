@@ -3,7 +3,7 @@ use std::{fmt::Debug, hash::Hash};
 use bevy::{ecs::system::Resource, math::Vec3, render::mesh::Mesh, utils::HashSet};
 use serde::{Deserialize, Serialize};
 
-use crate::room::{SolidFace, SolidRoom};
+use crate::room::{Face, SolidRoom};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum BorderType {
@@ -14,7 +14,7 @@ pub enum BorderType {
 #[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct Edge;
 
-pub trait ShapeLoader<
+pub trait ShapeMeshLoader<
     const NUM_VERTICES: usize,
     const NUM_FACES: usize,
     const NUM_VERTICES_PER_FACE: usize,
@@ -27,9 +27,9 @@ pub trait ShapeLoader<
         vertex_indices.map(|index| Vec3::from_array(Self::VERTICES[index]))
     }
 
-    fn make_nodes_from_face(&self, face: &SolidFace) -> Vec<SolidRoom>;
+    fn make_nodes_from_face(&self, face: &Face) -> Vec<SolidRoom>;
 
-    fn border_type(from: &SolidFace, to: &SolidFace) -> Option<BorderType> {
+    fn border_type(from: &Face, to: &Face) -> Option<BorderType> {
         let from_vertex_set = Self::FACES[from.id()]
             .into_iter()
             .collect::<HashSet<usize>>();
@@ -43,9 +43,15 @@ pub trait ShapeLoader<
     }
 
     fn generate_nodes(&self) -> Vec<SolidRoom> {
-        Self::get_all_faces()
-            .iter()
-            .flat_map(|face| self.make_nodes_from_face(face))
+        Self::FACES
+            .into_iter()
+            .enumerate()
+            .map(|(id, face_indices)| {
+                let normal = Self::face_normal(&face_indices);
+
+                Face { id, normal }
+            })
+            .flat_map(|face| self.make_nodes_from_face(&face))
             .collect()
     }
 
@@ -62,19 +68,6 @@ pub trait ShapeLoader<
         let vec_1 = vertices[1] - vertices[0];
         let vec_2 = vertices[2] - vertices[0];
         vec_1.cross(vec_2).normalize()
-    }
-
-    fn get_all_faces() -> Vec<SolidFace> {
-        Self::FACES
-            .into_iter()
-            .enumerate()
-            .map(|(id, face_indices)| {
-                let normal = Self::face_normal(&face_indices);
-
-                SolidFace { id, normal }
-            })
-            .into_iter()
-            .collect::<Vec<_>>()
     }
 
     fn get_face_mesh(&self, face_vertices: [Vec3; NUM_VERTICES_PER_FACE]) -> Mesh;

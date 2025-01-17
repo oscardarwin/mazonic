@@ -12,8 +12,8 @@ use bevy::{
 use itertools::{iproduct, repeat_n};
 
 use crate::{
-    room::{SolidFace, SolidRoom},
-    shape::shape_loader::ShapeLoader,
+    room::{Face, SolidRoom},
+    shape::shape_loader::ShapeMeshLoader,
 };
 
 const CUBE_VERTICES: [[f32; 3]; 8] = [
@@ -40,16 +40,14 @@ const CUBE_FACES: [[usize; 4]; 6] = [
 pub struct Cube {
     nodes_per_edge: u8,
     pub distance_between_nodes: f32,
-    face_size: f32,
 }
 
 impl Cube {
-    pub fn new(nodes_per_edge: u8, face_size: f32) -> Self {
-        let distance_between_nodes = face_size / (nodes_per_edge as f32);
+    pub fn new(nodes_per_edge: u8) -> Self {
+        let distance_between_nodes = 1.0 / (nodes_per_edge as f32);
         Self {
             nodes_per_edge,
             distance_between_nodes,
-            face_size,
         }
     }
 
@@ -61,11 +59,11 @@ impl Cube {
     }
 }
 
-impl ShapeLoader<8, 6, 4> for Cube {
+impl ShapeMeshLoader<8, 6, 4> for Cube {
     const VERTICES: [[f32; 3]; 8] = CUBE_VERTICES;
     const FACES: [[usize; 4]; 6] = CUBE_FACES;
 
-    fn make_nodes_from_face(&self, face: &SolidFace) -> Vec<SolidRoom> {
+    fn make_nodes_from_face(&self, face: &Face) -> Vec<SolidRoom> {
         let vertex_indices = CUBE_FACES[face.id()];
 
         let (vec_i, vec_j) = Self::defining_vectors(&vertex_indices);
@@ -85,7 +83,7 @@ impl ShapeLoader<8, 6, 4> for Cube {
                 let face_coord_y = (face_y - abs_max_face_coord) * vec_j;
 
                 let face_coord = face_coord_x + face_coord_y + nodes_per_edge_float * normal / 2.0;
-                let position = face_coord * self.face_size / nodes_per_edge_float;
+                let position = face_coord / nodes_per_edge_float;
                 (i, j, face.id).hash(&mut hasher);
 
                 let id = hasher.finish();
@@ -100,7 +98,7 @@ impl ShapeLoader<8, 6, 4> for Cube {
     }
 
     fn get_face_mesh(&self, vertices: [Vec3; 4]) -> Mesh {
-        let scaling_factor = self.face_size / 2.0;
+        let scaling_factor = 0.5;
 
         let uvs = vec![[0.0_f32, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
 

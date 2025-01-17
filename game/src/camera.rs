@@ -136,7 +136,7 @@ pub fn update_camera_on_window_resize(
         Shape::Icosahedron(_) => PHI * (3.0 - PHI).sqrt(),
     };
 
-    let circumradius = level.face_size * circumradius_factor / 2.0;
+    let circumradius = circumradius_factor / 2.0;
     let target_view_radius = circumradius * 1.3;
 
     let target_camera_x_axis_point = camera_transform.right().normalize() * target_view_radius;

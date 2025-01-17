@@ -5,11 +5,11 @@ use bevy::{
 };
 use itertools::{iproduct, repeat_n};
 
-use crate::room::{SolidFace, SolidRoom};
+use crate::room::{Face, SolidRoom};
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 pub fn make_nodes_from_face(
-    face: &SolidFace,
+    face: &Face,
     vertices: [Vec3; 3],
     nodes_per_edge: u8,
     distance_between_nodes: f32,

@@ -26,7 +26,7 @@ use crate::{
     game_state::GameState,
     is_room_junction::is_junction,
     player::{Player, PlayerMazeState},
-    room::{SolidFace, SolidRoom},
+    room::{Face, SolidRoom},
     sound::{Note, NoteMapping},
 };
 
@@ -35,7 +35,7 @@ use super::{
     dodecahedron::Dodecahedron,
     octahedron::Octahedron,
     platonic_mesh_builder::MazeMeshBuilder,
-    shape_loader::{BorderType, Edge, ShapeLoader},
+    shape_loader::{BorderType, Edge, ShapeMeshLoader},
 };
 use super::{icosahedron::Icosahedron, tetrahedron::Tetrahedron};
 use crate::assets::GameAssetHandles;
@@ -68,25 +68,35 @@ pub enum Shape {
     Dodecahedron(Dodecahedron),
 }
 
+impl Shape {
+    pub fn get_face_meshes(&self) -> Vec<Mesh> {
+        match self {
+            Shape::Cube(cube) => cube.get_face_meshes(),
+            Shape::Tetrahedron(tetrahedron) => tetrahedron.get_face_meshes(),
+            Shape::Octahedron(octahedron) => octahedron.get_face_meshes(),
+            Shape::Dodecahedron(dodecahedron) => dodecahedron.get_face_meshes(),
+            Shape::Icosahedron(icosahedron) => icosahedron.get_face_meshes(),
+        }
+    }
+}
+
 #[derive(Component, Clone, Debug)]
 pub struct GameLevel {
     pub seed: u64,
-    pub face_size: f32,
     pub shape: Shape,
     pub nodes_per_edge: u8,
 }
 
 impl GameLevel {
-    fn new(seed: u64, face_size: f32, shape: Shape, nodes_per_edge: u8) -> Self {
+    fn new(seed: u64, shape: Shape, nodes_per_edge: u8) -> Self {
         GameLevel {
             seed,
-            face_size,
             shape,
             nodes_per_edge,
         }
     }
 
-    pub fn border_type(&self, from: &SolidFace, to: &SolidFace) -> Option<BorderType> {
+    pub fn border_type(&self, from: &Face, to: &Face) -> Option<BorderType> {
         match &self.shape {
             Shape::Tetrahedron(_) => Tetrahedron::border_type(&from, &to),
             Shape::Cube(_) => Cube::border_type(&from, &to),
@@ -134,38 +144,32 @@ impl GameLevel {
     }
 
     pub fn get_face_meshes(&self) -> Vec<Mesh> {
-        match &self.shape {
-            Shape::Cube(cube) => cube.get_face_meshes(),
-            Shape::Tetrahedron(tetrahedron) => tetrahedron.get_face_meshes(),
-            Shape::Octahedron(octahedron) => octahedron.get_face_meshes(),
-            Shape::Dodecahedron(dodecahedron) => dodecahedron.get_face_meshes(),
-            Shape::Icosahedron(icosahedron) => icosahedron.get_face_meshes(),
-        }
+        self.shape.get_face_meshes()
     }
 
-    pub fn tetrahedron(nodes_per_edge: u8, face_size: f32, seed: u64) -> GameLevel {
-        let shape = Shape::Tetrahedron(Tetrahedron::new(nodes_per_edge, face_size));
-        GameLevel::new(seed, face_size, shape, nodes_per_edge)
+    pub fn tetrahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
+        let shape = Shape::Tetrahedron(Tetrahedron::new(nodes_per_edge));
+        GameLevel::new(seed, shape, nodes_per_edge)
     }
 
-    pub fn cube(nodes_per_edge: u8, face_size: f32, seed: u64) -> GameLevel {
-        let shape = Shape::Cube(Cube::new(nodes_per_edge, face_size));
-        GameLevel::new(seed, face_size, shape, nodes_per_edge)
+    pub fn cube(nodes_per_edge: u8, seed: u64) -> GameLevel {
+        let shape = Shape::Cube(Cube::new(nodes_per_edge));
+        GameLevel::new(seed, shape, nodes_per_edge)
     }
 
-    pub fn octahedron(nodes_per_edge: u8, face_size: f32, seed: u64) -> GameLevel {
-        let shape = Shape::Octahedron(Octahedron::new(nodes_per_edge, face_size));
-        GameLevel::new(seed, face_size, shape, nodes_per_edge)
+    pub fn octahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
+        let shape = Shape::Octahedron(Octahedron::new(nodes_per_edge));
+        GameLevel::new(seed, shape, nodes_per_edge)
     }
 
-    pub fn dodecahedron(face_size: f32, seed: u64) -> GameLevel {
-        let shape = Shape::Dodecahedron(Dodecahedron::new(face_size));
-        GameLevel::new(seed, face_size, shape, 1)
+    pub fn dodecahedron(seed: u64) -> GameLevel {
+        let shape = Shape::Dodecahedron(Dodecahedron::new());
+        GameLevel::new(seed, shape, 1)
     }
 
-    pub fn icosahedron(nodes_per_edge: u8, face_size: f32, seed: u64) -> GameLevel {
-        let shape = Shape::Icosahedron(Icosahedron::new(nodes_per_edge, face_size));
-        GameLevel::new(seed, face_size, shape, nodes_per_edge)
+    pub fn icosahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
+        let shape = Shape::Icosahedron(Icosahedron::new(nodes_per_edge));
+        GameLevel::new(seed, shape, nodes_per_edge)
     }
 
     pub fn filename(&self) -> String {
@@ -203,16 +207,16 @@ impl Plugin for LoaderPlugin {
 
 pub fn get_levels() -> Vec<GameLevel> {
     vec![
-        GameLevel::tetrahedron(1, 3.0, 1), // 4
-        GameLevel::cube(2, 2.0, 2),        // 24
-        GameLevel::octahedron(3, 2.4, 3),  // 48
-        GameLevel::dodecahedron(1.0, 1),   // 60
-        GameLevel::icosahedron(2, 2.0, 2), // 60
-        GameLevel::tetrahedron(5, 3.0, 2), // 60
-        GameLevel::octahedron(4, 2.0, 4),  // 80
-        GameLevel::cube(4, 2.0, 3),        // 96
-        GameLevel::icosahedron(3, 2.0, 2), // 120
-        GameLevel::cube(6, 2.0, 1),        // 216
+        GameLevel::tetrahedron(1, 1), // 4
+        GameLevel::cube(2, 2),        // 24
+        GameLevel::octahedron(3, 3),  // 48
+        GameLevel::dodecahedron(1),   // 60
+        GameLevel::icosahedron(2, 2), // 60
+        GameLevel::tetrahedron(5, 2), // 60
+        GameLevel::octahedron(4, 4),  // 80
+        GameLevel::cube(4, 3),        // 96
+        GameLevel::icosahedron(3, 2), // 120
+        GameLevel::cube(6, 1),        // 216
     ]
 }
 

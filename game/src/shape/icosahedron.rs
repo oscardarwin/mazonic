@@ -8,8 +8,8 @@ use bevy::{
 
 use crate::{
     constants::PHI,
-    room::{SolidFace, SolidRoom},
-    shape::shape_loader::ShapeLoader,
+    room::{Face, SolidRoom},
+    shape::shape_loader::ShapeMeshLoader,
 };
 
 use super::triangle_face_generator;
@@ -56,31 +56,29 @@ const ICOSAHEDRON_FACES: [[usize; 3]; 20] = [
 pub struct Icosahedron {
     nodes_per_edge: u8,
     pub distance_between_nodes: f32,
-    face_size: f32,
 }
 
 impl Icosahedron {
-    pub fn new(nodes_per_edge: u8, face_size: f32) -> Self {
-        let distance_between_nodes = face_size / (nodes_per_edge as f32 - 1.0 + 3.0_f32.sqrt());
+    pub fn new(nodes_per_edge: u8) -> Self {
+        let distance_between_nodes = 1.0 / (nodes_per_edge as f32 - 1.0 + 3.0_f32.sqrt());
 
         Self {
             nodes_per_edge,
             distance_between_nodes,
-            face_size,
         }
     }
 }
 
-impl ShapeLoader<12, 20, 3> for Icosahedron {
+impl ShapeMeshLoader<12, 20, 3> for Icosahedron {
     const VERTICES: [[f32; 3]; 12] = ICOSAHEDRON_VERTICES;
     const FACES: [[usize; 3]; 20] = ICOSAHEDRON_FACES;
 
-    fn make_nodes_from_face(&self, face: &SolidFace) -> Vec<SolidRoom> {
+    fn make_nodes_from_face(&self, face: &Face) -> Vec<SolidRoom> {
         let vertex_indices = ICOSAHEDRON_FACES[face.id()];
 
         let vertices = Self::vertices(&vertex_indices);
 
-        let face_height_from_origin = self.face_size * PHI.powi(2) / 3.0_f32.sqrt() / 2.0;
+        let face_height_from_origin = 1.0 * PHI.powi(2) / 3.0_f32.sqrt() / 2.0;
 
         triangle_face_generator::make_nodes_from_face(
             face,
@@ -92,7 +90,7 @@ impl ShapeLoader<12, 20, 3> for Icosahedron {
     }
 
     fn get_face_mesh(&self, vertices: [Vec3; 3]) -> Mesh {
-        let scaling_factor = self.face_size / 2.0;
+        let scaling_factor = 0.5;
         triangle_face_generator::get_mesh(vertices, scaling_factor)
     }
 }
