@@ -4,13 +4,22 @@ use bevy::prelude::*;
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
     #[default]
+    Selector,
+    Menu,
+    Playing,
+}
+
+#[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
+#[source(GameState = GameState::Playing)]
+pub enum PlayState {
+    #[default]
     Loading,
     Playing,
     Victory,
 }
 
 pub fn victory_transition(
-    mut next_controller_state: ResMut<NextState<GameState>>,
+    mut next_controller_state: ResMut<NextState<PlayState>>,
     player_state_query: Query<&PlayerMazeState>,
     maze_component: Query<&SolutionComponent>,
 ) {
@@ -25,6 +34,6 @@ pub fn victory_transition(
     let final_room = solution.last().unwrap();
 
     if room == final_room {
-        next_controller_state.set(GameState::Victory)
+        next_controller_state.set(PlayState::Victory)
     }
 }
