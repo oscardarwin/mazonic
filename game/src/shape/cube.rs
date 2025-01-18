@@ -43,7 +43,7 @@ pub struct Cube {
 }
 
 impl Cube {
-    pub fn new(nodes_per_edge: u8) -> Self {
+    pub const fn new(nodes_per_edge: u8) -> Self {
         let distance_between_nodes = 1.0 / (nodes_per_edge as f32);
         Self {
             nodes_per_edge,

@@ -7,6 +7,7 @@ use bevy::{
 };
 
 use crate::{
+    constants::SQRT_3,
     room::{Face, SolidRoom},
     shape::shape_loader::ShapeMeshLoader,
 };
@@ -40,8 +41,8 @@ pub struct Octahedron {
 }
 
 impl Octahedron {
-    pub fn new(nodes_per_edge: u8) -> Self {
-        let distance_between_nodes = 1.0 / (nodes_per_edge as f32 - 1.0 + 3.0_f32.sqrt());
+    pub const fn new(nodes_per_edge: u8) -> Self {
+        let distance_between_nodes = 1.0 / (nodes_per_edge as f32 - 1.0 + SQRT_3);
 
         Self {
             nodes_per_edge,

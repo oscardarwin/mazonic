@@ -15,7 +15,7 @@ use bevy::{
 use itertools::repeat_n;
 
 use crate::{
-    constants::PHI,
+    constants::{PHI, TAN_27},
     room::{Face, SolidRoom},
     shape::shape_loader::ShapeMeshLoader,
 };
@@ -61,19 +61,13 @@ const DODECAHEDRON_FACES: [[usize; 5]; 12] = [
 #[derive(Resource, Component, Clone, Debug)]
 pub struct Dodecahedron {
     pub distance_between_nodes: f32,
-    node_from_edge_lerp_factor: f32,
 }
 
 impl Dodecahedron {
-    pub fn new() -> Self {
-        let tan_27 = (0.15 * PI).tan();
-        let distance_between_nodes = tan_27;
-
-        let tan_54 = (0.3 * PI).tan();
-        let node_from_edge_lerp_factor = tan_27 / tan_54;
+    pub const fn new() -> Self {
+        let distance_between_nodes = TAN_27;
         Self {
             distance_between_nodes,
-            node_from_edge_lerp_factor,
         }
     }
 }
@@ -96,11 +90,14 @@ impl ShapeMeshLoader<20, 12, 5> for Dodecahedron {
             (vertices[4], vertices[0]),
         ];
 
+        let tan_54 = (0.3 * PI).tan();
+        let node_from_edge_lerp_factor = self.distance_between_nodes / tan_54;
+
         let mut hasher = DefaultHasher::new();
         pairs
             .into_iter()
             .map(|(vertex, adjacent)| vertex.lerp(adjacent, 0.5))
-            .map(|edge_midpoint| edge_midpoint.lerp(face_center, self.node_from_edge_lerp_factor))
+            .map(|edge_midpoint| edge_midpoint.lerp(face_center, node_from_edge_lerp_factor))
             .enumerate()
             .map(|(id, position)| {
                 (id, face.id).hash(&mut hasher);

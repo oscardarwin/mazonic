@@ -3,11 +3,12 @@ use std::{fmt::Debug, usize};
 use bevy::{
     ecs::{component::Component, system::Resource},
     math::Vec3,
+    reflect::Array,
     render::mesh::Mesh,
 };
 
 use crate::{
-    constants::PHI,
+    constants::{PHI, SQRT_3},
     room::{Face, SolidRoom},
     shape::shape_loader::ShapeMeshLoader,
 };
@@ -59,13 +60,17 @@ pub struct Icosahedron {
 }
 
 impl Icosahedron {
-    pub fn new(nodes_per_edge: u8) -> Self {
-        let distance_between_nodes = 1.0 / (nodes_per_edge as f32 - 1.0 + 3.0_f32.sqrt());
+    pub const fn new(nodes_per_edge: u8) -> Self {
+        let distance_between_nodes = 1.0 / (nodes_per_edge as f32 - 1.0 + SQRT_3);
 
         Self {
             nodes_per_edge,
             distance_between_nodes,
         }
+    }
+
+    pub fn face_height_from_origin() -> f32 {
+        1.0 * PHI.powi(2) / 3.0_f32.sqrt() / 2.0
     }
 }
 
@@ -78,7 +83,7 @@ impl ShapeMeshLoader<12, 20, 3> for Icosahedron {
 
         let vertices = Self::vertices(&vertex_indices);
 
-        let face_height_from_origin = 1.0 * PHI.powi(2) / 3.0_f32.sqrt() / 2.0;
+        let face_height_from_origin = 1.0 * Self::face_height_from_origin();
 
         triangle_face_generator::make_nodes_from_face(
             face,
