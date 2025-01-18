@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    game_state::GameState,
+    game_state::PlayState,
     shape::loader::{GraphComponent, LevelIndex, Levels, SolutionComponent},
     statistics::PlayerPath,
 };
@@ -233,7 +233,7 @@ pub fn previous_level(
         ),
     >,
     mut level_index: ResMut<LevelIndex>,
-    mut game_state: ResMut<NextState<GameState>>,
+    mut game_state: ResMut<NextState<PlayState>>,
 ) {
     let Ok(interaction) = interaction_query.get_single() else {
         return;
@@ -243,7 +243,7 @@ pub fn previous_level(
         println!("previous level");
 
         level_index.0 -= 1;
-        game_state.set(GameState::Loading);
+        game_state.set(PlayState::Loading);
     }
 }
 
@@ -252,7 +252,7 @@ pub fn replay_level(
         &Interaction,
         (Changed<Interaction>, With<Button>, With<ReplayLevelButton>),
     >,
-    mut game_state: ResMut<NextState<GameState>>,
+    mut game_state: ResMut<NextState<PlayState>>,
 ) {
     let Ok(interaction) = interaction_query.get_single() else {
         return;
@@ -260,7 +260,7 @@ pub fn replay_level(
 
     if *interaction == Interaction::Pressed {
         println!("replay level");
-        game_state.set(GameState::Loading);
+        game_state.set(PlayState::Loading);
     }
 }
 
@@ -270,7 +270,7 @@ pub fn next_level(
         (Changed<Interaction>, With<Button>, With<NextLevelButton>),
     >,
     mut level_index: ResMut<LevelIndex>,
-    mut game_state: ResMut<NextState<GameState>>,
+    mut game_state: ResMut<NextState<PlayState>>,
 ) {
     let Ok(interaction) = interaction_query.get_single() else {
         return;
@@ -280,6 +280,6 @@ pub fn next_level(
         println!("next level");
 
         level_index.0 += 1;
-        game_state.set(GameState::Loading);
+        game_state.set(PlayState::Loading);
     }
 }
