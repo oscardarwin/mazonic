@@ -23,6 +23,8 @@ mod game_settings;
 mod game_state;
 mod game_systems;
 pub mod is_room_junction;
+mod level_selector;
+pub mod levels;
 mod light;
 mod player;
 pub mod room;
