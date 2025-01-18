@@ -23,7 +23,7 @@ use petgraph::{graphmap::GraphMap, Directed};
 use crate::{
     assets::{FaceMaterialHandles, ShapeFaceMaterial},
     game_settings::{FaceColorPalette, GameSettings},
-    game_state::GameState,
+    game_state::PlayState,
     is_room_junction::is_junction,
     player::{Player, PlayerMazeState},
     room::{Face, SolidRoom},
@@ -39,6 +39,8 @@ use super::{
 };
 use super::{icosahedron::Icosahedron, tetrahedron::Tetrahedron};
 use crate::assets::GameAssetHandles;
+use crate::levels::LEVELS;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Component)]
@@ -88,7 +90,7 @@ pub struct GameLevel {
 }
 
 impl GameLevel {
-    fn new(seed: u64, shape: Shape, nodes_per_edge: u8) -> Self {
+    const fn new(seed: u64, shape: Shape, nodes_per_edge: u8) -> Self {
         GameLevel {
             seed,
             shape,
@@ -147,27 +149,27 @@ impl GameLevel {
         self.shape.get_face_meshes()
     }
 
-    pub fn tetrahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
+    pub const fn tetrahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
         let shape = Shape::Tetrahedron(Tetrahedron::new(nodes_per_edge));
         GameLevel::new(seed, shape, nodes_per_edge)
     }
 
-    pub fn cube(nodes_per_edge: u8, seed: u64) -> GameLevel {
+    pub const fn cube(nodes_per_edge: u8, seed: u64) -> GameLevel {
         let shape = Shape::Cube(Cube::new(nodes_per_edge));
         GameLevel::new(seed, shape, nodes_per_edge)
     }
 
-    pub fn octahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
+    pub const fn octahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
         let shape = Shape::Octahedron(Octahedron::new(nodes_per_edge));
         GameLevel::new(seed, shape, nodes_per_edge)
     }
 
-    pub fn dodecahedron(seed: u64) -> GameLevel {
+    pub const fn dodecahedron(seed: u64) -> GameLevel {
         let shape = Shape::Dodecahedron(Dodecahedron::new());
         GameLevel::new(seed, shape, 1)
     }
 
-    pub fn icosahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
+    pub const fn icosahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
         let shape = Shape::Icosahedron(Icosahedron::new(nodes_per_edge));
         GameLevel::new(seed, shape, nodes_per_edge)
     }
@@ -199,25 +201,9 @@ pub struct LoaderPlugin;
 
 impl Plugin for LoaderPlugin {
     fn build(&self, app: &mut App) {
-        let levels = get_levels();
-        app.insert_resource(LevelIndex(0));
-        app.insert_resource(Levels(levels));
+        app.insert_resource(LevelIndex(19));
+        app.insert_resource(Levels(LEVELS.to_vec()));
     }
-}
-
-pub fn get_levels() -> Vec<GameLevel> {
-    vec![
-        GameLevel::tetrahedron(1, 1), // 4
-        GameLevel::cube(2, 2),        // 24
-        GameLevel::octahedron(3, 3),  // 48
-        GameLevel::dodecahedron(1),   // 60
-        GameLevel::icosahedron(2, 2), // 60
-        GameLevel::tetrahedron(5, 2), // 60
-        GameLevel::octahedron(4, 4),  // 80
-        GameLevel::cube(4, 3),        // 96
-        GameLevel::icosahedron(3, 2), // 120
-        GameLevel::cube(6, 1),        // 216
-    ]
 }
 
 #[derive(Component)]
@@ -227,7 +213,7 @@ pub fn load_level_asset(
     mut commands: Commands,
     level_resource: Res<LevelIndex>,
     levels: Res<Levels>,
-    mut game_state: ResMut<NextState<GameState>>,
+    mut game_state: ResMut<NextState<PlayState>>,
     current_level_entities: Query<Entity, With<LevelData>>,
     asset_server: Res<AssetServer>,
 ) {
@@ -256,7 +242,7 @@ pub fn load_level_asset(
 
 pub fn spawn_level_data_components(
     mut commands: Commands,
-    mut game_state: ResMut<NextState<GameState>>,
+    mut game_state: ResMut<NextState<PlayState>>,
     current_level_entities: Query<Entity, With<LevelData>>,
     mut maze_save_data_event: EventReader<AssetEvent<MazeLevelData>>,
     maze_save_data_assets: Res<Assets<MazeLevelData>>,
@@ -293,7 +279,7 @@ pub fn spawn_level_data_components(
             SolutionComponent(solution.clone()),
             NoteMapping(note_midi_handle),
         ));
-        game_state.set(GameState::Playing);
+        game_state.set(PlayState::Playing);
     }
 }
 
