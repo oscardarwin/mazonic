@@ -7,7 +7,8 @@ use crate::{
     effects::{
         setup_node_arrival_particle, spawn_node_arrival_particles, update_node_arrival_particles,
     },
-    game_state::{victory_transition, GameState},
+    game_state::{victory_transition, GameState, PlayState},
+    level_selector::{self, SelectorCameraState},
     light::{light_follow_camera, setup_light},
     player::{
         move_player, spawn_player, spawn_player_halo, turn_off_player_halo, turn_on_player_halo,
@@ -27,79 +28,67 @@ pub struct GameSystemsPlugin;
 
 impl Plugin for GameSystemsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Loading), load_level_asset);
-        let setup_systems = (
+        app.init_state::<GameState>()
+            .add_sub_state::<PlayState>()
+            .add_sub_state::<SelectorCameraState>();
+
+        let enter_play_systems = (
             spawn_level_meshes,
             setup_statistics,
             spawn_player,
             spawn_player_halo.after(spawn_player),
         )
             .into_configs();
-        let controller_solve_system = solve
-            .run_if(in_state(ControllerState::Solving))
-            .run_if(in_state(GameState::Playing));
-        let victory_ui_transition = victory_transition.run_if(in_state(GameState::Playing));
-        let update_statistics = update_player_path;
 
-        let camera_follow_player_system =
-            (camera_follow_player.run_if(in_state(ControllerState::IdlePostSolve)),)
-                .run_if(in_state(GameState::Playing));
-
-        app.add_systems(OnExit(ControllerState::Solving), turn_on_player_halo);
-        app.add_systems(OnEnter(ControllerState::Solving), turn_off_player_halo);
-        app.add_systems(Update, update_halo_follow_player);
+        let startup_systems = (
+            camera_setup,
+            setup_light,
+            setup_node_arrival_particle,
+            setup_game_assets,
+        );
 
         let update_systems = (
             move_player,
-            controller_solve_system,
-            victory_ui_transition,
-            update_statistics.run_if(in_state(GameState::Playing)),
-            play_note.run_if(in_state(GameState::Playing)),
-            camera_follow_player_system,
+            solve.run_if(in_state(ControllerState::Solving)),
+            victory_transition.run_if(in_state(PlayState::Playing)),
+            update_player_path.run_if(in_state(PlayState::Playing)),
+            play_note.run_if(in_state(PlayState::Playing)),
+            camera_follow_player
+                .run_if(in_state(ControllerState::IdlePostSolve))
+                .run_if(in_state(PlayState::Playing)),
             spawn_node_arrival_particles,
+            (
+                update_level_complete_ui,
+                next_level,
+                replay_level,
+                previous_level,
+            )
+                .run_if(in_state(PlayState::Victory)),
+            idle.run_if(
+                in_state(ControllerState::IdlePostSolve)
+                    .or(in_state(ControllerState::IdlePostView)),
+            ),
+            view.run_if(in_state(ControllerState::Viewing)),
+            camera_dolly.run_if(in_state(ControllerState::Viewing)),
+            level_selector::idle.run_if(in_state(SelectorCameraState::Idle)),
+            camera_dolly.run_if(in_state(SelectorCameraState::Dolly)),
+            level_selector::view.run_if(in_state(SelectorCameraState::Dolly)),
+            update_halo_follow_player.run_if(in_state(GameState::Playing)),
+            update_camera_on_window_resize,
+            light_follow_camera,
+            update_node_arrival_particles,
+            spawn_level_data_components,
         )
             .into_configs();
 
-        let on_victory_systems = spawn_level_complete_ui.into_configs();
-        app.add_systems(OnEnter(GameState::Playing), setup_systems);
-        app.add_systems(Update, update_systems);
-        app.add_systems(OnEnter(GameState::Victory), on_victory_systems);
-
-        app.init_state::<GameState>()
-            .add_systems(OnExit(GameState::Victory), despawn_level_complete_ui)
-            .add_systems(
-                Update,
-                (
-                    update_level_complete_ui,
-                    next_level,
-                    replay_level,
-                    previous_level,
-                )
-                    .run_if(in_state(GameState::Victory)),
-            );
-
-        let camera_update_systems = (
-            idle.run_if(in_state(ControllerState::IdlePostSolve)),
-            idle.run_if(in_state(ControllerState::IdlePostView)),
-            view.run_if(in_state(ControllerState::Viewing)),
-            camera_dolly.run_if(in_state(ControllerState::Viewing)),
-        );
-
-        app.add_systems(Update, spawn_level_data_components);
-
-        app.add_systems(
-            Update,
-            camera_update_systems.run_if(in_state(GameState::Playing)),
-        )
-        .add_systems(Startup, camera_setup)
-        .add_systems(Update, update_camera_on_window_resize);
-
-        app.add_systems(Startup, setup_light)
-            .add_systems(Update, light_follow_camera);
-
-        app.add_systems(Startup, setup_node_arrival_particle);
-        app.add_systems(Update, update_node_arrival_particles);
-
-        app.add_systems(Startup, setup_game_assets);
+        app.add_systems(Startup, startup_systems)
+            .add_systems(Update, update_systems)
+            .add_systems(OnEnter(GameState::Selector), level_selector::load)
+            .add_systems(OnEnter(PlayState::Loading), load_level_asset)
+            .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
+            .add_systems(OnEnter(PlayState::Victory), spawn_level_complete_ui)
+            .add_systems(OnExit(PlayState::Victory), despawn_level_complete_ui)
+            .add_systems(OnEnter(ControllerState::Solving), turn_off_player_halo)
+            .add_systems(OnExit(ControllerState::Solving), turn_on_player_halo);
     }
 }
