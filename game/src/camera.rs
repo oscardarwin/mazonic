@@ -1,7 +1,7 @@
 use crate::{
     constants::PHI,
     game_settings::GameSettings,
-    level_selector::Selectable,
+    level_selector::{SelectableLevel, SelectorSaveData},
     player::{Player, PlayerMazeState},
     shape::loader::{GameLevel, Shape},
 };
@@ -72,9 +72,30 @@ pub fn camera_follow_player(
     camera_target.translation = target_unit_translation * game_settings.camera_distance;
 }
 
+pub fn set_initial_closest_selector_face(
+    selectable: Query<(&Transform, &SelectableLevel), Without<MainCamera>>,
+    mut camera_target_query: Query<&mut CameraTarget, With<MainCamera>>,
+    save_data_query: Query<&SelectorSaveData>,
+    game_settings: Res<GameSettings>,
+) {
+    let mut camera_target = camera_target_query.single_mut();
+
+    let save_data = save_data_query.single();
+
+    let face_transform = selectable
+        .iter()
+        .filter(|(_, SelectableLevel(level_index))| *level_index == save_data.completed_index)
+        .map(|(transform, _)| transform)
+        .next()
+        .unwrap();
+
+    camera_target.translation = -face_transform.forward() * game_settings.camera_distance;
+    camera_target.up = *face_transform.right();
+}
+
 pub fn camera_move_to_closest_selector_face(
     mut camera_target_query: Query<(&mut CameraTarget, &Transform), With<MainCamera>>,
-    selectable: Query<&Transform, (With<Selectable>, Without<MainCamera>)>,
+    selectable: Query<&Transform, (With<SelectableLevel>, Without<MainCamera>)>,
     game_settings: Res<GameSettings>,
 ) {
     let (mut camera_target, camera_transform) = camera_target_query.single_mut();

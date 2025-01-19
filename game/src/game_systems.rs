@@ -3,7 +3,8 @@ use bevy::{prelude::*, text::Update2dText};
 use crate::{
     camera::{
         camera_dolly, camera_follow_player, camera_move_to_closest_selector_face,
-        camera_move_to_target, camera_setup, update_camera_on_window_resize,
+        camera_move_to_target, camera_setup, set_initial_closest_selector_face,
+        update_camera_on_window_resize,
     },
     controller::{idle, solve, view, ControllerState},
     effects::{
@@ -41,6 +42,12 @@ impl Plugin for GameSystemsPlugin {
             setup_statistics,
             spawn_player,
             spawn_player_halo.after(spawn_player),
+        )
+            .into_configs();
+
+        let enter_selector_systems = (
+            level_selector::load,
+            set_initial_closest_selector_face.after(level_selector::load),
         )
             .into_configs();
 
@@ -88,7 +95,7 @@ impl Plugin for GameSystemsPlugin {
         app.add_systems(Startup, startup_systems)
             .add_systems(Update, update_systems)
             .add_systems(OnEnter(GameState::Setup), menu::setup)
-            .add_systems(OnEnter(GameState::Selector), level_selector::load)
+            .add_systems(OnEnter(GameState::Selector), enter_selector_systems)
             .add_systems(OnEnter(PlayState::Loading), load_level_asset)
             .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
             .add_systems(OnEnter(PlayState::Victory), spawn_level_complete_ui)
@@ -99,7 +106,7 @@ impl Plugin for GameSystemsPlugin {
                 camera_follow_player,
             )
             .add_systems(
-                OnEnter(SelectorCameraState::Idle),
+                OnExit(SelectorCameraState::Dolly),
                 camera_move_to_closest_selector_face,
             )
             .add_systems(OnExit(ControllerState::Solving), turn_on_player_halo);

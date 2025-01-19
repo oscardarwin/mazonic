@@ -48,6 +48,9 @@ pub fn setup_save_data(mut commands: Commands) {
     commands.spawn(save_data);
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct TargetCameraFace(Transform);
+
 #[derive(SubStates, Hash, Eq, Clone, PartialEq, Debug, Default)]
 #[source(GameState = GameState::Selector)]
 pub enum SelectorCameraState {
@@ -57,7 +60,7 @@ pub enum SelectorCameraState {
 }
 
 #[derive(Component, Clone, Debug)]
-pub struct Selectable;
+pub struct SelectableLevel(pub usize);
 
 pub fn load(
     mut commands: Commands,
@@ -71,6 +74,7 @@ pub fn load(
     println!("loading selector");
 
     let save_data = save_data_query.single();
+
     let material_handles = &game_materials.selector_material_handles;
     let ready_easy_color = &game_settings.palette.face_colors.colors[0];
     let ready_hard_color = &game_settings.palette.face_colors.colors[3];
@@ -135,7 +139,7 @@ pub fn load(
         commands
             .spawn(Mesh3d(symbol_mesh_handle))
             .insert(MeshMaterial3d(sprite_sheet_material_handle.clone()))
-            .insert(Selectable)
+            .insert(SelectableLevel(level_index))
             .insert(transform.clone());
 
         let number_mesh_handle = number_mesh_handles.get(&level.nodes_per_edge).unwrap();
@@ -143,7 +147,7 @@ pub fn load(
         commands
             .spawn(Mesh3d(number_mesh_handle.clone()))
             .insert(MeshMaterial3d(sprite_sheet_material_handle.clone()))
-            .insert(Selectable)
+            .insert(SelectableLevel(level_index))
             .insert(transform.clone());
     }
 
