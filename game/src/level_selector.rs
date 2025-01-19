@@ -156,6 +156,8 @@ pub fn load(
             -*to_transform.forward(),
         );
 
+        // println!("edge translation: {:?}", edge_transform.translation);
+
         commands
             .spawn(Mesh3d(edge_mesh_handle.clone()))
             .insert(MeshMaterial3d(game_materials.line_material.clone()))
@@ -171,7 +173,8 @@ fn compute_face_transform(level_index: usize) -> Transform {
     let face_center = Icosahedron::vertices(&face)
         .iter()
         .fold(Vec3::ZERO, |acc, item| acc + item)
-        / 6.0;
+        / 3.0
+        / 2.0;
 
     let other_level_index = if level_index == 0 { 1 } else { level_index - 1 };
     let other_face_index = FACE_ORDER[other_level_index];
@@ -184,13 +187,25 @@ fn compute_face_transform(level_index: usize) -> Transform {
         .cloned()
         .collect::<Vec<usize>>();
 
+    println!(
+        "edge points: {:?}. from index: {:?}, to index {:?}",
+        edge_points, face_index, other_face_index
+    );
+
     let edge_midpoint = edge_points.iter().fold(Vec3::ZERO, |acc, item| {
-        Vec3::from_array(Icosahedron::VERTICES[*item])
-    }) / 2.0;
+        acc + Vec3::from_array(Icosahedron::VERTICES[*item])
+    }) / 2.0
+        / 2.0;
+
+    let center_to_edge = if level_index == 0 {
+        face_center - edge_midpoint
+    } else {
+        edge_midpoint - face_center
+    };
 
     Transform::IDENTITY
         .with_scale(Vec3::splat(0.4))
-        .looking_at(-face_normal.clone(), edge_midpoint - face_center)
+        .looking_at(-face_normal.clone(), center_to_edge.cross(face_normal))
         .with_translation(face_center + face_normal * 0.003)
 }
 

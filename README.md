@@ -1,6 +1,8 @@
 # TODO:
 
-## Github Pages page
+Make Level Icons clickable
+Make Camera adjust on idle squared on a face and rotated. 
+
 
 ## Graphics
 Animation on level change?
