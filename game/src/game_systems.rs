@@ -1,8 +1,10 @@
 use bevy::{prelude::*, text::Update2dText};
 
 use crate::{
-    materials::setup_materials,
-    camera::{camera_dolly, camera_follow_player, camera_setup, update_camera_on_window_resize},
+    camera::{
+        camera_dolly, camera_follow_player, camera_move_to_closest_selector_face,
+        camera_move_to_target, camera_setup, update_camera_on_window_resize,
+    },
     controller::{idle, solve, view, ControllerState},
     effects::{
         setup_node_arrival_particle, spawn_node_arrival_particles, update_node_arrival_particles,
@@ -10,6 +12,7 @@ use crate::{
     game_state::{victory_transition, GameState, PlayState},
     level_selector::{self, setup_save_data, SelectorCameraState},
     light::{light_follow_camera, setup_light},
+    materials::setup_materials,
     menu,
     player::{
         move_player, spawn_player, spawn_player_halo, turn_off_player_halo, turn_on_player_halo,
@@ -55,9 +58,8 @@ impl Plugin for GameSystemsPlugin {
             victory_transition.run_if(in_state(PlayState::Playing)),
             update_player_path.run_if(in_state(PlayState::Playing)),
             play_note.run_if(in_state(PlayState::Playing)),
-            camera_follow_player
-                .run_if(in_state(ControllerState::IdlePostSolve))
-                .run_if(in_state(PlayState::Playing)),
+            camera_move_to_target.run_if(in_state(ControllerState::IdlePostSolve)),
+            camera_move_to_target.run_if(in_state(SelectorCameraState::Idle)),
             spawn_node_arrival_particles,
             (
                 update_level_complete_ui,
@@ -92,6 +94,14 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(OnEnter(PlayState::Victory), spawn_level_complete_ui)
             .add_systems(OnExit(PlayState::Victory), despawn_level_complete_ui)
             .add_systems(OnEnter(ControllerState::Solving), turn_off_player_halo)
+            .add_systems(
+                OnEnter(ControllerState::IdlePostSolve),
+                camera_follow_player,
+            )
+            .add_systems(
+                OnEnter(SelectorCameraState::Idle),
+                camera_move_to_closest_selector_face,
+            )
             .add_systems(OnExit(ControllerState::Solving), turn_on_player_halo);
     }
 }

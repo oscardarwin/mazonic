@@ -1,32 +1,55 @@
 use crate::{
     constants::PHI,
     game_settings::GameSettings,
+    level_selector::Selectable,
     player::{Player, PlayerMazeState},
     shape::loader::{GameLevel, Shape},
 };
-use bevy::{math::NormedVectorSpace, prelude::*, window::PrimaryWindow};
+use bevy::{
+    math::{NormedVectorSpace, VectorSpace},
+    prelude::*,
+    window::PrimaryWindow,
+};
 use bevy_rapier3d::na::ComplexField;
+
+const CAMERA_MOVE_THRESHOLD: f32 = 0.0005;
 
 #[derive(Component)]
 pub struct MainCamera;
 
+#[derive(Component)]
+pub struct CameraTarget {
+    translation: Vec3,
+    up: Vec3,
+    looking_at: Vec3,
+}
+
 pub fn camera_setup(mut commands: Commands, game_settings: Res<GameSettings>) {
+    let translation = Vec3::new(0., 0., game_settings.camera_distance);
+    let looking_at = Vec3::ZERO;
+    let up = Vec3::Y;
+
+    let transform =
+        Transform::from_translation(translation.clone()).looking_at(looking_at.clone(), up.clone());
+
     commands
-        .spawn(Camera3dBundle {
-            camera: Camera {
-                clear_color: ClearColorConfig::Custom(game_settings.palette.background_color),
-                ..Default::default()
-            },
-            transform: Transform::from_xyz(0.0, 0.0, game_settings.camera_distance)
-                .looking_at(Vec3::new(0., 0., 0.), Vec3::Y),
-            ..default()
+        .spawn(Camera {
+            clear_color: ClearColorConfig::Custom(game_settings.palette.background_color),
+            ..Default::default()
+        })
+        .insert(Camera3d::default())
+        .insert(transform.clone())
+        .insert(CameraTarget {
+            translation,
+            up,
+            looking_at,
         })
         .insert(IsDefaultUiCamera)
         .insert(MainCamera);
 }
 
 pub fn camera_follow_player(
-    mut camera_query: Query<&mut Transform, With<MainCamera>>,
+    mut camera_target_query: Query<&mut CameraTarget, With<MainCamera>>,
     player_query: Query<&PlayerMazeState, (With<Player>, Without<MainCamera>)>,
     game_settings: Res<GameSettings>,
 ) {
@@ -34,29 +57,9 @@ pub fn camera_follow_player(
         return;
     };
 
-    let mut camera_transform = camera_query.single_mut();
+    let mut camera_target = camera_target_query.single_mut();
 
-    let camera_translation = camera_transform.translation;
-
-    let target_camera_vector = get_target_vector(player_maze_state);
-
-    let step_camera_angle = target_camera_vector.angle_between(camera_translation);
-
-    if step_camera_angle < 0.15 {
-        return;
-    }
-
-    let target_angle = game_settings.camera_follow_speed * step_camera_angle;
-
-    let player_camera_axis = camera_translation.cross(target_camera_vector.clone());
-
-    let rotation = Quat::from_axis_angle(player_camera_axis, target_angle);
-
-    rotate_transform(camera_transform, rotation);
-}
-
-fn get_target_vector(player_maze_state: &PlayerMazeState) -> Vec3 {
-    match player_maze_state {
+    let target_unit_translation = match player_maze_state {
         PlayerMazeState::Node(node) => node.face().normal(),
         PlayerMazeState::Edge(from_node, to_node, _) => {
             let from_face_normal = from_node.face().normal();
@@ -64,7 +67,68 @@ fn get_target_vector(player_maze_state: &PlayerMazeState) -> Vec3 {
 
             from_face_normal.lerp(to_face_normal, 0.5)
         }
+    };
+
+    camera_target.translation = target_unit_translation * game_settings.camera_distance;
+}
+
+pub fn camera_move_to_closest_selector_face(
+    mut camera_target_query: Query<(&mut CameraTarget, &Transform), With<MainCamera>>,
+    selectable: Query<&Transform, (With<Selectable>, Without<MainCamera>)>,
+    game_settings: Res<GameSettings>,
+) {
+    let (mut camera_target, camera_transform) = camera_target_query.single_mut();
+
+    let camera_forward = camera_transform.forward();
+
+    let Some(closest_face_transform) = selectable.iter().min_by_key(|selectable_transform| {
+        let face_normal = -Vec3::from(selectable_transform.forward());
+        (camera_forward.dot(face_normal) * 100.0) as i32
+    }) else {
+        return;
+    };
+
+    camera_target.translation = -closest_face_transform.forward() * game_settings.camera_distance;
+    camera_target.up = *closest_face_transform.right();
+}
+
+pub fn camera_move_to_target(
+    target_query: Query<&CameraTarget>,
+    mut camera_query: Query<&mut Transform, With<MainCamera>>,
+    game_settings: Res<GameSettings>,
+) {
+    let Ok(CameraTarget {
+        translation,
+        up,
+        looking_at,
+    }) = target_query.get_single()
+    else {
+        return;
+    };
+
+    let mut camera_transform = camera_query.single_mut();
+
+    let target_transform = Transform::IDENTITY
+        .with_translation(translation.clone())
+        .looking_at(*looking_at, *up);
+
+    let camera_follow_speed = game_settings.camera_follow_speed;
+    let new_rotation = camera_transform
+        .rotation
+        .lerp(target_transform.rotation, camera_follow_speed);
+
+    let new_translation = camera_transform
+        .translation
+        .lerp(*translation, camera_follow_speed);
+
+    if new_translation.distance(camera_transform.translation) < CAMERA_MOVE_THRESHOLD
+        && new_rotation.abs_diff_eq(camera_transform.rotation, CAMERA_MOVE_THRESHOLD)
+    {
+        return;
     }
+
+    camera_transform.translation = new_translation;
+    camera_transform.rotation = new_rotation;
 }
 
 pub fn camera_dolly(

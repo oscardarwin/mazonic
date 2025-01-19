@@ -56,6 +56,9 @@ pub enum SelectorCameraState {
     Idle,
 }
 
+#[derive(Component, Clone, Debug)]
+pub struct Selectable;
+
 pub fn load(
     mut commands: Commands,
     mut asset_server: ResMut<AssetServer>,
@@ -132,6 +135,7 @@ pub fn load(
         commands
             .spawn(Mesh3d(symbol_mesh_handle))
             .insert(MeshMaterial3d(sprite_sheet_material_handle.clone()))
+            .insert(Selectable)
             .insert(transform.clone());
 
         let number_mesh_handle = number_mesh_handles.get(&level.nodes_per_edge).unwrap();
@@ -139,6 +143,7 @@ pub fn load(
         commands
             .spawn(Mesh3d(number_mesh_handle.clone()))
             .insert(MeshMaterial3d(sprite_sheet_material_handle.clone()))
+            .insert(Selectable)
             .insert(transform.clone());
     }
 
@@ -155,8 +160,6 @@ pub fn load(
             to_transform.translation,
             -*to_transform.forward(),
         );
-
-        // println!("edge translation: {:?}", edge_transform.translation);
 
         commands
             .spawn(Mesh3d(edge_mesh_handle.clone()))
@@ -186,11 +189,6 @@ fn compute_face_transform(level_index: usize) -> Transform {
         .intersection(&other_face.into_iter().collect::<HashSet<usize>>())
         .cloned()
         .collect::<Vec<usize>>();
-
-    println!(
-        "edge points: {:?}. from index: {:?}, to index {:?}",
-        edge_points, face_index, other_face_index
-    );
 
     let edge_midpoint = edge_points.iter().fold(Vec3::ZERO, |acc, item| {
         acc + Vec3::from_array(Icosahedron::VERTICES[*item])
@@ -274,7 +272,6 @@ pub fn idle(
     };
 
     let Some(cursor_position) = window.cursor_position() else {
-        // if the cursor is not inside the window, we can't do anything
         return;
     };
 
@@ -284,7 +281,6 @@ pub fn idle(
         .viewport_to_world(camera_global_transform, cursor_position)
         .ok()
     else {
-        // if it was impossible to compute for whatever reason; we can't do anything
         return;
     };
 
