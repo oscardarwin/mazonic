@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use crate::{
-    assets::{GameAssetHandles, PlayerHaloMaterial},
+    materials::{GameMaterialHandles, PlayerHaloMaterial},
     game_settings::GameSettings,
     room::SolidRoom,
     shape::{
@@ -56,7 +56,7 @@ pub fn spawn_player_halo(
     settings: Res<GameSettings>,
     player_query: Query<&Transform, With<Player>>,
     mesh_builder_query: Query<&MazeMeshBuilder>,
-    asset_handles: Res<GameAssetHandles>,
+    asset_handles: Res<GameMaterialHandles>,
 ) {
     let Ok(mesh_builder) = mesh_builder_query.get_single() else {
         return;
@@ -96,7 +96,7 @@ pub fn update_halo_follow_player(
         Assets<ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>>,
     >,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_handles: Res<GameAssetHandles>,
+    asset_handles: Res<GameMaterialHandles>,
 ) {
     let Ok((mut player_halo_transform, halo)) = player_halo_query.get_single_mut() else {
         return;
@@ -152,7 +152,7 @@ pub fn spawn_player(
     mesh_builder_query: Query<&MazeMeshBuilder>,
     solution_query: Query<&SolutionComponent>,
     settings: Res<GameSettings>,
-    asset_handles: Res<GameAssetHandles>,
+    asset_handles: Res<GameMaterialHandles>,
 ) {
     let Ok(mesh_builder) = mesh_builder_query.get_single() else {
         return;

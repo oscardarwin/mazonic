@@ -48,6 +48,26 @@ impl MazeMeshBuilder {
         }
     }
 
+    pub fn tetrahedron(distance_between_nodes: f32) -> Self {
+        Self::new(distance_between_nodes, (1.0_f32 / 3.0).acos())
+    }
+
+    pub fn cube(distance_between_nodes: f32) -> Self {
+        Self::new(distance_between_nodes, FRAC_PI_2)
+    }
+
+    pub fn octahedron(distance_between_nodes: f32) -> Self {
+        Self::new(distance_between_nodes, (-1.0_f32 / 3.0).acos())
+    }
+
+    pub fn dodecahedron(distance_between_nodes: f32) -> Self {
+        Self::new(distance_between_nodes, (-5.0_f32.sqrt() / 5.0).acos())
+    }
+
+    pub fn icosahedron(distance_between_nodes: f32) -> Self {
+        Self::new(distance_between_nodes, (-5.0_f32.sqrt() / 3.0).acos())
+    }
+
     pub fn player_mesh(&self) -> Sphere {
         Sphere::new(self.distance_between_nodes / 6.0)
     }

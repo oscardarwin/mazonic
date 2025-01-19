@@ -99,16 +99,24 @@ impl FaceMaterialHandles {
     }
 }
 
+pub struct SelectorMaterialHandles {
+    pub unavailable: Handle<StandardMaterial>,
+    pub completed: Handle<StandardMaterial>,
+    pub perfect_score: Handle<StandardMaterial>,
+    pub melody_found: Handle<StandardMaterial>,
+}
+
 #[derive(Resource)]
-pub struct GameAssetHandles {
+pub struct GameMaterialHandles {
     pub player_halo_material: Handle<ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>>,
     pub player_material: Handle<StandardMaterial>,
     pub line_material: Handle<StandardMaterial>,
     pub dashed_arrow_material: Handle<ExtendedMaterial<StandardMaterial, DashedArrowMaterial>>,
     pub face_materials: FaceMaterialHandles,
+    pub selector_material_handles: SelectorMaterialHandles,
 }
 
-pub fn setup_game_assets(
+pub fn setup_materials(
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut dashed_arrow_materials: ResMut<
@@ -169,7 +177,14 @@ pub fn setup_game_assets(
         extension: PlayerHaloMaterial {},
     });
 
-    commands.insert_resource(GameAssetHandles {
+    let selector_material_handles = SelectorMaterialHandles {
+        unavailable: materials.add(game_settings.palette.face_colors.colors[4]),
+        completed: materials.add(game_settings.palette.face_colors.colors[2]),
+        perfect_score: materials.add(game_settings.palette.face_colors.colors[1]),
+        melody_found: materials.add(game_settings.palette.player_color),
+    };
+
+    commands.insert_resource(GameMaterialHandles {
         player_halo_material,
         player_material,
         line_material,
@@ -177,6 +192,7 @@ pub fn setup_game_assets(
         face_materials: FaceMaterialHandles {
             materials: face_materials,
         },
+        selector_material_handles,
     })
 }
 

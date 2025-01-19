@@ -21,10 +21,10 @@ use std::{
 use petgraph::{graphmap::GraphMap, Directed};
 
 use crate::{
-    assets::{FaceMaterialHandles, ShapeFaceMaterial},
     game_settings::{FaceColorPalette, GameSettings},
     game_state::PlayState,
     is_room_junction::is_junction,
+    materials::{FaceMaterialHandles, ShapeFaceMaterial},
     player::{Player, PlayerMazeState},
     room::{Face, SolidRoom},
     sound::{Note, NoteMapping},
@@ -38,8 +38,8 @@ use super::{
     shape_loader::{BorderType, Edge, ShapeMeshLoader},
 };
 use super::{icosahedron::Icosahedron, tetrahedron::Tetrahedron};
-use crate::assets::GameAssetHandles;
 use crate::levels::LEVELS;
+use crate::materials::GameMaterialHandles;
 
 use serde::{Deserialize, Serialize};
 
@@ -119,17 +119,15 @@ impl GameLevel {
     }
 
     pub fn get_maze_mesh_builder(&self) -> MazeMeshBuilder {
-        let node_distance = self.node_distance();
+        let distance_between_nodes = self.node_distance();
 
-        let face_angle = match self.shape {
-            Shape::Cube(_) => FRAC_PI_2,
-            Shape::Tetrahedron(_) => (1.0_f32 / 3.0).acos(),
-            Shape::Octahedron(_) => (-1.0_f32 / 3.0).acos(),
-            Shape::Dodecahedron(_) => (-5.0_f32.sqrt() / 5.0).acos(),
-            Shape::Icosahedron(_) => (-5.0_f32.sqrt() / 3.0).acos(),
-        };
-
-        MazeMeshBuilder::new(node_distance, face_angle)
+        match self.shape {
+            Shape::Cube(_) => MazeMeshBuilder::cube(distance_between_nodes),
+            Shape::Tetrahedron(_) => MazeMeshBuilder::tetrahedron(distance_between_nodes),
+            Shape::Octahedron(_) => MazeMeshBuilder::octahedron(distance_between_nodes),
+            Shape::Dodecahedron(_) => MazeMeshBuilder::dodecahedron(distance_between_nodes),
+            Shape::Icosahedron(_) => MazeMeshBuilder::icosahedron(distance_between_nodes),
+        }
     }
 
     pub fn get_face_materials(
@@ -290,7 +288,7 @@ pub fn spawn_level_meshes(
     level_query: Query<(&MazeMeshBuilder, &GameLevel)>,
     maze_query: Query<(&GraphComponent, &SolutionComponent)>,
     settings: Res<GameSettings>,
-    asset_handles: Res<GameAssetHandles>,
+    asset_handles: Res<GameMaterialHandles>,
 ) {
     let Ok((mesh_builder, level)) = level_query.get_single() else {
         return;
@@ -392,22 +390,31 @@ fn get_connection_transform(from: SolidRoom, to: SolidRoom, border_type: &Border
                 .looking_to(forward, from.face().normal())
                 .with_translation(from.position() + from.face().normal() * 0.001)
         }
-        BorderType::Connected => {
-            let from_normal = from.face().normal();
-            let to_normal = to.face().normal();
-
-            let half_angle = from_normal.angle_between(to_normal) / 2.0;
-
-            let average_normal = from_normal.lerp(to_normal, 0.5).normalize();
-
-            let edge_vec = to.position() - from.position();
-
-            let intersection_point = from.position()
-                + (edge_vec + edge_vec.norm() * half_angle.tan() * average_normal) / 2.0;
-
-            Transform::IDENTITY
-                .looking_to(intersection_point - to.position(), to.face().normal())
-                .with_translation(intersection_point + average_normal * 0.001)
-        }
+        BorderType::Connected => get_cross_face_edge_transform(
+            from.position(),
+            from.face().normal(),
+            to.position(),
+            to.face().normal(),
+        ),
     }
+}
+
+pub fn get_cross_face_edge_transform(
+    from_position: Vec3,
+    from_normal: Vec3,
+    to_position: Vec3,
+    to_normal: Vec3,
+) -> Transform {
+    let half_angle = from_normal.angle_between(to_normal) / 2.0;
+
+    let average_normal = from_normal.lerp(to_normal, 0.5).normalize();
+
+    let edge_vec = to_position - from_position;
+
+    let intersection_point =
+        from_position + (edge_vec + edge_vec.norm() * half_angle.tan() * average_normal) / 2.0;
+
+    Transform::IDENTITY
+        .looking_to(intersection_point - to_position, to_normal)
+        .with_translation(intersection_point + average_normal * 0.001)
 }

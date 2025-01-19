@@ -21,10 +21,16 @@ Menu
 Play 
 - 20 levels
 
+## Selector
+Not available - Dark Blue
+Available To Play - Orange
+Completed - Green
+Perfect Score - Blue - Particles
+Hidden Melody - Gold Symbol - Particles (with quaver symbols)
+
 ## Possible Polyhedra vertex numbers:
 
 formula:
-
 N * (N + 1) = 2, 6, 12, 20, 30, 42, 56, 72, 90, 110, 132
 
 2 * N * (N + 1) = 4, 12, 24, 40, 60, 84, 112, 144, 180, 220, 264

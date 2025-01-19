@@ -1,13 +1,23 @@
-use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
+use bevy::{
+    prelude::*,
+    utils::{hashbrown::HashSet, HashMap},
+    window::PrimaryWindow,
+};
 use bevy_rapier3d::prelude::*;
 
 use crate::{
-    assets::GameAssetHandles,
     camera::MainCamera,
+    constants::SQRT_3,
     game_settings::GameSettings,
     game_state::GameState,
     levels::LEVELS,
-    shape::{icosahedron::Icosahedron, loader::Shape, shape_loader::ShapeMeshLoader},
+    materials::GameMaterialHandles,
+    shape::{
+        icosahedron::Icosahedron,
+        loader::{get_cross_face_edge_transform, Shape},
+        platonic_mesh_builder::MazeMeshBuilder,
+        shape_loader::ShapeMeshLoader,
+    },
 };
 
 const SYMBOL_TEXTURE_DIMENSIONS: Vec2 = Vec2::new(5.0, 3.0);
@@ -15,6 +25,28 @@ const SYMBOL_TEXTURE_DIMENSIONS: Vec2 = Vec2::new(5.0, 3.0);
 const FACE_ORDER: [usize; 20] = [
     0, 2, 1, 4, 3, 11, 12, 5, 6, 7, 8, 19, 17, 16, 15, 14, 13, 10, 9, 18,
 ];
+
+#[derive(Reflect, Component, Debug, Clone)]
+pub struct SelectorSaveData {
+    pub completed_index: usize,
+    pub melody_found_indices: HashSet<usize>,
+    pub perfect_score_indices: HashSet<usize>,
+}
+
+impl Default for SelectorSaveData {
+    fn default() -> Self {
+        SelectorSaveData {
+            completed_index: 18,
+            melody_found_indices: HashSet::new(),
+            perfect_score_indices: HashSet::new(),
+        }
+    }
+}
+
+pub fn setup_save_data(mut commands: Commands) {
+    let save_data = SelectorSaveData::default();
+    commands.spawn(save_data);
+}
 
 #[derive(SubStates, Hash, Eq, Clone, PartialEq, Debug, Default)]
 #[source(GameState = GameState::Selector)]
@@ -29,8 +61,16 @@ pub fn load(
     mut asset_server: ResMut<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    save_data_query: Query<&SelectorSaveData>,
     game_settings: Res<GameSettings>,
+    game_materials: Res<GameMaterialHandles>,
 ) {
+    println!("loading selector");
+
+    let save_data = save_data_query.single();
+    let material_handles = &game_materials.selector_material_handles;
+    let ready_easy_color = &game_settings.palette.face_colors.colors[0];
+    let ready_hard_color = &game_settings.palette.face_colors.colors[3];
     let icosahedron_shape = Icosahedron::new(1);
     let face_meshes = icosahedron_shape.get_face_meshes();
 
@@ -56,34 +96,31 @@ pub fn load(
         })
         .collect::<HashMap<u8, Handle<Mesh>>>();
 
-    let color_palette = color_palette(game_settings.into_inner());
+    let face_local_transforms = (0..LEVELS.len())
+        .map(|level_index| compute_face_transform(level_index))
+        .collect::<Vec<Transform>>();
 
-    let face_material_handles = color_palette
-        .into_iter()
-        .map(|material| materials.add(material))
-        .collect::<Vec<Handle<StandardMaterial>>>();
+    for (level_index, level) in LEVELS.iter().enumerate() {
+        let face_material_handle = if level_index > save_data.completed_index {
+            material_handles.unavailable.clone()
+        } else if level_index == save_data.completed_index {
+            let mix_factor = (level_index as f32) / (LEVELS.len() as f32);
+            let color = ready_easy_color.mix(ready_hard_color, mix_factor);
+            materials.add(StandardMaterial::from_color(color))
+        } else if save_data.perfect_score_indices.contains(&level_index) {
+            material_handles.perfect_score.clone()
+        } else {
+            material_handles.completed.clone()
+        };
 
-    for ((level, face_material_handle), face_index) in
-        LEVELS.iter().zip(face_material_handles).zip(FACE_ORDER)
-    {
+        let face_index = FACE_ORDER[level_index];
         let face_mesh = face_meshes[face_index].clone();
         let face_mesh_handle = meshes.add(face_mesh);
         commands
             .spawn(Mesh3d(face_mesh_handle))
             .insert(MeshMaterial3d(face_material_handle.clone()));
 
-        let face = Icosahedron::FACES[face_index];
-        let face_normal = Icosahedron::face_normal(&face);
-        let face_center = Icosahedron::vertices(&face)
-            .iter()
-            .fold(Vec3::ZERO, |acc, item| acc + item)
-            / 6.0;
-
-        let transform = Transform::IDENTITY
-            .with_scale(Vec3::splat(0.5))
-            .looking_at(-face_normal.clone(), face_normal.any_orthogonal_vector())
-            .with_translation(face_center + face_normal * 0.003);
-
+        let transform = face_local_transforms[level_index];
         let symbol_mesh_handle = match level.shape {
             Shape::Tetrahedron(_) => tetrahedron_symbol_mesh_handle.clone(),
             Shape::Cube(_) => cube_symbol_mesh_handle.clone(),
@@ -104,6 +141,57 @@ pub fn load(
             .insert(MeshMaterial3d(sprite_sheet_material_handle.clone()))
             .insert(transform.clone());
     }
+
+    let mesh_builder = MazeMeshBuilder::icosahedron(1.0 / SQRT_3 / 3.0);
+    let edge_mesh_handle = meshes.add(mesh_builder.cross_face_edge());
+
+    for (from_level_index, to_level_index) in (0..).zip(1..LEVELS.len()) {
+        let from_transform = face_local_transforms[from_level_index];
+        let to_transform = face_local_transforms[to_level_index];
+
+        let edge_transform = get_cross_face_edge_transform(
+            from_transform.translation,
+            -*from_transform.forward(),
+            to_transform.translation,
+            -*to_transform.forward(),
+        );
+
+        commands
+            .spawn(Mesh3d(edge_mesh_handle.clone()))
+            .insert(MeshMaterial3d(game_materials.line_material.clone()))
+            .insert(edge_transform);
+    }
+}
+
+fn compute_face_transform(level_index: usize) -> Transform {
+    let face_index = FACE_ORDER[level_index];
+
+    let face = Icosahedron::FACES[face_index];
+    let face_normal = Icosahedron::face_normal(&face);
+    let face_center = Icosahedron::vertices(&face)
+        .iter()
+        .fold(Vec3::ZERO, |acc, item| acc + item)
+        / 6.0;
+
+    let other_level_index = if level_index == 0 { 1 } else { level_index - 1 };
+    let other_face_index = FACE_ORDER[other_level_index];
+    let other_face = Icosahedron::FACES[other_face_index];
+
+    let edge_points = face
+        .into_iter()
+        .collect::<HashSet<usize>>()
+        .intersection(&other_face.into_iter().collect::<HashSet<usize>>())
+        .cloned()
+        .collect::<Vec<usize>>();
+
+    let edge_midpoint = edge_points.iter().fold(Vec3::ZERO, |acc, item| {
+        Vec3::from_array(Icosahedron::VERTICES[*item])
+    }) / 2.0;
+
+    Transform::IDENTITY
+        .with_scale(Vec3::splat(0.4))
+        .looking_at(-face_normal.clone(), edge_midpoint - face_center)
+        .with_translation(face_center + face_normal * 0.003)
 }
 
 fn number_symbol_mesh(number: u8) -> Mesh {

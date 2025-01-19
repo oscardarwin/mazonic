@@ -1,7 +1,7 @@
 #![allow(warnings)]
 use std::io::Cursor;
 
-use assets::{DashedArrowMaterial, PlayerHaloMaterial, ShapeFaceMaterial};
+use materials::{DashedArrowMaterial, PlayerHaloMaterial, ShapeFaceMaterial};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::pbr::wireframe::WireframePlugin;
 use bevy::{pbr::ExtendedMaterial, prelude::*};
@@ -14,7 +14,7 @@ use game_systems::GameSystemsPlugin;
 use noisy_bevy::NoisyShaderPlugin;
 use shape::loader::{GameLevel, LoaderPlugin, MazeLevelData};
 
-mod assets;
+mod materials;
 mod camera;
 mod constants;
 mod controller;
@@ -26,6 +26,7 @@ pub mod is_room_junction;
 mod level_selector;
 pub mod levels;
 mod light;
+mod menu;
 mod player;
 pub mod room;
 pub mod shape;

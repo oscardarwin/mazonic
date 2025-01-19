@@ -1,15 +1,16 @@
 use bevy::{prelude::*, text::Update2dText};
 
 use crate::{
-    assets::setup_game_assets,
+    materials::setup_materials,
     camera::{camera_dolly, camera_follow_player, camera_setup, update_camera_on_window_resize},
     controller::{idle, solve, view, ControllerState},
     effects::{
         setup_node_arrival_particle, spawn_node_arrival_particles, update_node_arrival_particles,
     },
     game_state::{victory_transition, GameState, PlayState},
-    level_selector::{self, SelectorCameraState},
+    level_selector::{self, setup_save_data, SelectorCameraState},
     light::{light_follow_camera, setup_light},
+    menu,
     player::{
         move_player, spawn_player, spawn_player_halo, turn_off_player_halo, turn_on_player_halo,
         update_halo_follow_player,
@@ -44,7 +45,8 @@ impl Plugin for GameSystemsPlugin {
             camera_setup,
             setup_light,
             setup_node_arrival_particle,
-            setup_game_assets,
+            setup_materials,
+            setup_save_data,
         );
 
         let update_systems = (
@@ -83,6 +85,7 @@ impl Plugin for GameSystemsPlugin {
 
         app.add_systems(Startup, startup_systems)
             .add_systems(Update, update_systems)
+            .add_systems(OnEnter(GameState::Setup), menu::setup)
             .add_systems(OnEnter(GameState::Selector), level_selector::load)
             .add_systems(OnEnter(PlayState::Loading), load_level_asset)
             .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
