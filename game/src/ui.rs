@@ -1,8 +1,13 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    ui::widget::{ImageNodeSize, NodeImageMode},
+};
 
 use crate::{
-    game_state::PlayState,
-    shape::loader::{GraphComponent, LevelIndex, Levels, SolutionComponent},
+    game_state::{GameState, PlayState},
+    level_selector::SaveData,
+    levels::LEVELS,
+    shape::loader::{GraphComponent, SolutionComponent},
     statistics::PlayerPath,
 };
 
@@ -15,16 +20,109 @@ pub struct ReplayLevelButton;
 #[derive(Component)]
 pub struct NextLevelButton;
 
+#[derive(Component)]
+pub struct LevelSelectorButton;
+
 const FONT_PATH: &str = "fonts/Slimamifbold.ttf";
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.65, 0.65, 0.65);
 
+pub fn spawn_navigation_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let font = asset_server.load(FONT_PATH);
+    let font_size = 50.0;
+
+    let get_text_node = |text: String| {
+        (
+            Text::new(text),
+            TextFont {
+                font: font.clone(),
+                font_size: font_size.clone(),
+                ..default()
+            },
+            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+        )
+    };
+
+    let level_selector_rect = Rect::new(0., 0., 128., 128.);
+
+    let button = (
+        Button,
+        Node {
+            width: Val::Px(96.),
+            height: Val::Px(96.),
+            border: UiRect::all(Val::Px(5.0)),
+            // horizontally center child text
+            justify_content: JustifyContent::Center,
+            // vertically center child text
+            align_items: AlignItems::Center,
+            padding: UiRect::all(Val::Px(5.)),
+            ..default()
+        },
+        BorderColor(Color::BLACK),
+        BorderRadius::MAX,
+        BackgroundColor(NORMAL_BUTTON),
+    );
+
+    let side_bar_node = Node {
+        width: Val::Px(96.),
+        height: Val::Percent(100.),
+        flex_direction: FlexDirection::Column,
+        justify_content: JustifyContent::SpaceBetween,
+        ..default()
+    };
+
+    let level_selector_node = (ImageNode::new(
+        asset_server.load("sprites/symbols_sprite_sheet.png"),
+    )
+    .with_rect(level_selector_rect),);
+
+    commands
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            justify_content: JustifyContent::SpaceBetween,
+            ..default()
+        })
+        .insert(PickingBehavior::IGNORE)
+        .with_children(|parent| {
+            parent.spawn(side_bar_node.clone()).with_children(|parent| {
+                parent
+                    .spawn(button.clone())
+                    .insert(ReplayLevelButton)
+                    .with_child(get_text_node("↻".to_string()));
+
+                parent
+                    .spawn(button.clone())
+                    .insert(PreviousLevelButton)
+                    .with_child(get_text_node("←".to_string()));
+            });
+
+            parent.spawn(side_bar_node).with_children(|parent| {
+                parent
+                    .spawn(button.clone())
+                    .insert(LevelSelectorButton)
+                    .with_child((
+                        Node {
+                            width: Val::Percent(85.),
+                            height: Val::Percent(85.),
+                            ..default()
+                        },
+                        level_selector_node,
+                    ));
+
+                parent
+                    .spawn(button)
+                    .insert(NextLevelButton)
+                    .with_child(get_text_node("→".to_string()));
+            });
+        });
+}
+
 pub fn spawn_level_complete_ui(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    level_index: Res<LevelIndex>,
-    levels: Res<Levels>,
+    save_data_query: Query<&SaveData>,
     player_path_resource: Res<PlayerPath>,
     solution_component: Query<&SolutionComponent>,
 ) {
@@ -32,15 +130,15 @@ pub fn spawn_level_complete_ui(
         return;
     };
 
-    let max_level = levels.into_inner().0.len();
-    let LevelIndex(current_level) = level_index.into_inner();
+    let max_level = LEVELS.len();
+    let save_data = save_data_query.single();
     let PlayerPath(path) = player_path_resource.into_inner();
     let path_length = path.len();
 
     let solution_length = solution.len();
     let solution_text = format!(
         "Level {}\nScore {}\nSolution {}",
-        current_level + 1,
+        save_data.current_index + 1,
         path_length,
         solution_length
     );
@@ -78,35 +176,6 @@ pub fn spawn_level_complete_ui(
                             BackgroundColor(Color::srgb(0.95, 0.85, 0.85)),
                         ))
                         .with_children(|parent| {
-                            if *current_level > 0 {
-                                parent
-                                    .spawn((
-                                        Button,
-                                        Node {
-                                            width: Val::Percent(25.),
-                                            height: Val::Percent(100.),
-                                            border: UiRect::all(Val::Px(5.0)),
-                                            // horizontally center child text
-                                            justify_content: JustifyContent::Center,
-                                            // vertically center child text
-                                            align_items: AlignItems::Center,
-                                            ..default()
-                                        },
-                                        BorderColor(Color::BLACK),
-                                        BorderRadius::MAX,
-                                        BackgroundColor(NORMAL_BUTTON),
-                                    ))
-                                    .insert(PreviousLevelButton)
-                                    .with_child((
-                                        Text::new("←"),
-                                        TextFont {
-                                            font: asset_server.load(FONT_PATH),
-                                            font_size: 33.0,
-                                            ..default()
-                                        },
-                                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                                    ));
-                            }
                             parent
                                 .spawn((
                                     Node {
@@ -158,35 +227,6 @@ pub fn spawn_level_complete_ui(
                                     },
                                     TextColor(Color::srgb(0.9, 0.9, 0.9)),
                                 ));
-                            if current_level + 1 < max_level {
-                                parent
-                                    .spawn((
-                                        Button,
-                                        Node {
-                                            width: Val::Percent(25.),
-                                            height: Val::Percent(100.),
-                                            border: UiRect::all(Val::Px(5.0)),
-                                            // horizontally center child text
-                                            justify_content: JustifyContent::Center,
-                                            // vertically center child text
-                                            align_items: AlignItems::Center,
-                                            ..default()
-                                        },
-                                        BorderColor(Color::BLACK),
-                                        BorderRadius::MAX,
-                                        BackgroundColor(NORMAL_BUTTON),
-                                    ))
-                                    .insert(NextLevelButton)
-                                    .with_child((
-                                        Text::new("→"),
-                                        TextFont {
-                                            font: asset_server.load(FONT_PATH),
-                                            font_size: 33.0,
-                                            ..default()
-                                        },
-                                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                                    ));
-                            }
                         });
                 });
         });
@@ -232,18 +272,21 @@ pub fn previous_level(
             With<PreviousLevelButton>,
         ),
     >,
-    mut level_index: ResMut<LevelIndex>,
-    mut game_state: ResMut<NextState<PlayState>>,
+    mut save_data_query: Query<&mut SaveData>,
+    mut play_state: ResMut<NextState<PlayState>>,
 ) {
+    let Ok(mut save_data) = save_data_query.get_single_mut() else {
+        return;
+    };
+
     let Ok(interaction) = interaction_query.get_single() else {
         return;
     };
 
-    if *interaction == Interaction::Pressed && level_index.0 > 0 {
+    if *interaction == Interaction::Pressed && save_data.current_index > 0 {
         println!("previous level");
-
-        level_index.0 -= 1;
-        game_state.set(PlayState::Loading);
+        save_data.current_index -= 1;
+        play_state.set(PlayState::Loading);
     }
 }
 
@@ -252,7 +295,7 @@ pub fn replay_level(
         &Interaction,
         (Changed<Interaction>, With<Button>, With<ReplayLevelButton>),
     >,
-    mut game_state: ResMut<NextState<PlayState>>,
+    mut play_state: ResMut<NextState<PlayState>>,
 ) {
     let Ok(interaction) = interaction_query.get_single() else {
         return;
@@ -260,7 +303,7 @@ pub fn replay_level(
 
     if *interaction == Interaction::Pressed {
         println!("replay level");
-        game_state.set(PlayState::Loading);
+        play_state.set(PlayState::Loading);
     }
 }
 
@@ -269,8 +312,35 @@ pub fn next_level(
         &Interaction,
         (Changed<Interaction>, With<Button>, With<NextLevelButton>),
     >,
-    mut level_index: ResMut<LevelIndex>,
-    mut game_state: ResMut<NextState<PlayState>>,
+    mut save_data_query: Query<&mut SaveData>,
+    mut play_state: ResMut<NextState<PlayState>>,
+) {
+    let Ok(mut save_data) = save_data_query.get_single_mut() else {
+        return;
+    };
+
+    let Ok(interaction) = interaction_query.get_single() else {
+        return;
+    };
+
+    if *interaction == Interaction::Pressed && save_data.current_index < LEVELS.len() - 1 {
+        println!("next level");
+
+        save_data.current_index += 1;
+        play_state.set(PlayState::Loading);
+    }
+}
+
+pub fn level_selector(
+    interaction_query: Query<
+        &Interaction,
+        (
+            Changed<Interaction>,
+            With<Button>,
+            With<LevelSelectorButton>,
+        ),
+    >,
+    mut game_state: ResMut<NextState<GameState>>,
 ) {
     let Ok(interaction) = interaction_query.get_single() else {
         return;
@@ -279,7 +349,6 @@ pub fn next_level(
     if *interaction == Interaction::Pressed {
         println!("next level");
 
-        level_index.0 += 1;
-        game_state.set(PlayState::Loading);
+        game_state.set(GameState::Selector);
     }
 }

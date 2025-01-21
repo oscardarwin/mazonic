@@ -1,8 +1,10 @@
 # TODO:
 
 Make Level Icons clickable
-Make Camera adjust on idle squared on a face and rotated. 
+Particles move towards face for current level.
+Particles emit quavers for completed music.
 
+update level ui
 
 ## Graphics
 Animation on level change?

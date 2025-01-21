@@ -11,7 +11,10 @@ use crate::{
 };
 use bevy::{
     ecs::system::{Query, ResMut},
-    input::{mouse::MouseButton, ButtonInput},
+    input::{
+        mouse::{MouseButton, MouseButtonInput},
+        ButtonInput, ButtonState,
+    },
     math::{primitives::InfinitePlane3d, NormedVectorSpace, Ray3d, Vec3},
     prelude::*,
     render::camera::Camera,
@@ -25,9 +28,9 @@ use petgraph::{graphmap::GraphMap, Directed};
 #[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
 #[source(PlayState = PlayState::Playing)]
 pub enum ControllerState {
+    #[default]
     IdlePostSolve,
     IdlePostView,
-    #[default]
     Solving,
     Viewing,
 }
@@ -44,11 +47,17 @@ impl Plugin for Controller {
 pub fn idle(
     camera_query: Query<(&GlobalTransform, &Camera), With<MainCamera>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
-    mouse_buttons: Res<ButtonInput<MouseButton>>,
     rapier_context_query: Query<&RapierContext>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
+    mut mouse_button_event_reader: EventReader<MouseButtonInput>,
 ) {
-    if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
+    if mouse_button_event_reader
+        .read()
+        .filter(|input| input.button == MouseButton::Left)
+        .filter(|input| input.state == ButtonState::Pressed)
+        .next()
+        .is_none()
+    {
         return;
     }
 
@@ -89,10 +98,16 @@ pub fn idle(
 }
 
 pub fn view(
-    mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
+    mut mouse_button_event_reader: EventReader<MouseButtonInput>,
 ) {
-    if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
+    if mouse_button_event_reader
+        .read()
+        .filter(|input| input.button == MouseButton::Left)
+        .filter(|input| input.state == ButtonState::Released)
+        .next()
+        .is_some()
+    {
         next_controller_state.set(ControllerState::IdlePostView);
         return;
     }
@@ -102,7 +117,7 @@ pub fn solve(
     camera_query: Query<(&GlobalTransform, &Camera)>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<(&mut PlayerMazeState, &Player)>,
-    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    mut mouse_button_event_reader: EventReader<MouseButtonInput>,
     level: Query<&GameLevel>,
     graph_query: Query<&GraphComponent>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
@@ -117,7 +132,13 @@ pub fn solve(
         return;
     };
 
-    if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
+    if mouse_button_event_reader
+        .read()
+        .filter(|input| input.button == MouseButton::Left)
+        .filter(|input| input.state == ButtonState::Released)
+        .next()
+        .is_some()
+    {
         next_controller_state.set(ControllerState::IdlePostSolve);
         return;
     }
@@ -151,12 +172,20 @@ pub fn solve(
 
     let (mut player_maze_state, Player { size }) = player_query.single_mut();
     let player_elevation = game_settings.player_elevation + size;
+    let node_snap_threshold = shape.node_distance() * 0.2;
 
     if let Some(new_player_maze_state) = match player_maze_state.as_ref() {
-        PlayerMazeState::Node(node) => move_player_on_node(&node, &graph, player_elevation, ray),
-        PlayerMazeState::Edge(from_node, to_node, _) => {
-            move_player_on_edge(&from_node, &to_node, ray, player_elevation, &shape)
+        PlayerMazeState::Node(node) => {
+            move_player_on_node(&node, &graph, player_elevation, node_snap_threshold, ray)
         }
+        PlayerMazeState::Edge(from_node, to_node, _) => move_player_on_edge(
+            &from_node,
+            &to_node,
+            ray,
+            player_elevation,
+            node_snap_threshold,
+            &shape,
+        ),
     } {
         *player_maze_state = new_player_maze_state;
     }
@@ -182,6 +211,7 @@ fn move_player_on_node(
     node: &SolidRoom,
     graph: &GraphMap<SolidRoom, Edge, Directed>,
     player_elevation: f32,
+    node_snap_threshold: f32,
     ray: Ray3d,
 ) -> Option<PlayerMazeState> {
     let face_intersection_point = project_ray_to_controller_face(ray, node, player_elevation)?;
@@ -190,7 +220,7 @@ fn move_player_on_node(
 
     let face_intersection_from_player = face_intersection_point - node_player_position;
 
-    if face_intersection_from_player.norm() <= 0.18 {
+    if face_intersection_from_player.norm() <= node_snap_threshold {
         return None;
     }
 
@@ -218,6 +248,7 @@ fn move_player_on_edge(
     to_node: &SolidRoom,
     ray: Ray3d,
     player_elevation: f32,
+    node_snap_threshold: f32,
     level: &GameLevel,
 ) -> Option<PlayerMazeState> {
     let player_plane_edge_intersection =
@@ -230,9 +261,9 @@ fn move_player_on_edge(
         + from_node.face().normal() * player_elevation
         - player_plane_edge_intersection;
 
-    let new_player_state = if to_node_to_intersection.norm() < 0.18 {
+    let new_player_state = if to_node_to_intersection.norm() < node_snap_threshold {
         PlayerMazeState::Node(to_node.clone())
-    } else if from_node_to_intersection.norm() < 0.18 {
+    } else if from_node_to_intersection.norm() < node_snap_threshold {
         PlayerMazeState::Node(from_node.clone())
     } else {
         PlayerMazeState::Edge(

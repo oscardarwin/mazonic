@@ -1,4 +1,5 @@
 use bevy::{
+    input::{mouse::MouseButtonInput, ButtonState},
     prelude::*,
     utils::{hashbrown::HashSet, HashMap},
     window::PrimaryWindow,
@@ -6,7 +7,7 @@ use bevy::{
 use bevy_rapier3d::prelude::*;
 
 use crate::{
-    camera::MainCamera,
+    camera::{CameraTarget, MainCamera},
     constants::SQRT_3,
     game_settings::GameSettings,
     game_state::GameState,
@@ -26,17 +27,19 @@ const FACE_ORDER: [usize; 20] = [
     0, 2, 1, 4, 3, 11, 12, 5, 6, 7, 8, 19, 17, 16, 15, 14, 13, 10, 9, 18,
 ];
 
-#[derive(Reflect, Component, Debug, Clone)]
-pub struct SelectorSaveData {
+#[derive(Component, Debug, Clone)]
+pub struct SaveData {
+    pub current_index: usize,
     pub completed_index: usize,
     pub melody_found_indices: HashSet<usize>,
     pub perfect_score_indices: HashSet<usize>,
 }
 
-impl Default for SelectorSaveData {
+impl Default for SaveData {
     fn default() -> Self {
-        SelectorSaveData {
-            completed_index: 18,
+        SaveData {
+            current_index: 0,
+            completed_index: 4,
             melody_found_indices: HashSet::new(),
             perfect_score_indices: HashSet::new(),
         }
@@ -44,7 +47,7 @@ impl Default for SelectorSaveData {
 }
 
 pub fn setup_save_data(mut commands: Commands) {
-    let save_data = SelectorSaveData::default();
+    let save_data = SaveData::default();
     commands.spawn(save_data);
 }
 
@@ -53,7 +56,7 @@ pub struct TargetCameraFace(Transform);
 
 #[derive(SubStates, Hash, Eq, Clone, PartialEq, Debug, Default)]
 #[source(GameState = GameState::Selector)]
-pub enum SelectorCameraState {
+pub enum SelectorState {
     Dolly,
     #[default]
     Idle,
@@ -67,11 +70,12 @@ pub fn load(
     mut asset_server: ResMut<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    save_data_query: Query<&SelectorSaveData>,
+    save_data_query: Query<&SaveData>,
     game_settings: Res<GameSettings>,
     game_materials: Res<GameMaterialHandles>,
+    mut mouse_button_event_reader: EventReader<MouseButtonInput>,
 ) {
-    println!("loading selector");
+    mouse_button_event_reader.clear();
 
     let save_data = save_data_query.single();
 
@@ -263,11 +267,17 @@ fn color_palette(game_settings: &GameSettings) -> Vec<StandardMaterial> {
 pub fn idle(
     camera_query: Query<(&GlobalTransform, &Camera), With<MainCamera>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
-    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    mut mouse_button_event_reader: EventReader<MouseButtonInput>,
     rapier_context_query: Query<&RapierContext>,
-    mut next_camera_state: ResMut<NextState<SelectorCameraState>>,
+    mut next_selector_state: ResMut<NextState<SelectorState>>,
 ) {
-    if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
+    if mouse_button_event_reader
+        .read()
+        .filter(|input| input.button == MouseButton::Left)
+        .filter(|input| input.state == ButtonState::Pressed)
+        .next()
+        .is_none()
+    {
         return;
     }
 
@@ -300,16 +310,69 @@ pub fn idle(
         .is_some()
     {
     } else {
-        next_camera_state.set(SelectorCameraState::Dolly);
+        next_selector_state.set(SelectorState::Dolly);
     }
 }
 
 pub fn view(
-    mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut next_controller_state: ResMut<NextState<SelectorCameraState>>,
+    mut mouse_button_event_reader: EventReader<MouseButtonInput>,
+    mut next_controller_state: ResMut<NextState<SelectorState>>,
 ) {
-    if !mouse_buttons.pressed(MouseButton::Left) || mouse_buttons.just_pressed(MouseButton::Left) {
-        next_controller_state.set(SelectorCameraState::Idle);
-        return;
+    if mouse_button_event_reader
+        .read()
+        .filter(|input| input.button == MouseButton::Left)
+        .filter(|input| input.state == ButtonState::Released)
+        .next()
+        .is_some()
+    {
+        next_controller_state.set(SelectorState::Idle);
     }
+}
+
+pub fn set_initial_camera_target(
+    selectable: Query<(&Transform, &SelectableLevel), Without<MainCamera>>,
+    mut camera_target_query: Query<&mut CameraTarget, With<MainCamera>>,
+    save_data_query: Query<&SaveData>,
+    game_settings: Res<GameSettings>,
+) {
+    let mut camera_target = camera_target_query.single_mut();
+
+    let save_data = save_data_query.single();
+
+    println!(
+        "Setting selector look at level index: {:?}",
+        save_data.current_index
+    );
+
+    let face_transform = selectable
+        .iter()
+        .filter(|(_, SelectableLevel(level_index))| *level_index == save_data.current_index)
+        .map(|(transform, _)| transform)
+        .next()
+        .unwrap();
+
+    camera_target.translation = -face_transform.forward() * game_settings.camera_distance;
+    camera_target.up = *face_transform.right();
+}
+
+pub fn set_camera_target_to_closest_face(
+    mut camera_target_query: Query<(&mut CameraTarget, &Transform), With<MainCamera>>,
+    selectable: Query<&Transform, (With<SelectableLevel>, Without<MainCamera>)>,
+    game_settings: Res<GameSettings>,
+) {
+    let (mut camera_target, camera_transform) = camera_target_query.single_mut();
+
+    let camera_forward = camera_transform.forward();
+
+    let Some(closest_face_transform) = selectable.iter().min_by_key(|selectable_transform| {
+        let face_normal = -Vec3::from(selectable_transform.forward());
+        (camera_forward.dot(face_normal) * 100.0) as i32
+    }) else {
+        return;
+    };
+
+    println!("Setting selector camera target: {closest_face_transform:?}");
+
+    camera_target.translation = -closest_face_transform.forward() * game_settings.camera_distance;
+    camera_target.up = *closest_face_transform.right();
 }

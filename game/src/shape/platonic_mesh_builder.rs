@@ -13,8 +13,7 @@ use bevy::render::{
 #[derive(Component)]
 pub struct MazeMeshBuilder {
     dash_width: f32,
-    dash_length: f32,
-    min_spacing: f32,
+    arrow_head_length: f32,
     arrow_head_width: f32,
     face_angle: f32,
     distance_between_nodes: f32,
@@ -32,15 +31,13 @@ impl MazeMeshBuilder {
         .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<Vec3>::new())
         .with_inserted_indices(Indices::U32(vec![]));
 
-        let dash_width = distance_between_nodes / 7.0;
+        let dash_width = distance_between_nodes / 6.0;
         let arrow_head_width = dash_width * 1.7;
-        let dash_length = distance_between_nodes / 5.0;
-        let min_spacing = dash_length / 1.6;
+        let arrow_head_length = distance_between_nodes / 5.0;
 
         MazeMeshBuilder {
             dash_width,
-            dash_length,
-            min_spacing,
+            arrow_head_length,
             arrow_head_width,
             face_angle,
             distance_between_nodes,
@@ -69,19 +66,19 @@ impl MazeMeshBuilder {
     }
 
     pub fn player_mesh(&self) -> Sphere {
-        Sphere::new(self.distance_between_nodes / 6.0)
+        Sphere::new(self.distance_between_nodes / 4.0)
     }
 
     pub fn player_halo_mesh(&self) -> Sphere {
-        Sphere::new(self.distance_between_nodes / 5.4)
+        Sphere::new(self.distance_between_nodes / 3.6)
     }
 
     pub fn intersection_room_mesh(&self) -> Mesh {
-        Circle::new(self.distance_between_nodes / 10.0).into()
+        Circle::new(self.distance_between_nodes / 6.0).into()
     }
 
     pub fn goal_mesh(&self) -> Mesh {
-        Circle::new(self.distance_between_nodes / 8.0).into()
+        Circle::new(self.distance_between_nodes / 4.0).into()
     }
 
     fn line(&self, length: f32, uv_start: f32, uv_end: f32) -> Mesh {
@@ -106,7 +103,7 @@ impl MazeMeshBuilder {
 
     fn arrow_head(&self) -> Mesh {
         let arrow_side_vertex = Vec3::new(self.arrow_head_width / 2.0, 0.0, 0.0);
-        let arrow_tip_vertex = Vec3::new(0.0, 0.0, self.dash_length / 2.0);
+        let arrow_tip_vertex = Vec3::new(0.0, 0.0, self.arrow_head_length / 2.0);
 
         let mut mesh = Triangle3d::new(arrow_tip_vertex, arrow_side_vertex, -arrow_side_vertex)
             .mesh()
@@ -125,7 +122,8 @@ impl MazeMeshBuilder {
     }
 
     pub fn one_way_edge(&self) -> Mesh {
-        let rectangle_section_length = 0.9 * self.distance_between_nodes - self.dash_length * 0.5;
+        let rectangle_section_length =
+            0.9 * self.distance_between_nodes - self.arrow_head_length * 0.5;
         let mut rectangle_mesh = self.line(rectangle_section_length, 0.0, 0.5);
 
         let arrow_head_mesh = self
@@ -138,7 +136,7 @@ impl MazeMeshBuilder {
 
     pub fn cross_face_one_way_edge(&self) -> Mesh {
         let first_length = self.distance_between_nodes / 2.0;
-        let second_length = 0.4 * self.distance_between_nodes - self.dash_length * 0.5;
+        let second_length = 0.4 * self.distance_between_nodes - self.arrow_head_length * 0.5;
         let uv_mid_point = 0.5 * first_length / (first_length + second_length);
 
         let mut second_line = self.line(second_length, uv_mid_point, 0.5);

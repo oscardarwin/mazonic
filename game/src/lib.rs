@@ -1,7 +1,6 @@
 #![allow(warnings)]
 use std::io::Cursor;
 
-use materials::{DashedArrowMaterial, PlayerHaloMaterial, ShapeFaceMaterial};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::pbr::wireframe::WireframePlugin;
 use bevy::{pbr::ExtendedMaterial, prelude::*};
@@ -11,10 +10,10 @@ use bevy_rustysynth::RustySynthPlugin;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use game_systems::GameSystemsPlugin;
+use materials::{DashedArrowMaterial, PlayerHaloMaterial, ShapeFaceMaterial};
 use noisy_bevy::NoisyShaderPlugin;
-use shape::loader::{GameLevel, LoaderPlugin, MazeLevelData};
+use shape::loader::{GameLevel, MazeLevelData};
 
-mod materials;
 mod camera;
 mod constants;
 mod controller;
@@ -26,6 +25,7 @@ pub mod is_room_junction;
 mod level_selector;
 pub mod levels;
 mod light;
+mod materials;
 mod menu;
 mod player;
 pub mod room;
@@ -46,7 +46,6 @@ pub fn run() {
         .add_plugins(JsonAssetPlugin::<MazeLevelData>::new(&[".json"]))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(GameSettingsPlugin::default())
-        .add_plugins(LoaderPlugin::default())
         .add_plugins(Controller::default())
         .add_plugins(GameSystemsPlugin::default())
         .add_plugins(MaterialPlugin::<

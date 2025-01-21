@@ -24,6 +24,7 @@ use crate::{
     game_settings::{FaceColorPalette, GameSettings},
     game_state::PlayState,
     is_room_junction::is_junction,
+    level_selector::SaveData,
     materials::{FaceMaterialHandles, ShapeFaceMaterial},
     player::{Player, PlayerMazeState},
     room::{Face, SolidRoom},
@@ -188,41 +189,24 @@ impl GameLevel {
     }
 }
 
-#[derive(Resource, Clone)]
-pub struct LevelIndex(pub usize);
-
-#[derive(Resource)]
-pub struct Levels(pub Vec<GameLevel>);
-
-#[derive(Default)]
-pub struct LoaderPlugin;
-
-impl Plugin for LoaderPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(LevelIndex(19));
-        app.insert_resource(Levels(LEVELS.to_vec()));
-    }
-}
-
 #[derive(Component)]
 pub struct MazeSaveDataHandle(Handle<MazeLevelData>);
 
-pub fn load_level_asset(
-    mut commands: Commands,
-    level_resource: Res<LevelIndex>,
-    levels: Res<Levels>,
-    mut game_state: ResMut<NextState<PlayState>>,
-    current_level_entities: Query<Entity, With<LevelData>>,
-    asset_server: Res<AssetServer>,
-) {
-    let LevelIndex(index) = level_resource.into_inner();
-    let Levels(levels) = levels.into_inner();
-
-    for entity in current_level_entities.iter() {
+pub fn despawn_level_data(mut commands: Commands, level_entities: Query<Entity, With<LevelData>>) {
+    for entity in level_entities.iter() {
         commands.entity(entity).despawn();
     }
+}
 
-    let level = levels.get(*index).unwrap();
+pub fn load_level_asset(
+    mut commands: Commands,
+    save_data_query: Query<&SaveData>,
+    mut game_state: ResMut<NextState<PlayState>>,
+    asset_server: Res<AssetServer>,
+) {
+    let save_data = save_data_query.single();
+
+    let level = &LEVELS[save_data.current_index];
 
     let file_path = level.filename();
 
@@ -241,44 +225,41 @@ pub fn load_level_asset(
 pub fn spawn_level_data_components(
     mut commands: Commands,
     mut game_state: ResMut<NextState<PlayState>>,
-    current_level_entities: Query<Entity, With<LevelData>>,
-    mut maze_save_data_event: EventReader<AssetEvent<MazeLevelData>>,
     maze_save_data_assets: Res<Assets<MazeLevelData>>,
     asset_server: Res<AssetServer>,
+    maze_save_data_query: Query<&MazeSaveDataHandle>,
 ) {
-    for ev in maze_save_data_event.read() {
-        let AssetEvent::Added { id } = ev else {
-            continue;
-        };
+    let MazeSaveDataHandle(maze_save_data_handle) = maze_save_data_query.single();
 
-        let Some(MazeLevelData {
-            graph,
-            solution,
-            node_id_to_note: node_id_note_mapping,
-        }) = maze_save_data_assets.get(*id)
-        else {
-            continue;
-        };
+    let Some(MazeLevelData {
+        graph,
+        solution,
+        node_id_to_note,
+    }) = maze_save_data_assets.get(maze_save_data_handle)
+    else {
+        return;
+    };
 
-        let note_midi_handle = node_id_note_mapping
-            .into_iter()
-            .map(|(node_id, note)| {
-                let midi_note = note.clone().into();
-                let audio = MidiAudio::Sequence(vec![midi_note]);
-                let audio_handle = asset_server.add::<MidiAudio>(audio);
-                (*node_id, audio_handle)
-            })
-            .collect::<HashMap<u64, Handle<MidiAudio>>>();
+    println!("Loading Maze");
 
-        // TODO: perhaps think about how not to duplicate the data here.
-        commands.spawn((
-            LevelData,
-            GraphComponent(graph.clone()),
-            SolutionComponent(solution.clone()),
-            NoteMapping(note_midi_handle),
-        ));
-        game_state.set(PlayState::Playing);
-    }
+    let note_midi_handle = node_id_to_note
+        .into_iter()
+        .map(|(node_id, note)| {
+            let midi_note = note.clone().into();
+            let audio = MidiAudio::Sequence(vec![midi_note]);
+            let audio_handle = asset_server.add::<MidiAudio>(audio);
+            (*node_id, audio_handle)
+        })
+        .collect::<HashMap<u64, Handle<MidiAudio>>>();
+
+    // TODO: perhaps think about how not to duplicate the data here.
+    commands.spawn((
+        LevelData,
+        GraphComponent(graph.clone()),
+        SolutionComponent(solution.clone()),
+        NoteMapping(note_midi_handle),
+    ));
+    game_state.set(PlayState::Playing);
 }
 
 pub fn spawn_level_meshes(
