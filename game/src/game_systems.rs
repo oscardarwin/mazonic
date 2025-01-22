@@ -84,7 +84,7 @@ impl Plugin for GameSystemsPlugin {
                 camera_follow_player,
             )
             .add_systems(
-                OnExit(SelectorState::Dolly),
+                OnExit(SelectorState::Clicked),
                 level_selector::set_camera_target_to_closest_face,
             )
             .add_systems(OnExit(ControllerState::Solving), turn_on_player_halo);
@@ -93,10 +93,11 @@ impl Plugin for GameSystemsPlugin {
 
 fn get_update_systems() -> SystemConfigs {
     let selector_systems = (
-        level_selector::idle.run_if(in_state(SelectorState::Idle)),
+        level_selector::set_selector_state.run_if(in_state(GameState::Selector)),
+        level_selector::update_interactables.run_if(in_state(GameState::Selector)),
+        level_selector::update_selection_overlay.run_if(in_state(GameState::Selector)),
         camera_move_to_target.run_if(in_state(SelectorState::Idle)),
-        camera_dolly.run_if(in_state(SelectorState::Dolly)),
-        level_selector::view.run_if(in_state(SelectorState::Dolly)),
+        camera_dolly.run_if(in_state(SelectorState::Clicked)),
     )
         .into_configs();
 

@@ -51,19 +51,32 @@ pub fn setup_save_data(mut commands: Commands) {
     commands.spawn(save_data);
 }
 
-#[derive(Component, Debug, Clone)]
-pub struct TargetCameraFace(Transform);
-
 #[derive(SubStates, Hash, Eq, Clone, PartialEq, Debug, Default)]
 #[source(GameState = GameState::Selector)]
 pub enum SelectorState {
-    Dolly,
+    Clicked,
     #[default]
     Idle,
 }
 
 #[derive(Component, Clone, Debug)]
+pub struct SelectorEntity;
+
+#[derive(Component, Clone, Debug)]
 pub struct SelectableLevel(pub usize);
+
+#[derive(Component, Clone, Debug)]
+pub struct SelectedLevel(pub Option<usize>);
+
+#[derive(Component, Clone, Debug, PartialEq)]
+pub enum SelectorOverlayState {
+    Hovered,
+    Pressed,
+    None,
+}
+
+#[derive(Component, Clone, Debug)]
+pub struct SelectionOverlay;
 
 pub fn load(
     mut commands: Commands,
@@ -79,7 +92,7 @@ pub fn load(
 
     let save_data = save_data_query.single();
 
-    let material_handles = &game_materials.selector_material_handles;
+    let material_handles = &game_materials.selector_handles;
     let ready_easy_color = &game_settings.palette.face_colors.colors[0];
     let ready_hard_color = &game_settings.palette.face_colors.colors[3];
     let icosahedron_shape = Icosahedron::new(1);
@@ -127,9 +140,6 @@ pub fn load(
         let face_index = FACE_ORDER[level_index];
         let face_mesh = face_meshes[face_index].clone();
         let face_mesh_handle = meshes.add(face_mesh);
-        commands
-            .spawn(Mesh3d(face_mesh_handle))
-            .insert(MeshMaterial3d(face_material_handle.clone()));
 
         let transform = face_local_transforms[level_index];
         let symbol_mesh_handle = match level.shape {
@@ -140,19 +150,54 @@ pub fn load(
             Shape::Icosahedron(_) => icosahedron_symbol_mesh_handle.clone(),
         };
 
-        commands
-            .spawn(Mesh3d(symbol_mesh_handle))
-            .insert(MeshMaterial3d(sprite_sheet_material_handle.clone()))
-            .insert(SelectableLevel(level_index))
-            .insert(transform.clone());
+        let scaling_factor = 0.5;
+        let face_vertices = Icosahedron::vertices(&Icosahedron::FACES[face_index]);
+        let triangle_collider = Collider::triangle(
+            face_vertices[0] * scaling_factor,
+            face_vertices[1] * scaling_factor,
+            face_vertices[2] * scaling_factor,
+        );
+
+        let face_object = (
+            Mesh3d(face_mesh_handle.clone()),
+            MeshMaterial3d(face_material_handle),
+        );
+
+        let selection_overlay_object = (
+            Mesh3d(face_mesh_handle.clone()),
+            MeshMaterial3d(game_materials.selector_handles.selection_hover.clone()),
+        );
+
+        let symbol_object = (
+            Mesh3d(symbol_mesh_handle),
+            MeshMaterial3d(sprite_sheet_material_handle.clone()),
+        );
 
         let number_mesh_handle = number_mesh_handles.get(&level.nodes_per_edge).unwrap();
+        let number_object = (
+            Mesh3d(number_mesh_handle.clone()),
+            MeshMaterial3d(sprite_sheet_material_handle.clone()),
+        );
 
         commands
-            .spawn(Mesh3d(number_mesh_handle.clone()))
-            .insert(MeshMaterial3d(sprite_sheet_material_handle.clone()))
-            .insert(SelectableLevel(level_index))
-            .insert(transform.clone());
+            .spawn(face_object)
+            .insert(triangle_collider)
+            .insert(SelectorEntity)
+            .insert(SelectorOverlayState::None)
+            .with_children(|parent| {
+                parent
+                    .spawn(transform)
+                    .insert(SelectableLevel(level_index))
+                    .with_children(|parent| {
+                        parent.spawn(symbol_object);
+                        parent.spawn(number_object);
+                    });
+                parent
+                    .spawn(Transform::from_translation(transform.translation * 0.005))
+                    .insert(selection_overlay_object)
+                    .insert(SelectionOverlay)
+                    .insert(Visibility::Hidden);
+            });
     }
 
     let mesh_builder = MazeMeshBuilder::icosahedron(1.0 / SQRT_3 / 3.0);
@@ -172,8 +217,11 @@ pub fn load(
         commands
             .spawn(Mesh3d(edge_mesh_handle.clone()))
             .insert(MeshMaterial3d(game_materials.line_material.clone()))
-            .insert(edge_transform);
+            .insert(edge_transform)
+            .insert(SelectorEntity);
     }
+
+    commands.spawn(SelectedLevel(None)).insert(SelectorEntity);
 }
 
 fn compute_face_transform(level_index: usize) -> Transform {
@@ -264,23 +312,37 @@ fn color_palette(game_settings: &GameSettings) -> Vec<StandardMaterial> {
         .collect()
 }
 
-pub fn idle(
-    camera_query: Query<(&GlobalTransform, &Camera), With<MainCamera>>,
-    primary_window: Query<&Window, With<PrimaryWindow>>,
+pub fn set_selector_state(
     mut mouse_button_event_reader: EventReader<MouseButtonInput>,
-    rapier_context_query: Query<&RapierContext>,
     mut next_selector_state: ResMut<NextState<SelectorState>>,
 ) {
-    if mouse_button_event_reader
+    let Some(mouse_button_event) = mouse_button_event_reader
         .read()
         .filter(|input| input.button == MouseButton::Left)
-        .filter(|input| input.state == ButtonState::Pressed)
+        .map(|input| input.state)
         .next()
-        .is_none()
-    {
+    else {
         return;
-    }
+    };
 
+    match mouse_button_event {
+        ButtonState::Pressed => {
+            next_selector_state.set(SelectorState::Clicked);
+        }
+        ButtonState::Released => {
+            next_selector_state.set(SelectorState::Idle);
+        }
+    }
+}
+
+pub fn update_interactables(
+    buttons: Res<ButtonInput<MouseButton>>,
+    rapier_context_query: Query<&RapierContext>,
+    camera_query: Query<(&GlobalTransform, &Camera), With<MainCamera>>,
+    primary_window: Query<&Window, With<PrimaryWindow>>,
+    mut overlay_states_query: Query<(Entity, &mut SelectorOverlayState)>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+) {
     let Ok(window) = primary_window.get_single() else {
         return;
     };
@@ -298,7 +360,7 @@ pub fn idle(
         return;
     };
 
-    if rapier_context_query
+    let intersection = rapier_context_query
         .single()
         .cast_ray(
             ray.origin,
@@ -307,25 +369,70 @@ pub fn idle(
             true,
             QueryFilter::default(),
         )
-        .is_some()
-    {
-    } else {
-        next_selector_state.set(SelectorState::Dolly);
+        .map(|(entity, _)| entity);
+
+    let pressed = buttons.pressed(MouseButton::Left);
+
+    for (entity, mut overlay_state) in overlay_states_query.iter_mut() {
+        let new_overlay_state = match (intersection, pressed) {
+            (Some(intersected_entity), _) if intersected_entity != entity => {
+                SelectorOverlayState::None
+            }
+            (Some(intersected_entity), true) if intersected_entity == entity => {
+                SelectorOverlayState::Pressed
+            }
+            (Some(intersected_entity), false) if intersected_entity == entity => {
+                SelectorOverlayState::Hovered
+            }
+            _ => SelectorOverlayState::None,
+        };
+
+        if *overlay_state != new_overlay_state {
+            println!("Setting entity {entity:?}, Interaction: {new_overlay_state:?}");
+            *overlay_state = new_overlay_state;
+        }
     }
 }
 
-pub fn view(
-    mut mouse_button_event_reader: EventReader<MouseButtonInput>,
-    mut next_controller_state: ResMut<NextState<SelectorState>>,
+pub fn update_selection_overlay(
+    changed_overlay_state_query: Query<
+        (&SelectorOverlayState, &Children),
+        Changed<SelectorOverlayState>,
+    >,
+    game_material_handles: Res<GameMaterialHandles>,
+    mut overlay_query: Query<
+        (&mut MeshMaterial3d<StandardMaterial>, &mut Visibility),
+        With<SelectionOverlay>,
+    >,
 ) {
-    if mouse_button_event_reader
-        .read()
-        .filter(|input| input.button == MouseButton::Left)
-        .filter(|input| input.state == ButtonState::Released)
-        .next()
-        .is_some()
-    {
-        next_controller_state.set(SelectorState::Idle);
+    for (overlay_state, children) in changed_overlay_state_query.iter() {
+        let child = children
+            .into_iter()
+            .filter(|child| overlay_query.get(**child).is_ok())
+            .next()
+            .unwrap();
+
+        let (mut material, mut visibility) = overlay_query.get_mut(*child).unwrap();
+
+        match overlay_state {
+            SelectorOverlayState::None => {
+                *visibility = Visibility::Hidden;
+            }
+            SelectorOverlayState::Hovered => {
+                material.0 = game_material_handles
+                    .selector_handles
+                    .selection_hover
+                    .clone();
+                *visibility = Visibility::Visible;
+            }
+            SelectorOverlayState::Pressed => {
+                material.0 = game_material_handles
+                    .selector_handles
+                    .selection_pressed
+                    .clone();
+                *visibility = Visibility::Visible;
+            }
+        }
     }
 }
 
@@ -351,7 +458,8 @@ pub fn set_initial_camera_target(
         .next()
         .unwrap();
 
-    camera_target.translation = -face_transform.forward() * game_settings.camera_distance;
+    camera_target.translation_dir = *-face_transform.forward();
+    camera_target.translation_norm = game_settings.camera_distance;
     camera_target.up = *face_transform.right();
 }
 
@@ -373,6 +481,7 @@ pub fn set_camera_target_to_closest_face(
 
     println!("Setting selector camera target: {closest_face_transform:?}");
 
-    camera_target.translation = -closest_face_transform.forward() * game_settings.camera_distance;
+    camera_target.translation_dir = -closest_face_transform.forward().normalize();
+    camera_target.translation_norm = game_settings.camera_distance;
     camera_target.up = *closest_face_transform.right();
 }

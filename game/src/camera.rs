@@ -21,18 +21,20 @@ pub struct MainCamera;
 
 #[derive(Component)]
 pub struct CameraTarget {
-    pub translation: Vec3,
+    pub translation_dir: Vec3,
+    pub translation_norm: f32,
     pub up: Vec3,
     pub looking_at: Vec3,
 }
 
 pub fn camera_setup(mut commands: Commands, game_settings: Res<GameSettings>) {
-    let translation = Vec3::new(0., 0., game_settings.camera_distance);
+    let translation_dir = Vec3::Z;
+    let translation_norm = game_settings.camera_distance;
     let looking_at = Vec3::ZERO;
     let up = Vec3::Y;
 
-    let transform =
-        Transform::from_translation(translation.clone()).looking_at(looking_at.clone(), up.clone());
+    let transform = Transform::from_translation(translation_dir * translation_norm)
+        .looking_at(looking_at.clone(), up.clone());
 
     commands
         .spawn(Camera {
@@ -42,7 +44,8 @@ pub fn camera_setup(mut commands: Commands, game_settings: Res<GameSettings>) {
         .insert(Camera3d::default())
         .insert(transform.clone())
         .insert(CameraTarget {
-            translation,
+            translation_dir,
+            translation_norm,
             up,
             looking_at,
         })
@@ -70,10 +73,12 @@ pub fn camera_follow_player(
         }
     };
 
-    let new_translation = target_unit_translation * camera_target.translation.norm();
-    println!("Setting new camera target: {:?}", new_translation);
+    println!(
+        "Setting new camera target direction: {:?}",
+        target_unit_translation
+    );
 
-    camera_target.translation = new_translation;
+    camera_target.translation_dir = target_unit_translation;
 }
 
 pub fn camera_move_to_target(
@@ -82,7 +87,8 @@ pub fn camera_move_to_target(
     game_settings: Res<GameSettings>,
 ) {
     let Ok(CameraTarget {
-        translation,
+        translation_dir,
+        translation_norm,
         up,
         looking_at,
     }) = target_query.get_single()
@@ -92,24 +98,20 @@ pub fn camera_move_to_target(
 
     let mut camera_transform = camera_query.single_mut();
 
-    let target_transform = Transform::IDENTITY
-        .with_translation(*translation)
-        .looking_at(*looking_at, *up);
-
     let camera_follow_speed = game_settings.camera_follow_speed;
     let normalized_new_translation = camera_transform
         .translation
-        .lerp(*translation, camera_follow_speed)
+        .lerp(*translation_dir, camera_follow_speed)
         .normalize();
 
     let new_translation_norm = FloatExt::lerp(
         camera_transform.translation.norm(),
-        translation.norm(),
+        *translation_norm,
         camera_follow_speed,
     );
     let new_translation = normalized_new_translation * new_translation_norm;
 
-    if new_translation.distance(*translation) < CAMERA_MOVE_THRESHOLD {
+    if new_translation.distance(translation_dir * translation_norm) < CAMERA_MOVE_THRESHOLD {
         return;
     }
 
@@ -171,8 +173,8 @@ fn rotate_transform(mut transform: Mut<Transform>, rotation: Quat) {
 #[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
 #[source(GameState = GameState::Playing)]
 pub enum CameraResizeState {
-    #[default]
     Resizing,
+    #[default]
     Fixed,
 }
 
@@ -235,12 +237,10 @@ pub fn update_camera_distance(
 
     let max_abs_ndc = target_x_ndc.abs().max(target_y_ndc.abs()).max_element();
 
-    println!("Camera zoom resizing");
-
     next_camera_resize_state.set(CameraResizeState::Fixed);
-    camera_target.translation = camera_target.translation * max_abs_ndc;
+    camera_target.translation_norm = camera_target.translation_norm * max_abs_ndc;
     println!(
-        "Adjusting camera zoom to translation: {:?}, max absolute normalized device coordinate: {:?}",
-        camera_target.translation, max_abs_ndc
+        "Adjusting camera norm to: {:?}, max absolute normalized device coordinate: {:?}",
+        camera_target.translation_norm, max_abs_ndc
     );
 }
