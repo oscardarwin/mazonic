@@ -51,7 +51,7 @@ impl Default for GameSettings {
             player_elevation: 0.05,
             camera_distance: 3.0,
             light_offset: 3.0,
-            camera_follow_speed: 0.03,
+            camera_follow_speed: 0.08,
             palette: GameColorPalette::default(),
         }
     }
