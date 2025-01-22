@@ -74,6 +74,10 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(Update, update_systems)
             .add_systems(OnEnter(GameState::Setup), menu::setup)
             .add_systems(OnEnter(GameState::Selector), enter_selector_init_systems)
+            .add_systems(
+                OnExit(GameState::Selector),
+                level_selector::despawn_selector_entities,
+            )
             .add_systems(OnEnter(PlayState::Loading), enter_loading_systems)
             .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
             .add_systems(OnEnter(GameState::Playing), ui::spawn_navigation_ui)

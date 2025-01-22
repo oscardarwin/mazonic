@@ -76,6 +76,9 @@ pub enum SelectorOverlayState {
 }
 
 #[derive(Component, Clone, Debug)]
+pub struct CameraTargetTransform(Transform);
+
+#[derive(Component, Clone, Debug)]
 pub struct SelectionOverlay;
 
 pub fn load(
@@ -184,14 +187,13 @@ pub fn load(
             .insert(triangle_collider)
             .insert(SelectorEntity)
             .insert(SelectorOverlayState::None)
+            .insert(SelectableLevel(level_index))
+            .insert(CameraTargetTransform(transform.clone()))
             .with_children(|parent| {
-                parent
-                    .spawn(transform)
-                    .insert(SelectableLevel(level_index))
-                    .with_children(|parent| {
-                        parent.spawn(symbol_object);
-                        parent.spawn(number_object);
-                    });
+                parent.spawn(transform).with_children(|parent| {
+                    parent.spawn(symbol_object);
+                    parent.spawn(number_object);
+                });
                 parent
                     .spawn(Transform::from_translation(transform.translation * 0.005))
                     .insert(selection_overlay_object)
@@ -222,6 +224,15 @@ pub fn load(
     }
 
     commands.spawn(SelectedLevel(None)).insert(SelectorEntity);
+}
+
+pub fn despawn_selector_entities(
+    mut commands: Commands,
+    selector_entities: Query<Entity, With<SelectorEntity>>,
+) {
+    for entity in selector_entities.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
 }
 
 fn compute_face_transform(level_index: usize) -> Transform {
@@ -340,8 +351,10 @@ pub fn update_interactables(
     rapier_context_query: Query<&RapierContext>,
     camera_query: Query<(&GlobalTransform, &Camera), With<MainCamera>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
-    mut overlay_states_query: Query<(Entity, &mut SelectorOverlayState)>,
+    mut overlay_states_query: Query<(Entity, &mut SelectorOverlayState, &SelectableLevel)>,
     mut next_game_state: ResMut<NextState<GameState>>,
+    mut selector_state: Res<State<SelectorState>>,
+    mut save_data: Query<&mut SaveData>,
 ) {
     let Ok(window) = primary_window.get_single() else {
         return;
@@ -373,12 +386,15 @@ pub fn update_interactables(
 
     let pressed = buttons.pressed(MouseButton::Left);
 
-    for (entity, mut overlay_state) in overlay_states_query.iter_mut() {
+    for (entity, mut overlay_state, SelectableLevel(level_index)) in overlay_states_query.iter_mut()
+    {
         let new_overlay_state = match (intersection, pressed) {
             (Some(intersected_entity), _) if intersected_entity != entity => {
                 SelectorOverlayState::None
             }
-            (Some(intersected_entity), true) if intersected_entity == entity => {
+            (Some(intersected_entity), true)
+                if intersected_entity == entity && *overlay_state != SelectorOverlayState::None =>
+            {
                 SelectorOverlayState::Pressed
             }
             (Some(intersected_entity), false) if intersected_entity == entity => {
@@ -387,8 +403,14 @@ pub fn update_interactables(
             _ => SelectorOverlayState::None,
         };
 
+        if *overlay_state == SelectorOverlayState::Pressed
+            && new_overlay_state == SelectorOverlayState::Hovered
+        {
+            save_data.single_mut().current_index = *level_index;
+            next_game_state.set(GameState::Playing);
+        }
+
         if *overlay_state != new_overlay_state {
-            println!("Setting entity {entity:?}, Interaction: {new_overlay_state:?}");
             *overlay_state = new_overlay_state;
         }
     }
@@ -437,8 +459,8 @@ pub fn update_selection_overlay(
 }
 
 pub fn set_initial_camera_target(
-    selectable: Query<(&Transform, &SelectableLevel), Without<MainCamera>>,
-    mut camera_target_query: Query<&mut CameraTarget, With<MainCamera>>,
+    selectable: Query<(&CameraTargetTransform, &SelectableLevel)>,
+    mut camera_target_query: Query<&mut CameraTarget>,
     save_data_query: Query<&SaveData>,
     game_settings: Res<GameSettings>,
 ) {
@@ -454,7 +476,7 @@ pub fn set_initial_camera_target(
     let face_transform = selectable
         .iter()
         .filter(|(_, SelectableLevel(level_index))| *level_index == save_data.current_index)
-        .map(|(transform, _)| transform)
+        .map(|(CameraTargetTransform(transform), _)| transform)
         .next()
         .unwrap();
 
@@ -464,18 +486,22 @@ pub fn set_initial_camera_target(
 }
 
 pub fn set_camera_target_to_closest_face(
-    mut camera_target_query: Query<(&mut CameraTarget, &Transform), With<MainCamera>>,
-    selectable: Query<&Transform, (With<SelectableLevel>, Without<MainCamera>)>,
+    mut camera_target_query: Query<(&mut CameraTarget, &Transform)>,
+    selectable: Query<&CameraTargetTransform, With<SelectableLevel>>,
     game_settings: Res<GameSettings>,
 ) {
     let (mut camera_target, camera_transform) = camera_target_query.single_mut();
 
     let camera_forward = camera_transform.forward();
 
-    let Some(closest_face_transform) = selectable.iter().min_by_key(|selectable_transform| {
-        let face_normal = -Vec3::from(selectable_transform.forward());
-        (camera_forward.dot(face_normal) * 100.0) as i32
-    }) else {
+    let Some(CameraTargetTransform(closest_face_transform)) =
+        selectable
+            .iter()
+            .min_by_key(|CameraTargetTransform(selectable_transform)| {
+                let face_normal = -Vec3::from(selectable_transform.forward());
+                (camera_forward.dot(face_normal) * 100.0) as i32
+            })
+    else {
         return;
     };
 
