@@ -104,6 +104,8 @@ pub struct SelectorMaterialHandles {
     pub completed: Handle<StandardMaterial>,
     pub perfect_score: Handle<StandardMaterial>,
     pub melody_found: Handle<StandardMaterial>,
+    pub selection_pressed: Handle<StandardMaterial>,
+    pub selection_hover: Handle<StandardMaterial>,
 }
 
 #[derive(Resource)]
@@ -113,7 +115,7 @@ pub struct GameMaterialHandles {
     pub line_material: Handle<StandardMaterial>,
     pub dashed_arrow_material: Handle<ExtendedMaterial<StandardMaterial, DashedArrowMaterial>>,
     pub face_materials: FaceMaterialHandles,
-    pub selector_material_handles: SelectorMaterialHandles,
+    pub selector_handles: SelectorMaterialHandles,
 }
 
 pub fn setup_materials(
@@ -153,7 +155,7 @@ pub fn setup_materials(
         shape_face_materials.add(ExtendedMaterial {
             base: StandardMaterial {
                 base_color: color,
-                reflectance: 0.1,
+                reflectance: 0.0,
                 ..Default::default()
             },
             extension: ShapeFaceMaterial {},
@@ -177,13 +179,27 @@ pub fn setup_materials(
         extension: PlayerHaloMaterial {},
     });
 
-    let selector_material_handles = SelectorMaterialHandles {
+    let selection_hover = materials.add(StandardMaterial {
+        base_color: Color::WHITE.with_alpha(0.2),
+        alpha_mode: AlphaMode::Blend,
+        ..Default::default()
+    });
+    let selection_click = materials.add(StandardMaterial {
+        base_color: Color::WHITE.with_alpha(0.9),
+        alpha_mode: AlphaMode::Blend,
+        ..Default::default()
+    });
+
+    let selector_handles = SelectorMaterialHandles {
         unavailable: materials.add(game_settings.palette.face_colors.colors[4]),
         completed: materials.add(game_settings.palette.face_colors.colors[2]),
         perfect_score: materials.add(game_settings.palette.face_colors.colors[1]),
         melody_found: materials.add(game_settings.palette.player_color),
+        selection_pressed: selection_click,
+        selection_hover,
     };
 
+    // This could just be an entity with lots of little components.
     commands.insert_resource(GameMaterialHandles {
         player_halo_material,
         player_material,
@@ -192,7 +208,7 @@ pub fn setup_materials(
         face_materials: FaceMaterialHandles {
             materials: face_materials,
         },
-        selector_material_handles,
+        selector_handles,
     })
 }
 
