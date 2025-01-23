@@ -82,6 +82,7 @@ pub fn spawn_navigation_ui(mut commands: Commands, asset_server: Res<AssetServer
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
             justify_content: JustifyContent::SpaceBetween,
+            border: UiRect::all(Val::Px(10.)),
             ..default()
         })
         .insert(PickingBehavior::IGNORE)
