@@ -104,8 +104,8 @@ pub struct SelectorMaterialHandles {
     pub completed: Handle<StandardMaterial>,
     pub perfect_score: Handle<StandardMaterial>,
     pub melody_found: Handle<StandardMaterial>,
-    pub selection_pressed: Handle<StandardMaterial>,
-    pub selection_hover: Handle<StandardMaterial>,
+    pub selection_pressed: Handle<ExtendedMaterial<StandardMaterial, MenuSelectionHoverMaterial>>,
+    pub selection_hover: Handle<ExtendedMaterial<StandardMaterial, MenuSelectionHoverMaterial>>,
 }
 
 #[derive(Resource)]
@@ -126,6 +126,9 @@ pub fn setup_materials(
     >,
     mut player_halo_materials: ResMut<
         Assets<ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>>,
+    >,
+    mut menu_selection_hover_materials: ResMut<
+        Assets<ExtendedMaterial<StandardMaterial, MenuSelectionHoverMaterial>>,
     >,
     mut shape_face_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>>,
     asset_server: Res<AssetServer>,
@@ -156,6 +159,7 @@ pub fn setup_materials(
             base: StandardMaterial {
                 base_color: color,
                 reflectance: 0.0,
+                perceptual_roughness: 1.0,
                 ..Default::default()
             },
             extension: ShapeFaceMaterial {},
@@ -169,7 +173,6 @@ pub fn setup_materials(
             emissive: LinearRgba::from_vec3(bright_player_color),
             alpha_mode: AlphaMode::Blend,
             diffuse_transmission: 1.0,
-            //attenuation_distance: 10.0,
             thickness: 0.17,
             metallic: 0.2,
             fog_enabled: true,
@@ -179,23 +182,33 @@ pub fn setup_materials(
         extension: PlayerHaloMaterial {},
     });
 
-    let selection_hover = materials.add(StandardMaterial {
-        base_color: Color::WHITE.with_alpha(0.2),
-        alpha_mode: AlphaMode::Blend,
-        ..Default::default()
+    let line_color = &game_settings.palette.line_color;
+    let line_color_vec = line_color.to_linear().to_vec3();
+    let selection_hover = menu_selection_hover_materials.add(ExtendedMaterial {
+        base: StandardMaterial {
+            base_color: line_color.with_alpha(0.75),
+            emissive: LinearRgba::from_vec3(line_color_vec * 20.0),
+            alpha_mode: AlphaMode::Blend,
+            ..Default::default()
+        },
+        extension: MenuSelectionHoverMaterial {},
     });
-    let selection_click = materials.add(StandardMaterial {
-        base_color: Color::WHITE.with_alpha(0.9),
-        alpha_mode: AlphaMode::Blend,
-        ..Default::default()
+    let selection_pressed = menu_selection_hover_materials.add(ExtendedMaterial {
+        base: StandardMaterial {
+            base_color: line_color.with_alpha(0.9),
+            emissive: LinearRgba::from_vec3(line_color_vec * 50.0),
+            alpha_mode: AlphaMode::Blend,
+            ..Default::default()
+        },
+        extension: MenuSelectionHoverMaterial {},
     });
-
+    let face_colors = &game_settings.palette.face_colors.colors;
     let selector_handles = SelectorMaterialHandles {
-        unavailable: materials.add(game_settings.palette.face_colors.colors[4]),
-        completed: materials.add(game_settings.palette.face_colors.colors[2]),
-        perfect_score: materials.add(game_settings.palette.face_colors.colors[1]),
+        unavailable: materials.add(get_face_material_from_color(face_colors[4])),
+        completed: materials.add(get_face_material_from_color(face_colors[2])),
+        perfect_score: materials.add(get_face_material_from_color(face_colors[1])),
         melody_found: materials.add(game_settings.palette.player_color),
-        selection_pressed: selection_click,
+        selection_pressed,
         selection_hover,
     };
 
@@ -210,6 +223,15 @@ pub fn setup_materials(
         },
         selector_handles,
     })
+}
+
+fn get_face_material_from_color(color: Color) -> StandardMaterial {
+    StandardMaterial {
+        base_color: color,
+        reflectance: 0.0,
+        perceptual_roughness: 1.0,
+        ..Default::default()
+    }
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -236,5 +258,14 @@ pub struct ShapeFaceMaterial {}
 impl MaterialExtension for ShapeFaceMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/face_material.wgsl".into()
+    }
+}
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct MenuSelectionHoverMaterial {}
+
+impl MaterialExtension for MenuSelectionHoverMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/selection_hover.wgsl".into()
     }
 }
