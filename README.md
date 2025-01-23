@@ -1,6 +1,10 @@
 # TODO:
 
-Make Level Icons clickable
+Main Menu
+
+Make UI a bit offset from the screen edge.
+Replace edges with arrows.
+Make small animation for level selected with increasing triangle size.
 Particles move towards face for current level.
 Particles emit quavers for completed music.
 
@@ -12,8 +16,10 @@ Animation on level change?
 ## Menu
 Play
 Daily
+Time Challenge
 Settings
 Statistics
+Credits
 
 ## Higher Level Navigation
 Menu
