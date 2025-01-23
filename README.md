@@ -2,16 +2,24 @@
 
 Main Menu
 
-Make UI a bit offset from the screen edge.
+Make path highlight on discovered melody
+different material for goal node.
+
+Pather animation on level success.
+Grey out UI buttons when it's not possible to advance yet.
+Fix backlinks making the level too easy.
+
 Replace edges with arrows.
+Make some nodes inaccessable
 Make small animation for level selected with increasing triangle size.
+
 Particles move towards face for current level.
 Particles emit quavers for completed music.
 
 update level ui
 
-## Graphics
-Animation on level change?
+## Tech Debt
+Move all materials generation to their own file.
 
 ## Menu
 Play
