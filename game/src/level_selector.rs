@@ -8,12 +8,12 @@ use bevy::{
 use bevy_rapier3d::prelude::*;
 
 use crate::{
+    assets::materials::{GameMaterialHandles, MenuSelectionHoverMaterial},
     camera::{CameraTarget, MainCamera},
     constants::SQRT_3,
     game_settings::GameSettings,
     game_state::GameState,
     levels::LEVELS,
-    materials::{GameMaterialHandles, MenuSelectionHoverMaterial},
     shape::{
         icosahedron::Icosahedron,
         loader::{get_cross_face_edge_transform, Shape},
@@ -102,11 +102,13 @@ pub fn load(
     let icosahedron_shape = Icosahedron::new(1);
     let face_meshes = icosahedron_shape.get_face_meshes();
 
+    let line_color_vec = game_settings.palette.line_color.to_linear().to_vec3();
     let level_symbol_sprite_sheet = asset_server.load("sprites/symbols_sprite_sheet.png");
     let sprite_sheet_material_handle = materials.add(StandardMaterial {
         base_color_texture: Some(level_symbol_sprite_sheet.clone()),
         base_color: game_settings.palette.line_color,
         alpha_mode: AlphaMode::Blend,
+        emissive: LinearRgba::from_vec3(line_color_vec * 30.0),
         ..Default::default()
     });
 
@@ -196,7 +198,7 @@ pub fn load(
                     parent.spawn(number_object);
                 });
                 parent
-                    .spawn(Transform::from_translation(transform.translation * 0.005))
+                    .spawn(Transform::from_translation(transform.translation * 0.00001))
                     .insert(selection_overlay_object)
                     .insert(SelectionOverlay)
                     .insert(Visibility::Hidden);
@@ -204,7 +206,7 @@ pub fn load(
     }
 
     let mesh_builder = MazeMeshBuilder::icosahedron(1.0 / SQRT_3 / 3.0);
-    let edge_mesh_handle = meshes.add(mesh_builder.cross_face_edge());
+    let edge_mesh_handle = meshes.add(mesh_builder.cross_face_one_way_edge());
 
     for (from_level_index, to_level_index) in (0..).zip(1..LEVELS.len()) {
         let from_transform = face_local_transforms[from_level_index];
@@ -219,7 +221,7 @@ pub fn load(
 
         commands
             .spawn(Mesh3d(edge_mesh_handle.clone()))
-            .insert(MeshMaterial3d(game_materials.line_material.clone()))
+            .insert(MeshMaterial3d(game_materials.dashed_arrow_material.clone()))
             .insert(edge_transform)
             .insert(SelectorEntity);
     }

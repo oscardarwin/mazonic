@@ -1,6 +1,7 @@
 use bevy::{ecs::schedule::SystemConfigs, prelude::*, text::Update2dText};
 
 use crate::{
+    assets::materials::setup_materials,
     camera::{
         camera_dolly, camera_follow_player, camera_move_to_target, camera_setup,
         trigger_camera_resize_on_level_change, trigger_camera_resize_on_window_change,
@@ -13,7 +14,6 @@ use crate::{
     game_state::{victory_transition, GameState, PlayState},
     level_selector::{self, setup_save_data, SelectorState},
     light::{light_follow_camera, setup_light},
-    materials::setup_materials,
     menu,
     player::{
         move_player, spawn_player, spawn_player_halo, turn_off_player_halo, turn_on_player_halo,

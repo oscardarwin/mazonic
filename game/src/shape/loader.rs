@@ -21,11 +21,11 @@ use std::{
 use petgraph::{graphmap::GraphMap, Directed};
 
 use crate::{
+    assets::materials::{FaceMaterialHandles, ShapeFaceMaterial},
     game_settings::{FaceColorPalette, GameSettings},
     game_state::PlayState,
     is_room_junction::is_junction,
     level_selector::SaveData,
-    materials::{FaceMaterialHandles, ShapeFaceMaterial},
     player::{Player, PlayerMazeState},
     room::{Face, SolidRoom},
     sound::{Note, NoteMapping},
@@ -39,8 +39,8 @@ use super::{
     shape_loader::{BorderType, Edge, ShapeMeshLoader},
 };
 use super::{icosahedron::Icosahedron, tetrahedron::Tetrahedron};
+use crate::assets::materials::GameMaterialHandles;
 use crate::levels::LEVELS;
-use crate::materials::GameMaterialHandles;
 
 use serde::{Deserialize, Serialize};
 
@@ -397,5 +397,5 @@ pub fn get_cross_face_edge_transform(
 
     Transform::IDENTITY
         .looking_to(intersection_point - to_position, to_normal)
-        .with_translation(intersection_point + average_normal * 0.001)
+        .with_translation(intersection_point + average_normal * 0.000005)
 }
