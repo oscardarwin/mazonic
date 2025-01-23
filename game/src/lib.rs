@@ -10,7 +10,9 @@ use bevy_rustysynth::RustySynthPlugin;
 use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use game_systems::GameSystemsPlugin;
-use materials::{DashedArrowMaterial, PlayerHaloMaterial, ShapeFaceMaterial};
+use materials::{
+    DashedArrowMaterial, MenuSelectionHoverMaterial, PlayerHaloMaterial, ShapeFaceMaterial,
+};
 use noisy_bevy::NoisyShaderPlugin;
 use shape::loader::{GameLevel, MazeLevelData};
 
@@ -56,6 +58,9 @@ pub fn run() {
         >::default())
         .add_plugins(MaterialPlugin::<
             ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>,
+        >::default())
+        .add_plugins(MaterialPlugin::<
+            ExtendedMaterial<StandardMaterial, MenuSelectionHoverMaterial>,
         >::default())
         .add_plugins(NoisyShaderPlugin)
         .add_plugins(RustySynthPlugin {

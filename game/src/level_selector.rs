@@ -1,5 +1,6 @@
 use bevy::{
     input::{mouse::MouseButtonInput, ButtonState},
+    pbr::ExtendedMaterial,
     prelude::*,
     utils::{hashbrown::HashSet, HashMap},
     window::PrimaryWindow,
@@ -12,7 +13,7 @@ use crate::{
     game_settings::GameSettings,
     game_state::GameState,
     levels::LEVELS,
-    materials::GameMaterialHandles,
+    materials::{GameMaterialHandles, MenuSelectionHoverMaterial},
     shape::{
         icosahedron::Icosahedron,
         loader::{get_cross_face_edge_transform, Shape},
@@ -423,7 +424,10 @@ pub fn update_selection_overlay(
     >,
     game_material_handles: Res<GameMaterialHandles>,
     mut overlay_query: Query<
-        (&mut MeshMaterial3d<StandardMaterial>, &mut Visibility),
+        (
+            &mut MeshMaterial3d<ExtendedMaterial<StandardMaterial, MenuSelectionHoverMaterial>>,
+            &mut Visibility,
+        ),
         With<SelectionOverlay>,
     >,
 ) {
