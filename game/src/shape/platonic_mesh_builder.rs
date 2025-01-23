@@ -78,7 +78,7 @@ impl MazeMeshBuilder {
     }
 
     pub fn goal_mesh(&self) -> Mesh {
-        Circle::new(self.distance_between_nodes / 4.0).into()
+        Circle::new(self.distance_between_nodes / 5.5).into()
     }
 
     fn line(&self, length: f32, uv_start: f32, uv_end: f32) -> Mesh {
