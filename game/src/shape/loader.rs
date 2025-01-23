@@ -21,7 +21,8 @@ use std::{
 use petgraph::{graphmap::GraphMap, Directed};
 
 use crate::{
-    assets::materials::{FaceMaterialHandles, ShapeFaceMaterial},
+    assets::materials::FaceMaterialHandles,
+    assets::shaders::ShapeFaceMaterial,
     game_settings::{FaceColorPalette, GameSettings},
     game_state::PlayState,
     is_room_junction::is_junction,

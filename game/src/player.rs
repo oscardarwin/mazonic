@@ -1,7 +1,8 @@
 use std::fmt::Debug;
 
 use crate::{
-    assets::materials::{GameMaterialHandles, PlayerHaloMaterial},
+    assets::materials::GameMaterialHandles,
+    assets::shaders::PlayerHaloMaterial,
     game_settings::GameSettings,
     room::SolidRoom,
     shape::{

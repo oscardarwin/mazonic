@@ -1,7 +1,7 @@
 #![allow(warnings)]
 use std::io::Cursor;
 
-use assets::materials::{
+use assets::shaders::{
     DashedArrowMaterial, MenuSelectionHoverMaterial, PlayerHaloMaterial, ShapeFaceMaterial,
 };
 #[cfg(not(target_arch = "wasm32"))]

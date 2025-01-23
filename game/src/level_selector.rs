@@ -8,7 +8,8 @@ use bevy::{
 use bevy_rapier3d::prelude::*;
 
 use crate::{
-    assets::materials::{GameMaterialHandles, MenuSelectionHoverMaterial},
+    assets::materials::GameMaterialHandles,
+    assets::shaders::MenuSelectionHoverMaterial,
     camera::{CameraTarget, MainCamera},
     constants::SQRT_3,
     game_settings::GameSettings,

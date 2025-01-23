@@ -1,8 +1,8 @@
 use crate::game_settings::GameSettings;
-use bevy::{
-    pbr::{ExtendedMaterial, MaterialExtension},
-    prelude::*,
-    render::render_resource::{AsBindGroup, ShaderRef},
+use bevy::{pbr::ExtendedMaterial, prelude::*};
+
+use super::shaders::{
+    DashedArrowMaterial, MenuSelectionHoverMaterial, PlayerHaloMaterial, ShapeFaceMaterial,
 };
 
 pub struct FaceMaterialHandles {
@@ -231,41 +231,5 @@ fn get_face_material_from_color(color: Color) -> StandardMaterial {
         reflectance: 0.0,
         perceptual_roughness: 1.0,
         ..Default::default()
-    }
-}
-
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct DashedArrowMaterial {}
-
-impl MaterialExtension for DashedArrowMaterial {
-    fn fragment_shader() -> ShaderRef {
-        "shaders/dashed_line.wgsl".into()
-    }
-}
-
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct PlayerHaloMaterial {}
-
-impl MaterialExtension for PlayerHaloMaterial {
-    fn fragment_shader() -> ShaderRef {
-        "shaders/halo.wgsl".into()
-    }
-}
-
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct ShapeFaceMaterial {}
-
-impl MaterialExtension for ShapeFaceMaterial {
-    fn fragment_shader() -> ShaderRef {
-        "shaders/face_material.wgsl".into()
-    }
-}
-
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct MenuSelectionHoverMaterial {}
-
-impl MaterialExtension for MenuSelectionHoverMaterial {
-    fn fragment_shader() -> ShaderRef {
-        "shaders/selection_hover.wgsl".into()
     }
 }
