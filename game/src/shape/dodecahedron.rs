@@ -16,7 +16,7 @@ use itertools::repeat_n;
 
 use crate::{
     constants::{PHI, TAN_27},
-    room::{Face, SolidRoom},
+    room::{Face, Room},
     shape::shape_loader::ShapeMeshLoader,
 };
 
@@ -76,7 +76,7 @@ impl ShapeMeshLoader<20, 12, 5> for Dodecahedron {
     const VERTICES: [[f32; 3]; 20] = DODECAHEDRON_VERTICES;
     const FACES: [[usize; 5]; 12] = DODECAHEDRON_FACES;
 
-    fn make_nodes_from_face(&self, face: &Face) -> Vec<SolidRoom> {
+    fn make_nodes_from_face(&self, face: &Face) -> Vec<Room> {
         let vertex_indices = DODECAHEDRON_FACES[face.id()];
         let vertices = Self::vertices(&vertex_indices).map(|vertex| vertex * PHI / 2.0);
 
@@ -103,13 +103,13 @@ impl ShapeMeshLoader<20, 12, 5> for Dodecahedron {
                 (id, face.id).hash(&mut hasher);
                 let id = hasher.finish();
 
-                SolidRoom {
+                Room {
                     position,
                     face: face.clone(),
                     id,
                 }
             })
-            .collect::<Vec<SolidRoom>>()
+            .collect::<Vec<Room>>()
     }
 
     fn get_face_mesh(&self, vertices: [Vec3; 5]) -> Mesh {

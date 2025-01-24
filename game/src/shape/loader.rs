@@ -28,7 +28,7 @@ use crate::{
     is_room_junction::is_junction,
     level_selector::SaveData,
     player::{Player, PlayerMazeState},
-    room::{Face, SolidRoom},
+    room::{Face, Room},
     sound::{Note, NoteMapping},
 };
 
@@ -46,15 +46,15 @@ use crate::levels::LEVELS;
 use serde::{Deserialize, Serialize};
 
 #[derive(Component)]
-pub struct GraphComponent(pub GraphMap<SolidRoom, Edge, Directed>);
+pub struct GraphComponent(pub GraphMap<Room, Edge, Directed>);
 
 #[derive(Component)]
-pub struct SolutionComponent(pub Vec<SolidRoom>);
+pub struct SolutionComponent(pub Vec<Room>);
 
 #[derive(Serialize, Deserialize, Asset, TypePath)]
 pub struct MazeLevelData {
-    pub graph: GraphMap<SolidRoom, Edge, Directed>,
-    pub solution: Vec<SolidRoom>,
+    pub graph: GraphMap<Room, Edge, Directed>,
+    pub solution: Vec<Room>,
     pub node_id_to_note: HashMap<u64, Note>,
     //pub encrypted_song: Vec<u8>,
     //pub song_melody_length: u8,
@@ -364,7 +364,7 @@ pub fn spawn_level_meshes(
     }
 }
 
-fn get_connection_transform(from: SolidRoom, to: SolidRoom, border_type: &BorderType) -> Transform {
+fn get_connection_transform(from: Room, to: Room, border_type: &BorderType) -> Transform {
     match border_type {
         BorderType::SameFace => {
             let forward = from.position() - to.position();

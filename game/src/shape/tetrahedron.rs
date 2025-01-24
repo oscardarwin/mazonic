@@ -8,7 +8,7 @@ use bevy::{
 
 use crate::{
     constants::SQRT_3,
-    room::{Face, SolidRoom},
+    room::{Face, Room},
     shape::shape_loader::ShapeMeshLoader,
 };
 
@@ -44,7 +44,7 @@ impl ShapeMeshLoader<4, 4, 3> for Tetrahedron {
     const VERTICES: [[f32; 3]; 4] = TETRAHEDRON_VERTICES;
     const FACES: [[usize; 3]; 4] = TETRAHEDRON_FACES;
 
-    fn make_nodes_from_face(&self, face: &Face) -> Vec<SolidRoom> {
+    fn make_nodes_from_face(&self, face: &Face) -> Vec<Room> {
         let vertex_indices = TETRAHEDRON_FACES[face.id()];
 
         let vertices = Self::vertices(&vertex_indices);

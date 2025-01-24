@@ -5,7 +5,7 @@ use bevy::{
 };
 use itertools::{iproduct, repeat_n};
 
-use crate::room::{Face, SolidRoom};
+use crate::room::{Face, Room};
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 pub fn make_nodes_from_face(
@@ -14,7 +14,7 @@ pub fn make_nodes_from_face(
     nodes_per_edge: u8,
     distance_between_nodes: f32,
     face_height_from_origin: f32,
-) -> Vec<SolidRoom> {
+) -> Vec<Room> {
     let vec_i = (vertices[1] - vertices[0]).normalize();
     let vec_j = (vertices[2] - vertices[0]).normalize();
 
@@ -40,13 +40,13 @@ pub fn make_nodes_from_face(
 
             let id = hasher.finish();
 
-            SolidRoom {
+            Room {
                 position,
                 id,
                 face: face.clone(),
             }
         })
-        .collect::<Vec<SolidRoom>>()
+        .collect::<Vec<Room>>()
 }
 
 pub fn get_mesh(vertices: [Vec3; 3], scaling_factor: f32) -> Mesh {

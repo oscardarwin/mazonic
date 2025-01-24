@@ -3,7 +3,7 @@ use std::{fmt::Debug, hash::Hash};
 use bevy::{ecs::system::Resource, math::Vec3, render::mesh::Mesh, utils::HashSet};
 use serde::{Deserialize, Serialize};
 
-use crate::room::{Face, SolidRoom};
+use crate::room::{Face, Room};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum BorderType {
@@ -27,7 +27,7 @@ pub trait ShapeMeshLoader<
         vertex_indices.map(|index| Vec3::from_array(Self::VERTICES[index]))
     }
 
-    fn make_nodes_from_face(&self, face: &Face) -> Vec<SolidRoom>;
+    fn make_nodes_from_face(&self, face: &Face) -> Vec<Room>;
 
     fn border_type(from: &Face, to: &Face) -> Option<BorderType> {
         let from_vertex_set = Self::FACES[from.id()]
@@ -42,7 +42,7 @@ pub trait ShapeMeshLoader<
         }
     }
 
-    fn generate_nodes(&self) -> Vec<SolidRoom> {
+    fn generate_nodes(&self) -> Vec<Room> {
         Self::FACES
             .into_iter()
             .enumerate()

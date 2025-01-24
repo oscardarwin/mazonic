@@ -5,7 +5,7 @@ use bevy_rustysynth::{MidiAudio, MidiNote};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    is_room_junction::is_junction, player::PlayerMazeState, room::SolidRoom,
+    is_room_junction::is_junction, player::PlayerMazeState, room::Room,
     shape::loader::GraphComponent, statistics::PlayerPath,
 };
 
@@ -64,7 +64,7 @@ pub struct NoteMapping(pub HashMap<u64, Handle<MidiAudio>>);
 
 pub fn play_note(
     mut commands: Commands,
-    mut last_room_local: Local<Option<SolidRoom>>,
+    mut last_room_local: Local<Option<Room>>,
 
     graph_component: Query<&GraphComponent>,
     player_query: Query<&PlayerMazeState>,

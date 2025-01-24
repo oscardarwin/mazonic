@@ -12,7 +12,7 @@ use bevy::{
 use itertools::{iproduct, repeat_n};
 
 use crate::{
-    room::{Face, SolidRoom},
+    room::{Face, Room},
     shape::shape_loader::ShapeMeshLoader,
 };
 
@@ -59,11 +59,13 @@ impl Cube {
     }
 }
 
+
+
 impl ShapeMeshLoader<8, 6, 4> for Cube {
     const VERTICES: [[f32; 3]; 8] = CUBE_VERTICES;
     const FACES: [[usize; 4]; 6] = CUBE_FACES;
 
-    fn make_nodes_from_face(&self, face: &Face) -> Vec<SolidRoom> {
+    fn make_nodes_from_face(&self, face: &Face) -> Vec<Room> {
         let vertex_indices = CUBE_FACES[face.id()];
 
         let (vec_i, vec_j) = Self::defining_vectors(&vertex_indices);
@@ -88,13 +90,13 @@ impl ShapeMeshLoader<8, 6, 4> for Cube {
 
                 let id = hasher.finish();
 
-                SolidRoom {
+                Room {
                     position,
                     id,
                     face: face.clone(),
                 }
             })
-            .collect::<Vec<SolidRoom>>()
+            .collect::<Vec<Room>>()
     }
 
     fn get_face_mesh(&self, vertices: [Vec3; 4]) -> Mesh {

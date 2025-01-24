@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
+    assets::materials::GameMaterialHandles,
     game_settings::GameSettings,
     is_room_junction::is_junction,
     player::PlayerMazeState,
-    room::SolidRoom,
+    room::Room,
     shape::loader::{GraphComponent, LevelData},
 };
 
@@ -29,8 +30,9 @@ pub fn spawn_node_arrival_particles(
     node_arrival_mesh: Res<NodeArrivalEffectMesh>,
     player_maze_state: Query<&PlayerMazeState>,
     graph_component: Query<&GraphComponent>,
-    mut last_room_local: Local<Option<SolidRoom>>,
+    mut last_room_local: Local<Option<Room>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    game_materials: Res<GameMaterialHandles>,
     settings: Res<GameSettings>,
     time: Res<Time>,
 ) {

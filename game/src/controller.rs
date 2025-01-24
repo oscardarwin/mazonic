@@ -3,7 +3,7 @@ use crate::{
     game_settings::GameSettings,
     game_state::PlayState,
     player::{Player, PlayerMazeState},
-    room::SolidRoom,
+    room::Room,
     shape::{
         loader::{GameLevel, GraphComponent},
         shape_loader::{BorderType, Edge},
@@ -193,7 +193,7 @@ pub fn solve(
 
 fn project_ray_to_controller_face(
     ray: Ray3d,
-    cube_node: &SolidRoom,
+    cube_node: &Room,
     player_elevation: f32,
 ) -> Option<Vec3> {
     let plane_normal = cube_node.face().normal();
@@ -208,8 +208,8 @@ fn project_point_to_plane(point: &Vec3, plane_position: Vec3, plane_normal: &Vec
 }
 
 fn move_player_on_node(
-    node: &SolidRoom,
-    graph: &GraphMap<SolidRoom, Edge, Directed>,
+    node: &Room,
+    graph: &GraphMap<Room, Edge, Directed>,
     player_elevation: f32,
     node_snap_threshold: f32,
     ray: Ray3d,
@@ -244,8 +244,8 @@ fn move_player_on_node(
 }
 
 fn move_player_on_edge(
-    from_node: &SolidRoom,
-    to_node: &SolidRoom,
+    from_node: &Room,
+    to_node: &Room,
     ray: Ray3d,
     player_elevation: f32,
     node_snap_threshold: f32,
@@ -278,8 +278,8 @@ fn move_player_on_edge(
 
 fn compute_player_plane_edge_intersection(
     screen_ray: Ray3d,
-    from_node: &SolidRoom,
-    to_node: &SolidRoom,
+    from_node: &Room,
+    to_node: &Room,
     player_elevation: f32,
     level: &GameLevel,
 ) -> Option<Vec3> {
@@ -318,9 +318,9 @@ fn compute_player_plane_edge_intersection(
 
 fn compute_intersection_point_of_edge(
     ray: Ray3d,
-    room: &SolidRoom,
+    room: &Room,
     elevation: f32,
-    other_edge_room: &SolidRoom,
+    other_edge_room: &Room,
 ) -> Option<Vec3> {
     let plane_normal = room.face().normal();
 

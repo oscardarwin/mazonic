@@ -23,13 +23,13 @@ impl Face {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct SolidRoom {
+pub struct Room {
     pub position: Vec3,
     pub face: Face,
     pub id: u64,
 }
 
-impl SolidRoom {
+impl Room {
     pub fn position(&self) -> Vec3 {
         self.position
     }
@@ -44,28 +44,28 @@ impl SolidRoom {
     }
 }
 
-impl Ord for SolidRoom {
-    fn cmp(&self, other: &SolidRoom) -> Ordering {
+impl Ord for Room {
+    fn cmp(&self, other: &Room) -> Ordering {
         self.id.cmp(&other.id)
     }
 }
 
-impl PartialOrd for SolidRoom {
+impl PartialOrd for Room {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Hash for SolidRoom {
+impl Hash for Room {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
     }
 }
 
-impl PartialEq for SolidRoom {
+impl PartialEq for Room {
     fn eq(&self, other: &Self) -> bool {
         self.position.distance(other.position) < 0.01
     }
 }
 
-impl Eq for SolidRoom {}
+impl Eq for Room {}

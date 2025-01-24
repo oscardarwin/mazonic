@@ -9,7 +9,7 @@ use bevy::{
 
 use crate::{
     constants::{PHI, SQRT_3},
-    room::{Face, SolidRoom},
+    room::{Face, Room},
     shape::shape_loader::ShapeMeshLoader,
 };
 
@@ -78,7 +78,7 @@ impl ShapeMeshLoader<12, 20, 3> for Icosahedron {
     const VERTICES: [[f32; 3]; 12] = ICOSAHEDRON_VERTICES;
     const FACES: [[usize; 3]; 20] = ICOSAHEDRON_FACES;
 
-    fn make_nodes_from_face(&self, face: &Face) -> Vec<SolidRoom> {
+    fn make_nodes_from_face(&self, face: &Face) -> Vec<Room> {
         let vertex_indices = ICOSAHEDRON_FACES[face.id()];
 
         let vertices = Self::vertices(&vertex_indices);

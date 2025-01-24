@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
-use crate::{player::PlayerMazeState, room::SolidRoom};
+use crate::{player::PlayerMazeState, room::Room};
 
 #[derive(Resource)]
-pub struct PlayerPath(pub Vec<SolidRoom>);
+pub struct PlayerPath(pub Vec<Room>);
 
 pub fn setup_statistics(mut commands: Commands) {
     commands.insert_resource(PlayerPath(vec![]));

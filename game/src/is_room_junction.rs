@@ -1,16 +1,16 @@
 use itertools::Itertools;
 use petgraph::{graphmap::GraphMap, Directed, Direction};
 
-use crate::{room::SolidRoom, shape::shape_loader::Edge};
+use crate::{room::Room, shape::shape_loader::Edge};
 
-pub fn is_junction(room: &SolidRoom, graph: &GraphMap<SolidRoom, Edge, Directed>) -> bool {
+pub fn is_junction(room: &Room, graph: &GraphMap<Room, Edge, Directed>) -> bool {
     let incoming_neighbors = graph.neighbors_directed(*room, Direction::Incoming);
     let outgoing_neighbors = graph.neighbors_directed(*room, Direction::Outgoing);
 
     let neighbors = incoming_neighbors
         .chain(outgoing_neighbors)
         .unique()
-        .collect::<Vec<SolidRoom>>();
+        .collect::<Vec<Room>>();
 
     neighbors.len() != 2 || {
         let first_neighbor_position = room.project_other_to_face(&neighbors[0]);

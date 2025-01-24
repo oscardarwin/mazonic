@@ -4,7 +4,7 @@ use crate::{
     assets::materials::GameMaterialHandles,
     assets::shaders::PlayerHaloMaterial,
     game_settings::GameSettings,
-    room::SolidRoom,
+    room::Room,
     shape::{
         loader::{LevelData, SolutionComponent},
         platonic_mesh_builder::MazeMeshBuilder,
@@ -21,8 +21,8 @@ pub struct Player {
 
 #[derive(Component, Debug)]
 pub enum PlayerMazeState {
-    Node(SolidRoom),
-    Edge(SolidRoom, SolidRoom, Vec3),
+    Node(Room),
+    Edge(Room, Room, Vec3),
 }
 
 pub fn move_player(
@@ -184,7 +184,7 @@ pub fn spawn_player(
         .insert(LevelData);
 }
 
-fn compute_initial_player_transform(start_node: SolidRoom, player_elevation: f32) -> Transform {
+fn compute_initial_player_transform(start_node: Room, player_elevation: f32) -> Transform {
     let face_normal = start_node.face().normal();
 
     Transform::IDENTITY
