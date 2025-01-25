@@ -427,5 +427,5 @@ pub fn get_cross_face_edge_transform(
 
     Transform::IDENTITY
         .looking_to(intersection_point - to_position, to_normal)
-        .with_translation(intersection_point + average_normal * 0.000005)
+        .with_translation(intersection_point + average_normal * 0.0001)
 }
