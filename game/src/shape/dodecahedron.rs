@@ -62,18 +62,9 @@ pub const DODECAHEDRON_FACES: [[usize; 5]; 12] = [
 ];
 
 #[derive(Resource, Component, Clone, Debug)]
-pub struct Dodecahedron {
-    pub distance_between_nodes: f32,
-}
+pub struct Dodecahedron;
 
 impl Dodecahedron {
-    pub const fn new() -> Self {
-        let distance_between_nodes = TAN_27;
-        Self {
-            distance_between_nodes,
-        }
-    }
-
     pub fn get_faces() -> [[Vec3; 5]; 12] {
         face_indices_to_vertices(DODECAHEDRON_FACES, &DODECAHEDRON_VERTICES)
             .map(|face_vertices| face_vertices.map(|vertex| vertex * VERTEX_SCALING_FACTOR))

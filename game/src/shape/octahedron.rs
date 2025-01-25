@@ -36,21 +36,9 @@ pub const OCTAHEDRON_FACES: [[usize; 3]; 8] = [
 ];
 
 #[derive(Resource, Component, Clone, Debug)]
-pub struct Octahedron {
-    nodes_per_edge: u8,
-    pub distance_between_nodes: f32,
-}
+pub struct Octahedron;
 
 impl Octahedron {
-    pub const fn new(nodes_per_edge: u8) -> Self {
-        let distance_between_nodes = 1.0 / (nodes_per_edge as f32 - 1.0 + SQRT_3);
-
-        Self {
-            nodes_per_edge,
-            distance_between_nodes,
-        }
-    }
-
     pub fn get_faces() -> [[Vec3; 3]; 8] {
         face_indices_to_vertices(OCTAHEDRON_FACES, &OCTAHEDRON_VERTICES)
             .map(|face_vertices| face_vertices.map(|vertex| vertex * VERTEX_SCALING_FACTOR))

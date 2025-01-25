@@ -11,9 +11,7 @@ use bevy::{
 };
 use itertools::{iproduct, repeat_n};
 
-use crate::{
-    room::{Face, Room},
-};
+use crate::room::{Face, Room};
 
 use super::shape_loader::face_indices_to_vertices;
 
@@ -40,20 +38,9 @@ pub const CUBE_FACES: [[usize; 4]; 6] = [
 ];
 
 #[derive(Resource, Component, Clone, Debug)]
-pub struct Cube {
-    nodes_per_edge: u8,
-    pub distance_between_nodes: f32,
-}
+pub struct Cube;
 
 impl Cube {
-    pub const fn new(nodes_per_edge: u8) -> Self {
-        let distance_between_nodes = 1.0 / (nodes_per_edge as f32);
-        Self {
-            nodes_per_edge,
-            distance_between_nodes,
-        }
-    }
-
     pub fn get_faces() -> [[Vec3; 4]; 6] {
         face_indices_to_vertices(CUBE_FACES, &CUBE_VERTICES)
             .map(|face_vertices| face_vertices.map(|vertex| vertex * VERTEX_SCALING_FACTOR))

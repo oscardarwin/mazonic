@@ -55,21 +55,9 @@ pub const ICOSAHEDRON_FACES: [[usize; 3]; 20] = [
 ];
 
 #[derive(Resource, Component, Clone, Debug)]
-pub struct Icosahedron {
-    nodes_per_edge: u8,
-    pub distance_between_nodes: f32,
-}
+pub struct Icosahedron;
 
 impl Icosahedron {
-    pub const fn new(nodes_per_edge: u8) -> Self {
-        let distance_between_nodes = 1.0 / (nodes_per_edge as f32 - 1.0 + SQRT_3);
-
-        Self {
-            nodes_per_edge,
-            distance_between_nodes,
-        }
-    }
-
     pub fn face_height_from_origin() -> f32 {
         1.0 * PHI.powi(2) / 3.0_f32.sqrt() / 2.0
     }
