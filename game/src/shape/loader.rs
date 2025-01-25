@@ -29,6 +29,7 @@ use crate::{
         },
         shaders::ShapeFaceMaterial,
     },
+    constants::{SQRT_3, TAN_27},
     game_settings::{FaceColorPalette, GameSettings},
     game_state::PlayState,
     is_room_junction::is_junction,
@@ -73,27 +74,27 @@ pub struct LevelData;
 
 #[derive(Clone, Debug)]
 pub enum Shape {
-    Cube(Cube),
-    Tetrahedron(Tetrahedron),
-    Icosahedron(Icosahedron),
-    Octahedron(Octahedron),
-    Dodecahedron(Dodecahedron),
+    Cube,
+    Tetrahedron,
+    Icosahedron,
+    Octahedron,
+    Dodecahedron,
 }
 
 impl Shape {
     pub fn get_face_meshes(&self) -> Vec<Mesh> {
         match self {
-            Shape::Cube(_) => SquareFaceMeshGenerator::get_face_meshes::<6>(Cube::get_faces()),
-            Shape::Tetrahedron(_) => {
+            Shape::Cube => SquareFaceMeshGenerator::get_face_meshes::<6>(Cube::get_faces()),
+            Shape::Tetrahedron => {
                 TriangleFaceMeshGenerator::get_face_meshes::<4>(Tetrahedron::get_faces())
             }
-            Shape::Octahedron(_) => {
+            Shape::Octahedron => {
                 TriangleFaceMeshGenerator::get_face_meshes::<8>(Octahedron::get_faces())
             }
-            Shape::Dodecahedron(_) => {
+            Shape::Dodecahedron => {
                 PentagonFaceMeshGenerator::get_face_meshes::<12>(Dodecahedron::get_faces())
             }
-            Shape::Icosahedron(_) => {
+            Shape::Icosahedron => {
                 TriangleFaceMeshGenerator::get_face_meshes::<20>(Icosahedron::get_faces())
             }
         }
@@ -129,11 +130,11 @@ impl GameLevel {
 
     fn get_face_indices(&self, face: &Face) -> HashSet<usize> {
         let indices = match self.shape {
-            Shape::Tetrahedron(_) => TETRAHEDRON_FACES[face.id()].to_vec(),
-            Shape::Cube(_) => CUBE_FACES[face.id()].to_vec(),
-            Shape::Octahedron(_) => OCTAHEDRON_FACES[face.id()].to_vec(),
-            Shape::Dodecahedron(_) => DODECAHEDRON_FACES[face.id()].to_vec(),
-            Shape::Icosahedron(_) => ICOSAHEDRON_FACES[face.id()].to_vec(),
+            Shape::Tetrahedron => TETRAHEDRON_FACES[face.id()].to_vec(),
+            Shape::Cube => CUBE_FACES[face.id()].to_vec(),
+            Shape::Octahedron => OCTAHEDRON_FACES[face.id()].to_vec(),
+            Shape::Dodecahedron => DODECAHEDRON_FACES[face.id()].to_vec(),
+            Shape::Icosahedron => ICOSAHEDRON_FACES[face.id()].to_vec(),
         };
 
         indices.into_iter().collect()
@@ -141,11 +142,11 @@ impl GameLevel {
 
     pub fn node_distance(&self) -> f32 {
         match &self.shape {
-            Shape::Cube(cube) => cube.distance_between_nodes,
-            Shape::Tetrahedron(tetrahedron) => tetrahedron.distance_between_nodes,
-            Shape::Octahedron(octahedron) => octahedron.distance_between_nodes,
-            Shape::Dodecahedron(dodecahedron) => dodecahedron.distance_between_nodes,
-            Shape::Icosahedron(icosahedron) => icosahedron.distance_between_nodes,
+            Shape::Cube => 1.0 / (self.nodes_per_edge as f32),
+            Shape::Tetrahedron => 1.0 / (self.nodes_per_edge as f32 - 1.0 + SQRT_3),
+            Shape::Octahedron => 1.0 / (self.nodes_per_edge as f32 - 1.0 + SQRT_3),
+            Shape::Dodecahedron => TAN_27,
+            Shape::Icosahedron => 1.0 / (self.nodes_per_edge as f32 - 1.0 + SQRT_3),
         }
     }
 
@@ -153,11 +154,11 @@ impl GameLevel {
         let distance_between_nodes = self.node_distance();
 
         match self.shape {
-            Shape::Cube(_) => MazeMeshBuilder::cube(distance_between_nodes),
-            Shape::Tetrahedron(_) => MazeMeshBuilder::tetrahedron(distance_between_nodes),
-            Shape::Octahedron(_) => MazeMeshBuilder::octahedron(distance_between_nodes),
-            Shape::Dodecahedron(_) => MazeMeshBuilder::dodecahedron(distance_between_nodes),
-            Shape::Icosahedron(_) => MazeMeshBuilder::icosahedron(distance_between_nodes),
+            Shape::Cube => MazeMeshBuilder::cube(distance_between_nodes),
+            Shape::Tetrahedron => MazeMeshBuilder::tetrahedron(distance_between_nodes),
+            Shape::Octahedron => MazeMeshBuilder::octahedron(distance_between_nodes),
+            Shape::Dodecahedron => MazeMeshBuilder::dodecahedron(distance_between_nodes),
+            Shape::Icosahedron => MazeMeshBuilder::icosahedron(distance_between_nodes),
         }
     }
 
@@ -166,11 +167,11 @@ impl GameLevel {
         face_materials_handles: &FaceMaterialHandles,
     ) -> Vec<Handle<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>> {
         match &self.shape {
-            Shape::Cube(_) => face_materials_handles.cube().into_iter().collect(),
-            Shape::Tetrahedron(_) => face_materials_handles.tetrahedron().into_iter().collect(),
-            Shape::Octahedron(_) => face_materials_handles.octahedron().into_iter().collect(),
-            Shape::Dodecahedron(_) => face_materials_handles.dodecahedron().into_iter().collect(),
-            Shape::Icosahedron(_) => face_materials_handles.icosahedron().into_iter().collect(),
+            Shape::Cube => face_materials_handles.cube().into_iter().collect(),
+            Shape::Tetrahedron => face_materials_handles.tetrahedron().into_iter().collect(),
+            Shape::Octahedron => face_materials_handles.octahedron().into_iter().collect(),
+            Shape::Dodecahedron => face_materials_handles.dodecahedron().into_iter().collect(),
+            Shape::Icosahedron => face_materials_handles.icosahedron().into_iter().collect(),
         }
     }
 
@@ -179,37 +180,37 @@ impl GameLevel {
     }
 
     pub const fn tetrahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
-        let shape = Shape::Tetrahedron(Tetrahedron::new(nodes_per_edge));
+        let shape = Shape::Tetrahedron;
         GameLevel::new(seed, shape, nodes_per_edge)
     }
 
     pub const fn cube(nodes_per_edge: u8, seed: u64) -> GameLevel {
-        let shape = Shape::Cube(Cube::new(nodes_per_edge));
+        let shape = Shape::Cube;
         GameLevel::new(seed, shape, nodes_per_edge)
     }
 
     pub const fn octahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
-        let shape = Shape::Octahedron(Octahedron::new(nodes_per_edge));
+        let shape = Shape::Octahedron;
         GameLevel::new(seed, shape, nodes_per_edge)
     }
 
     pub const fn dodecahedron(seed: u64) -> GameLevel {
-        let shape = Shape::Dodecahedron(Dodecahedron::new());
+        let shape = Shape::Dodecahedron;
         GameLevel::new(seed, shape, 1)
     }
 
     pub const fn icosahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
-        let shape = Shape::Icosahedron(Icosahedron::new(nodes_per_edge));
+        let shape = Shape::Icosahedron;
         GameLevel::new(seed, shape, nodes_per_edge)
     }
 
     pub fn filename(&self) -> String {
         let shape = match &self.shape {
-            Shape::Cube(_) => "cube",
-            Shape::Tetrahedron(_) => "tetrahedron",
-            Shape::Octahedron(_) => "octahedron",
-            Shape::Dodecahedron(_) => "dodecahedron",
-            Shape::Icosahedron(_) => "icosahedron",
+            Shape::Cube => "cube",
+            Shape::Tetrahedron => "tetrahedron",
+            Shape::Octahedron => "octahedron",
+            Shape::Dodecahedron => "dodecahedron",
+            Shape::Icosahedron => "icosahedron",
         };
 
         format!(

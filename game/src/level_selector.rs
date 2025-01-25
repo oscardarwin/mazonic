@@ -153,14 +153,13 @@ pub fn load(
 
         let transform = face_local_transforms[level_index];
         let symbol_mesh_handle = match level.shape {
-            Shape::Tetrahedron(_) => tetrahedron_symbol_mesh_handle.clone(),
-            Shape::Cube(_) => cube_symbol_mesh_handle.clone(),
-            Shape::Octahedron(_) => octahedron_symbol_mesh_handle.clone(),
-            Shape::Dodecahedron(_) => dodecahedron_symbol_mesh_handle.clone(),
-            Shape::Icosahedron(_) => icosahedron_symbol_mesh_handle.clone(),
+            Shape::Tetrahedron => tetrahedron_symbol_mesh_handle.clone(),
+            Shape::Cube => cube_symbol_mesh_handle.clone(),
+            Shape::Octahedron => octahedron_symbol_mesh_handle.clone(),
+            Shape::Dodecahedron => dodecahedron_symbol_mesh_handle.clone(),
+            Shape::Icosahedron => icosahedron_symbol_mesh_handle.clone(),
         };
 
-        let scaling_factor = 0.5;
         let face_vertices = faces[face_index];
         let triangle_collider =
             Collider::triangle(face_vertices[0], face_vertices[1], face_vertices[2]);

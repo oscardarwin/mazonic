@@ -213,11 +213,11 @@ pub fn update_camera_distance(
     };
 
     let circumradius_factor = match &level.shape {
-        Shape::Tetrahedron(_) => 1.5_f32.sqrt(),
-        Shape::Cube(_) => 3.0_f32.sqrt(),
-        Shape::Octahedron(_) => 2.0_f32.sqrt(),
-        Shape::Dodecahedron(_) => 3.0_f32.sqrt() * PHI,
-        Shape::Icosahedron(_) => PHI * (3.0 - PHI).sqrt(),
+        Shape::Tetrahedron => 1.5_f32.sqrt(),
+        Shape::Cube => 3.0_f32.sqrt(),
+        Shape::Octahedron => 2.0_f32.sqrt(),
+        Shape::Dodecahedron => 3.0_f32.sqrt() * PHI,
+        Shape::Icosahedron => PHI * (3.0 - PHI).sqrt(),
     };
 
     let circumradius = circumradius_factor / 2.0;
