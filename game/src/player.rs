@@ -4,11 +4,9 @@ use crate::{
     assets::materials::GameMaterialHandles,
     assets::shaders::PlayerHaloMaterial,
     game_settings::GameSettings,
+    levels::LevelData,
     room::Room,
-    shape::{
-        loader::{LevelData, SolutionComponent},
-        platonic_mesh_builder::MazeMeshBuilder,
-    },
+    shape::{loader::SolutionComponent, platonic_mesh_builder::MazeMeshBuilder},
 };
 use bevy::{math::NormedVectorSpace, pbr::ExtendedMaterial, prelude::*};
 

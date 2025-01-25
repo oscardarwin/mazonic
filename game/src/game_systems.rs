@@ -14,13 +14,14 @@ use crate::{
     game_state::{victory_transition, GameState, PlayState},
     level_selector::{self, setup_save_data, SelectorState},
     light::{light_follow_camera, setup_light},
-    menu,
+    maze, menu,
     player::{
         move_player, spawn_player, spawn_player_halo, turn_off_player_halo, turn_on_player_halo,
         update_halo_follow_player,
     },
-    shape::loader::{
-        despawn_level_data, load_level_asset, spawn_level_data_components, spawn_level_meshes,
+    shape::{
+        self,
+        loader::{despawn_level_data, load_level_asset, spawn_level_data},
     },
     sound::play_note,
     statistics::{setup_statistics, update_player_path},
@@ -38,7 +39,8 @@ impl Plugin for GameSystemsPlugin {
             .add_sub_state::<CameraResizeState>();
 
         let enter_play_systems = (
-            spawn_level_meshes,
+            shape::loader::spawn_mesh,
+            maze::mesh::spawn,
             setup_statistics,
             spawn_player,
             trigger_camera_resize_on_level_change.after(spawn_player),
@@ -133,7 +135,7 @@ fn get_update_systems() -> SystemConfigs {
         ),
         light_follow_camera,
         update_node_arrival_particles,
-        spawn_level_data_components.run_if(in_state(PlayState::Loading)),
+        shape::loader::spawn_level_data.run_if(in_state(PlayState::Loading)),
         selector_systems,
     )
         .into_configs()

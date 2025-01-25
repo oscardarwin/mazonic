@@ -1,12 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
-    assets::materials::GameMaterialHandles,
-    game_settings::GameSettings,
-    is_room_junction::is_junction,
-    player::PlayerMazeState,
-    room::Room,
-    shape::loader::{GraphComponent, LevelData},
+    assets::materials::GameMaterialHandles, game_settings::GameSettings,
+    is_room_junction::is_junction, levels::LevelData, player::PlayerMazeState, room::Room,
+    shape::loader::GraphComponent,
 };
 
 #[derive(Resource)]

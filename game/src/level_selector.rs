@@ -18,9 +18,9 @@ use crate::{
     game_settings::GameSettings,
     game_state::GameState,
     levels::{Shape, LEVELS},
+    maze::mesh::get_cross_face_edge_transform,
     shape::{
-        icosahedron, loader::get_cross_face_edge_transform, platonic_mesh_builder::MazeMeshBuilder,
-        shape_utils::compute_face_normal,
+        icosahedron, platonic_mesh_builder::MazeMeshBuilder, shape_utils::compute_face_normal,
     },
 };
 

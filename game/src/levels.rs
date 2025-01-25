@@ -7,6 +7,9 @@ use crate::{
     shape::{cube, dodecahedron, icosahedron, octahedron, tetrahedron},
 };
 
+#[derive(Component)]
+pub struct LevelData;
+
 #[derive(Clone, Debug)]
 pub enum Shape {
     Cube,

@@ -3,9 +3,8 @@ use crate::{
     game_settings::GameSettings,
     game_state::GameState,
     level_selector::{SaveData, SelectableLevel},
-    levels::{GameLevel, Shape},
+    levels::{GameLevel, LevelData, Shape},
     player::{Player, PlayerMazeState},
-    shape::loader::LevelData,
 };
 use bevy::{
     color::palettes::css::{BLUE, RED},
