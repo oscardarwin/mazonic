@@ -7,7 +7,7 @@ use bevy::{
     prelude::*,
     render::mesh::Mesh,
     transform::components::Transform,
-    utils::HashMap,
+    utils::{HashMap, HashSet},
 };
 use bevy_rustysynth::{MidiAudio, MidiNote};
 
@@ -21,8 +21,14 @@ use std::{
 use petgraph::{graphmap::GraphMap, Directed};
 
 use crate::{
-    assets::materials::FaceMaterialHandles,
-    assets::shaders::ShapeFaceMaterial,
+    assets::{
+        materials::FaceMaterialHandles,
+        mesh_generators::{
+            FaceMeshGenerator, PentagonFaceMeshGenerator, SquareFaceMeshGenerator,
+            TriangleFaceMeshGenerator,
+        },
+        shaders::ShapeFaceMaterial,
+    },
     game_settings::{FaceColorPalette, GameSettings},
     game_state::PlayState,
     is_room_junction::is_junction,
@@ -33,11 +39,13 @@ use crate::{
 };
 
 use super::{
-    cube::Cube,
-    dodecahedron::Dodecahedron,
-    octahedron::Octahedron,
+    cube::{Cube, CUBE_FACES},
+    dodecahedron::{Dodecahedron, DODECAHEDRON_FACES},
+    icosahedron::ICOSAHEDRON_FACES,
+    octahedron::{Octahedron, OCTAHEDRON_FACES},
     platonic_mesh_builder::MazeMeshBuilder,
-    shape_loader::{BorderType, Edge, ShapeMeshLoader},
+    shape_loader::{BorderType, Edge},
+    tetrahedron::TETRAHEDRON_FACES,
 };
 use super::{icosahedron::Icosahedron, tetrahedron::Tetrahedron};
 use crate::assets::materials::GameMaterialHandles;
@@ -75,11 +83,19 @@ pub enum Shape {
 impl Shape {
     pub fn get_face_meshes(&self) -> Vec<Mesh> {
         match self {
-            Shape::Cube(cube) => cube.get_face_meshes(),
-            Shape::Tetrahedron(tetrahedron) => tetrahedron.get_face_meshes(),
-            Shape::Octahedron(octahedron) => octahedron.get_face_meshes(),
-            Shape::Dodecahedron(dodecahedron) => dodecahedron.get_face_meshes(),
-            Shape::Icosahedron(icosahedron) => icosahedron.get_face_meshes(),
+            Shape::Cube(_) => SquareFaceMeshGenerator::get_face_meshes::<6>(Cube::get_faces()),
+            Shape::Tetrahedron(_) => {
+                TriangleFaceMeshGenerator::get_face_meshes::<4>(Tetrahedron::get_faces())
+            }
+            Shape::Octahedron(_) => {
+                TriangleFaceMeshGenerator::get_face_meshes::<8>(Octahedron::get_faces())
+            }
+            Shape::Dodecahedron(_) => {
+                PentagonFaceMeshGenerator::get_face_meshes::<12>(Dodecahedron::get_faces())
+            }
+            Shape::Icosahedron(_) => {
+                TriangleFaceMeshGenerator::get_face_meshes::<20>(Icosahedron::get_faces())
+            }
         }
     }
 }
@@ -101,13 +117,26 @@ impl GameLevel {
     }
 
     pub fn border_type(&self, from: &Face, to: &Face) -> Option<BorderType> {
-        match &self.shape {
-            Shape::Tetrahedron(_) => Tetrahedron::border_type(&from, &to),
-            Shape::Cube(_) => Cube::border_type(&from, &to),
-            Shape::Octahedron(_) => Octahedron::border_type(&from, &to),
-            Shape::Dodecahedron(_) => Dodecahedron::border_type(&from, &to),
-            Shape::Icosahedron(_) => Icosahedron::border_type(&from, &to),
+        let from_vertex_set = self.get_face_indices(from);
+        let to_vertex_set = self.get_face_indices(to);
+
+        match from_vertex_set.intersection(&to_vertex_set).count() {
+            0 | 1 => None,
+            2 => Some(BorderType::Connected),
+            _ => Some(BorderType::SameFace),
         }
+    }
+
+    fn get_face_indices(&self, face: &Face) -> HashSet<usize> {
+        let indices = match self.shape {
+            Shape::Tetrahedron(_) => TETRAHEDRON_FACES[face.id()].to_vec(),
+            Shape::Cube(_) => CUBE_FACES[face.id()].to_vec(),
+            Shape::Octahedron(_) => OCTAHEDRON_FACES[face.id()].to_vec(),
+            Shape::Dodecahedron(_) => DODECAHEDRON_FACES[face.id()].to_vec(),
+            Shape::Icosahedron(_) => ICOSAHEDRON_FACES[face.id()].to_vec(),
+        };
+
+        indices.into_iter().collect()
     }
 
     pub fn node_distance(&self) -> f32 {

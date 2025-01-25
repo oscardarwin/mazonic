@@ -18,7 +18,7 @@ use shape::loader::{GameLevel, MazeLevelData};
 
 mod assets;
 mod camera;
-mod constants;
+pub mod constants;
 mod controller;
 mod effects;
 mod game_settings;

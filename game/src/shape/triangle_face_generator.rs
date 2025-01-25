@@ -48,26 +48,3 @@ pub fn make_nodes_from_face(
         })
         .collect::<Vec<Room>>()
 }
-
-pub fn get_mesh(vertices: [Vec3; 3], scaling_factor: f32) -> Mesh {
-    let uvs = vec![[0.0_f32, 0.0], [1.0, 0.0], [0.0, 1.0]];
-    let defining_vector_1 = vertices[1] - vertices[0];
-    let defining_vector_2 = vertices[2] - vertices[0];
-    let normal = defining_vector_1.cross(defining_vector_2).normalize();
-    let normals = repeat_n(normal.to_array(), 3).collect::<Vec<[f32; 3]>>();
-
-    let face_indices = vec![0_u16, 1, 2];
-
-    Mesh::new(
-        PrimitiveTopology::TriangleList,
-        RenderAssetUsages::RENDER_WORLD,
-    )
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_POSITION,
-        vertices.into_iter().collect::<Vec<Vec3>>(),
-    )
-    .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
-    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
-    .with_inserted_indices(Indices::U16(face_indices))
-    .scaled_by(Vec3::ONE * scaling_factor)
-}

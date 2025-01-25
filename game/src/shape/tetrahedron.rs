@@ -9,19 +9,20 @@ use bevy::{
 use crate::{
     constants::SQRT_3,
     room::{Face, Room},
-    shape::shape_loader::ShapeMeshLoader,
 };
 
-use super::triangle_face_generator;
+use super::{shape_loader::face_indices_to_vertices, triangle_face_generator};
 
-const TETRAHEDRON_VERTICES: [[f32; 3]; 4] = [
-    [1.0, 1.0, 1.0],
-    [-1.0, 1.0, -1.0],
-    [-1.0, -1.0, 1.0],
-    [1.0, -1.0, -1.0],
+const VERTEX_SCALING_FACTOR: f32 = 1.0 / SQRT_2 / 2.0;
+
+const TETRAHEDRON_VERTICES: [Vec3; 4] = [
+    Vec3::new(1.0, 1.0, 1.0),
+    Vec3::new(-1.0, 1.0, -1.0),
+    Vec3::new(-1.0, -1.0, 1.0),
+    Vec3::new(1.0, -1.0, -1.0),
 ];
 
-const TETRAHEDRON_FACES: [[usize; 3]; 4] = [[3, 2, 1], [0, 2, 3], [3, 1, 0], [0, 1, 2]];
+pub const TETRAHEDRON_FACES: [[usize; 3]; 4] = [[3, 2, 1], [0, 2, 3], [3, 1, 0], [0, 1, 2]];
 
 #[derive(Resource, Component, Clone, Debug)]
 pub struct Tetrahedron {
@@ -38,29 +39,9 @@ impl Tetrahedron {
             distance_between_nodes,
         }
     }
-}
 
-impl ShapeMeshLoader<4, 4, 3> for Tetrahedron {
-    const VERTICES: [[f32; 3]; 4] = TETRAHEDRON_VERTICES;
-    const FACES: [[usize; 3]; 4] = TETRAHEDRON_FACES;
-
-    fn make_nodes_from_face(&self, face: &Face) -> Vec<Room> {
-        let vertex_indices = TETRAHEDRON_FACES[face.id()];
-
-        let vertices = Self::vertices(&vertex_indices);
-
-        let face_height_from_origin = 3.0_f32.sqrt() / 6.0 / SQRT_2;
-        triangle_face_generator::make_nodes_from_face(
-            face,
-            vertices,
-            self.nodes_per_edge,
-            self.distance_between_nodes,
-            face_height_from_origin,
-        )
-    }
-
-    fn get_face_mesh(&self, vertices: [Vec3; 3]) -> Mesh {
-        let scaling_factor = 1.0 / SQRT_2 / 2.0;
-        triangle_face_generator::get_mesh(vertices, scaling_factor)
+    pub fn get_faces() -> [[Vec3; 3]; 4] {
+        face_indices_to_vertices(TETRAHEDRON_FACES, &TETRAHEDRON_VERTICES)
+            .map(|face_vertices| face_vertices.map(|vertex| vertex * VERTEX_SCALING_FACTOR))
     }
 }

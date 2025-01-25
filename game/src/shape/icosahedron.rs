@@ -10,27 +10,28 @@ use bevy::{
 use crate::{
     constants::{PHI, SQRT_3},
     room::{Face, Room},
-    shape::shape_loader::ShapeMeshLoader,
 };
 
-use super::triangle_face_generator;
+use super::{shape_loader::face_indices_to_vertices, triangle_face_generator};
 
-const ICOSAHEDRON_VERTICES: [[f32; 3]; 12] = [
-    [1.0, PHI, 0.0],
-    [1.0, -PHI, 0.0],
-    [-1.0, PHI, 0.0],
-    [-1.0, -PHI, 0.0],
-    [0.0, 1.0, PHI],
-    [0.0, 1.0, -PHI],
-    [0.0, -1.0, PHI],
-    [0.0, -1.0, -PHI],
-    [PHI, 0.0, 1.0],
-    [-PHI, 0.0, 1.0],
-    [PHI, 0.0, -1.0],
-    [-PHI, 0.0, -1.0],
+const VERTEX_SCALING_FACTOR: f32 = 0.5;
+
+pub const ICOSAHEDRON_VERTICES: [Vec3; 12] = [
+    Vec3::new(1.0, PHI, 0.0),
+    Vec3::new(1.0, -PHI, 0.0),
+    Vec3::new(-1.0, PHI, 0.0),
+    Vec3::new(-1.0, -PHI, 0.0),
+    Vec3::new(0.0, 1.0, PHI),
+    Vec3::new(0.0, 1.0, -PHI),
+    Vec3::new(0.0, -1.0, PHI),
+    Vec3::new(0.0, -1.0, -PHI),
+    Vec3::new(PHI, 0.0, 1.0),
+    Vec3::new(-PHI, 0.0, 1.0),
+    Vec3::new(PHI, 0.0, -1.0),
+    Vec3::new(-PHI, 0.0, -1.0),
 ];
 
-const ICOSAHEDRON_FACES: [[usize; 3]; 20] = [
+pub const ICOSAHEDRON_FACES: [[usize; 3]; 20] = [
     [0, 4, 8],
     [0, 10, 5],
     [0, 8, 10],
@@ -72,30 +73,9 @@ impl Icosahedron {
     pub fn face_height_from_origin() -> f32 {
         1.0 * PHI.powi(2) / 3.0_f32.sqrt() / 2.0
     }
-}
 
-impl ShapeMeshLoader<12, 20, 3> for Icosahedron {
-    const VERTICES: [[f32; 3]; 12] = ICOSAHEDRON_VERTICES;
-    const FACES: [[usize; 3]; 20] = ICOSAHEDRON_FACES;
-
-    fn make_nodes_from_face(&self, face: &Face) -> Vec<Room> {
-        let vertex_indices = ICOSAHEDRON_FACES[face.id()];
-
-        let vertices = Self::vertices(&vertex_indices);
-
-        let face_height_from_origin = 1.0 * Self::face_height_from_origin();
-
-        triangle_face_generator::make_nodes_from_face(
-            face,
-            vertices,
-            self.nodes_per_edge,
-            self.distance_between_nodes,
-            face_height_from_origin,
-        )
-    }
-
-    fn get_face_mesh(&self, vertices: [Vec3; 3]) -> Mesh {
-        let scaling_factor = 0.5;
-        triangle_face_generator::get_mesh(vertices, scaling_factor)
+    pub fn get_faces() -> [[Vec3; 3]; 20] {
+        face_indices_to_vertices(ICOSAHEDRON_FACES, &ICOSAHEDRON_VERTICES)
+            .map(|face_vertices| face_vertices.map(|vertex| vertex * VERTEX_SCALING_FACTOR))
     }
 }

@@ -8,18 +8,21 @@ use bevy::{
 use bevy_rapier3d::prelude::*;
 
 use crate::{
-    assets::materials::GameMaterialHandles,
-    assets::shaders::MenuSelectionHoverMaterial,
+    assets::{
+        materials::GameMaterialHandles,
+        mesh_generators::{FaceMeshGenerator, TriangleFaceMeshGenerator},
+        shaders::MenuSelectionHoverMaterial,
+    },
     camera::{CameraTarget, MainCamera},
     constants::SQRT_3,
     game_settings::GameSettings,
     game_state::GameState,
     levels::LEVELS,
     shape::{
-        icosahedron::Icosahedron,
+        icosahedron::{Icosahedron, ICOSAHEDRON_FACES, ICOSAHEDRON_VERTICES},
         loader::{get_cross_face_edge_transform, Shape},
         platonic_mesh_builder::MazeMeshBuilder,
-        shape_loader::ShapeMeshLoader,
+        shape_loader::compute_face_normal,
     },
 };
 
@@ -100,8 +103,8 @@ pub fn load(
     let material_handles = &game_materials.selector_handles;
     let ready_easy_color = &game_settings.palette.face_colors.colors[0];
     let ready_hard_color = &game_settings.palette.face_colors.colors[3];
-    let icosahedron_shape = Icosahedron::new(1);
-    let face_meshes = icosahedron_shape.get_face_meshes();
+    let faces = Icosahedron::get_faces();
+    let face_meshes = TriangleFaceMeshGenerator::get_face_meshes::<20>(faces);
 
     let line_color_vec = game_settings.palette.line_color.to_linear().to_vec3();
     let level_symbol_sprite_sheet = asset_server.load("sprites/symbols_sprite_sheet.png");
@@ -128,7 +131,7 @@ pub fn load(
         .collect::<HashMap<u8, Handle<Mesh>>>();
 
     let face_local_transforms = (0..LEVELS.len())
-        .map(|level_index| compute_face_transform(level_index))
+        .map(|level_index| compute_face_transform(level_index, &faces))
         .collect::<Vec<Transform>>();
 
     for (level_index, level) in LEVELS.iter().enumerate() {
@@ -158,7 +161,7 @@ pub fn load(
         };
 
         let scaling_factor = 0.5;
-        let face_vertices = Icosahedron::vertices(&Icosahedron::FACES[face_index]);
+        let face_vertices = faces[face_index];
         let triangle_collider = Collider::triangle(
             face_vertices[0] * scaling_factor,
             face_vertices[1] * scaling_factor,
@@ -239,31 +242,34 @@ pub fn despawn_selector_entities(
     }
 }
 
-fn compute_face_transform(level_index: usize) -> Transform {
+fn compute_face_transform(level_index: usize, faces: &[[Vec3; 3]; 20]) -> Transform {
     let face_index = FACE_ORDER[level_index];
 
-    let face = Icosahedron::FACES[face_index];
-    let face_normal = Icosahedron::face_normal(&face);
-    let face_center = Icosahedron::vertices(&face)
-        .iter()
-        .fold(Vec3::ZERO, |acc, item| acc + item)
-        / 3.0
-        / 2.0;
+    let face = faces[face_index];
+    let face_normal = compute_face_normal(&face);
+    let face_center = face.iter().fold(Vec3::ZERO, |acc, item| acc + item) / 3.0 / 2.0;
 
     let other_level_index = if level_index == 0 { 1 } else { level_index - 1 };
     let other_face_index = FACE_ORDER[other_level_index];
-    let other_face = Icosahedron::FACES[other_face_index];
+    let other_face = faces[other_face_index];
 
-    let edge_points = face
+    let face_vertex_indices = ICOSAHEDRON_FACES[face_index]
         .into_iter()
-        .collect::<HashSet<usize>>()
-        .intersection(&other_face.into_iter().collect::<HashSet<usize>>())
+        .collect::<HashSet<usize>>();
+
+    let other_face_vertex_indices = ICOSAHEDRON_FACES[other_face_index]
+        .into_iter()
+        .collect::<HashSet<usize>>();
+
+    let edge_vertex_indices = face_vertex_indices
+        .intersection(&other_face_vertex_indices)
         .cloned()
         .collect::<Vec<usize>>();
 
-    let edge_midpoint = edge_points.iter().fold(Vec3::ZERO, |acc, item| {
-        acc + Vec3::from_array(Icosahedron::VERTICES[*item])
-    }) / 2.0
+    let edge_midpoint = edge_vertex_indices
+        .iter()
+        .fold(Vec3::ZERO, |acc, item| acc + ICOSAHEDRON_VERTICES[*item])
+        / 2.0
         / 2.0;
 
     let center_to_edge = if level_index == 0 {
