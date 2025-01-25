@@ -17,12 +17,10 @@ use crate::{
     constants::SQRT_3,
     game_settings::GameSettings,
     game_state::GameState,
-    levels::LEVELS,
+    levels::{Shape, LEVELS},
     shape::{
-        icosahedron,
-        loader::{get_cross_face_edge_transform, Shape},
-        platonic_mesh_builder::MazeMeshBuilder,
-        shape_loader::compute_face_normal,
+        icosahedron, loader::get_cross_face_edge_transform, platonic_mesh_builder::MazeMeshBuilder,
+        shape_utils::compute_face_normal,
     },
 };
 

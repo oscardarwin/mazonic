@@ -69,3 +69,6 @@ impl PartialEq for Room {
 }
 
 impl Eq for Room {}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct Edge;

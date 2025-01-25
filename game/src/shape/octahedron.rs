@@ -11,7 +11,7 @@ use crate::{
     room::{Face, Room},
 };
 
-use super::{shape_loader::face_indices_to_vertices, triangle_face_generator};
+use super::shape_utils::face_indices_to_vertices;
 
 const VERTEX_SCALING_FACTOR: f32 = SQRT_2 / 2.0;
 

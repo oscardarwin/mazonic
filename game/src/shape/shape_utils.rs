@@ -1,18 +1,4 @@
-use std::{fmt::Debug, hash::Hash};
-
-use bevy::{ecs::system::Resource, math::Vec3, render::mesh::Mesh, utils::HashSet};
-use serde::{Deserialize, Serialize};
-
-use crate::room::{Face, Room};
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum BorderType {
-    SameFace,
-    Connected,
-}
-
-#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
-pub struct Edge;
+use bevy::prelude::*;
 
 pub fn face_indices_to_vertices<const NUM_FACES: usize, const VERTICES_PER_FACE: usize>(
     faces_indices: [[usize; VERTICES_PER_FACE]; NUM_FACES],

@@ -4,6 +4,5 @@ pub mod icosahedron;
 pub mod loader;
 pub mod octahedron;
 pub mod platonic_mesh_builder;
-pub mod shape_loader;
+pub mod shape_utils;
 pub mod tetrahedron;
-pub mod triangle_face_generator;

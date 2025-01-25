@@ -2,12 +2,11 @@ use crate::{
     camera::MainCamera,
     game_settings::GameSettings,
     game_state::PlayState,
+    levels::GameLevel,
+    maze::border_type::BorderType,
     player::{Player, PlayerMazeState},
-    room::Room,
-    shape::{
-        loader::{GameLevel, GraphComponent},
-        shape_loader::{BorderType, Edge},
-    },
+    room::{Edge, Room},
+    shape::loader::GraphComponent,
 };
 use bevy::{
     ecs::system::{Query, ResMut},
@@ -176,7 +175,7 @@ pub fn solve(
 
     if let Some(new_player_maze_state) = match player_maze_state.as_ref() {
         PlayerMazeState::Node(node) => {
-            move_player_on_node(&node, &graph, player_elevation, node_snap_threshold, ray)
+            move_player_on_node(&node, graph, player_elevation, node_snap_threshold, ray)
         }
         PlayerMazeState::Edge(from_node, to_node, _) => move_player_on_edge(
             &from_node,

@@ -13,7 +13,7 @@ use itertools::{iproduct, repeat_n};
 
 use crate::room::{Face, Room};
 
-use super::shape_loader::face_indices_to_vertices;
+use super::shape_utils::face_indices_to_vertices;
 
 const VERTEX_SCALING_FACTOR: f32 = 0.5;
 

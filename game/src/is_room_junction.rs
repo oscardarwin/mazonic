@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use petgraph::{graphmap::GraphMap, Directed, Direction};
 
-use crate::{room::Room, shape::shape_loader::Edge};
+use crate::room::{Edge, Room};
 
 pub fn is_junction(room: &Room, graph: &GraphMap<Room, Edge, Directed>) -> bool {
     let incoming_neighbors = graph.neighbors_directed(*room, Direction::Incoming);

@@ -14,7 +14,7 @@ use controller::Controller;
 use game_settings::GameSettingsPlugin;
 use game_systems::GameSystemsPlugin;
 use noisy_bevy::NoisyShaderPlugin;
-use shape::loader::{GameLevel, MazeLevelData};
+use shape::loader::MazeLevelData;
 
 mod assets;
 mod camera;
@@ -28,6 +28,7 @@ pub mod is_room_junction;
 mod level_selector;
 pub mod levels;
 mod light;
+pub mod maze;
 mod menu;
 mod player;
 pub mod room;
@@ -35,8 +36,6 @@ pub mod shape;
 pub mod sound;
 mod statistics;
 mod ui;
-
-pub fn save_level(name: &str, level: GameLevel) {}
 
 pub fn run() {
     App::new()
