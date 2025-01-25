@@ -162,11 +162,8 @@ pub fn load(
 
         let scaling_factor = 0.5;
         let face_vertices = faces[face_index];
-        let triangle_collider = Collider::triangle(
-            face_vertices[0] * scaling_factor,
-            face_vertices[1] * scaling_factor,
-            face_vertices[2] * scaling_factor,
-        );
+        let triangle_collider =
+            Collider::triangle(face_vertices[0], face_vertices[1], face_vertices[2]);
 
         let face_object = (
             Mesh3d(face_mesh_handle.clone()),
@@ -247,7 +244,7 @@ fn compute_face_transform(level_index: usize, faces: &[[Vec3; 3]; 20]) -> Transf
 
     let face = faces[face_index];
     let face_normal = compute_face_normal(&face);
-    let face_center = face.iter().fold(Vec3::ZERO, |acc, item| acc + item) / 3.0 / 2.0;
+    let face_center = face.iter().fold(Vec3::ZERO, |acc, item| acc + item) / 3.0;
 
     let other_level_index = if level_index == 0 { 1 } else { level_index - 1 };
     let other_face_index = FACE_ORDER[other_level_index];
