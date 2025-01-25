@@ -23,7 +23,7 @@ use super::shape_loader::face_indices_to_vertices;
 
 const VERTEX_SCALING_FACTOR: f32 = PHI / 2.0;
 
-const DODECAHEDRON_VERTICES: [Vec3; 20] = [
+const VERTICES: [Vec3; 20] = [
     Vec3::new(1.0 / PHI, PHI, 0.0),
     Vec3::new(PHI, 0.0, 1.0 / PHI),
     Vec3::new(0.0, 1.0 / PHI, PHI),
@@ -46,7 +46,7 @@ const DODECAHEDRON_VERTICES: [Vec3; 20] = [
     Vec3::new(-1.0, -1.0, -1.0),
 ];
 
-pub const DODECAHEDRON_FACES: [[usize; 5]; 12] = [
+pub const FACE_INDICES: [[usize; 5]; 12] = [
     [0, 9, 15, 2, 12],
     [0, 17, 11, 18, 9],
     [0, 12, 1, 7, 17],
@@ -61,12 +61,10 @@ pub const DODECAHEDRON_FACES: [[usize; 5]; 12] = [
     [8, 19, 10, 18, 11],
 ];
 
-#[derive(Resource, Component, Clone, Debug)]
-pub struct Dodecahedron;
+fn vertices() -> [Vec3; 20] {
+    VERTICES.map(|position| position * VERTEX_SCALING_FACTOR)
+}
 
-impl Dodecahedron {
-    pub fn get_faces() -> [[Vec3; 5]; 12] {
-        face_indices_to_vertices(DODECAHEDRON_FACES, &DODECAHEDRON_VERTICES)
-            .map(|face_vertices| face_vertices.map(|vertex| vertex * VERTEX_SCALING_FACTOR))
-    }
+pub fn faces() -> [[Vec3; 5]; 12] {
+    face_indices_to_vertices(FACE_INDICES, &vertices())
 }

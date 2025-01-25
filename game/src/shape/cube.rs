@@ -17,7 +17,7 @@ use super::shape_loader::face_indices_to_vertices;
 
 const VERTEX_SCALING_FACTOR: f32 = 0.5;
 
-const CUBE_VERTICES: [Vec3; 8] = [
+const VERTICES: [Vec3; 8] = [
     Vec3::new(-1.0, -1.0, -1.0),
     Vec3::new(-1.0, -1.0, 1.0),
     Vec3::new(-1.0, 1.0, -1.0),
@@ -28,7 +28,7 @@ const CUBE_VERTICES: [Vec3; 8] = [
     Vec3::new(1.0, 1.0, 1.0),
 ];
 
-pub const CUBE_FACES: [[usize; 4]; 6] = [
+pub const FACE_INDICES: [[usize; 4]; 6] = [
     [0, 2, 6, 4],
     [0, 1, 3, 2],
     [6, 7, 5, 4],
@@ -37,12 +37,10 @@ pub const CUBE_FACES: [[usize; 4]; 6] = [
     [5, 7, 3, 1],
 ];
 
-#[derive(Resource, Component, Clone, Debug)]
-pub struct Cube;
+fn vertices() -> [Vec3; 8] {
+    VERTICES.map(|position| position * VERTEX_SCALING_FACTOR)
+}
 
-impl Cube {
-    pub fn get_faces() -> [[Vec3; 4]; 6] {
-        face_indices_to_vertices(CUBE_FACES, &CUBE_VERTICES)
-            .map(|face_vertices| face_vertices.map(|vertex| vertex * VERTEX_SCALING_FACTOR))
-    }
+pub fn faces() -> [[Vec3; 4]; 6] {
+    face_indices_to_vertices(FACE_INDICES, &vertices())
 }

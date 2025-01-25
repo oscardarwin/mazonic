@@ -40,15 +40,11 @@ use crate::{
 };
 
 use super::{
-    cube::{Cube, CUBE_FACES},
-    dodecahedron::{Dodecahedron, DODECAHEDRON_FACES},
-    icosahedron::ICOSAHEDRON_FACES,
-    octahedron::{Octahedron, OCTAHEDRON_FACES},
+    cube, dodecahedron, icosahedron, octahedron,
     platonic_mesh_builder::MazeMeshBuilder,
     shape_loader::{BorderType, Edge},
-    tetrahedron::TETRAHEDRON_FACES,
+    tetrahedron,
 };
-use super::{icosahedron::Icosahedron, tetrahedron::Tetrahedron};
 use crate::assets::materials::GameMaterialHandles;
 use crate::levels::LEVELS;
 
@@ -84,19 +80,13 @@ pub enum Shape {
 impl Shape {
     pub fn get_face_meshes(&self) -> Vec<Mesh> {
         match self {
-            Shape::Cube => SquareFaceMeshGenerator::get_face_meshes::<6>(Cube::get_faces()),
-            Shape::Tetrahedron => {
-                TriangleFaceMeshGenerator::get_face_meshes::<4>(Tetrahedron::get_faces())
-            }
-            Shape::Octahedron => {
-                TriangleFaceMeshGenerator::get_face_meshes::<8>(Octahedron::get_faces())
-            }
+            Shape::Cube => SquareFaceMeshGenerator::get_face_meshes(cube::faces()),
+            Shape::Tetrahedron => TriangleFaceMeshGenerator::get_face_meshes(tetrahedron::faces()),
+            Shape::Octahedron => TriangleFaceMeshGenerator::get_face_meshes(octahedron::faces()),
             Shape::Dodecahedron => {
-                PentagonFaceMeshGenerator::get_face_meshes::<12>(Dodecahedron::get_faces())
+                PentagonFaceMeshGenerator::get_face_meshes(dodecahedron::faces())
             }
-            Shape::Icosahedron => {
-                TriangleFaceMeshGenerator::get_face_meshes::<20>(Icosahedron::get_faces())
-            }
+            Shape::Icosahedron => TriangleFaceMeshGenerator::get_face_meshes(icosahedron::faces()),
         }
     }
 }
@@ -130,11 +120,11 @@ impl GameLevel {
 
     fn get_face_indices(&self, face: &Face) -> HashSet<usize> {
         let indices = match self.shape {
-            Shape::Tetrahedron => TETRAHEDRON_FACES[face.id()].to_vec(),
-            Shape::Cube => CUBE_FACES[face.id()].to_vec(),
-            Shape::Octahedron => OCTAHEDRON_FACES[face.id()].to_vec(),
-            Shape::Dodecahedron => DODECAHEDRON_FACES[face.id()].to_vec(),
-            Shape::Icosahedron => ICOSAHEDRON_FACES[face.id()].to_vec(),
+            Shape::Tetrahedron => tetrahedron::FACE_INDICES[face.id()].to_vec(),
+            Shape::Cube => cube::FACE_INDICES[face.id()].to_vec(),
+            Shape::Octahedron => octahedron::FACE_INDICES[face.id()].to_vec(),
+            Shape::Dodecahedron => dodecahedron::FACE_INDICES[face.id()].to_vec(),
+            Shape::Icosahedron => icosahedron::FACE_INDICES[face.id()].to_vec(),
         };
 
         indices.into_iter().collect()

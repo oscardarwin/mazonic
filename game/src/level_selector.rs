@@ -19,7 +19,7 @@ use crate::{
     game_state::GameState,
     levels::LEVELS,
     shape::{
-        icosahedron::{Icosahedron, ICOSAHEDRON_FACES, ICOSAHEDRON_VERTICES},
+        icosahedron,
         loader::{get_cross_face_edge_transform, Shape},
         platonic_mesh_builder::MazeMeshBuilder,
         shape_loader::compute_face_normal,
@@ -103,7 +103,7 @@ pub fn load(
     let material_handles = &game_materials.selector_handles;
     let ready_easy_color = &game_settings.palette.face_colors.colors[0];
     let ready_hard_color = &game_settings.palette.face_colors.colors[3];
-    let faces = Icosahedron::get_faces();
+    let faces = icosahedron::faces();
     let face_meshes = TriangleFaceMeshGenerator::get_face_meshes::<20>(faces);
 
     let line_color_vec = game_settings.palette.line_color.to_linear().to_vec3();
@@ -249,11 +249,11 @@ fn compute_face_transform(level_index: usize, faces: &[[Vec3; 3]; 20]) -> Transf
     let other_face_index = FACE_ORDER[other_level_index];
     let other_face = faces[other_face_index];
 
-    let face_vertex_indices = ICOSAHEDRON_FACES[face_index]
+    let face_vertex_indices = icosahedron::FACE_INDICES[face_index]
         .into_iter()
         .collect::<HashSet<usize>>();
 
-    let other_face_vertex_indices = ICOSAHEDRON_FACES[other_face_index]
+    let other_face_vertex_indices = icosahedron::FACE_INDICES[other_face_index]
         .into_iter()
         .collect::<HashSet<usize>>();
 
@@ -262,9 +262,11 @@ fn compute_face_transform(level_index: usize, faces: &[[Vec3; 3]; 20]) -> Transf
         .cloned()
         .collect::<Vec<usize>>();
 
+    let icosahedron_vertices = icosahedron::vertices();
+
     let edge_midpoint = edge_vertex_indices
         .iter()
-        .fold(Vec3::ZERO, |acc, item| acc + ICOSAHEDRON_VERTICES[*item])
+        .fold(Vec3::ZERO, |acc, item| acc + icosahedron_vertices[*item])
         / 2.0
         / 2.0;
 
