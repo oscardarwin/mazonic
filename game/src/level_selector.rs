@@ -360,7 +360,7 @@ pub fn update_interactables(
     mut overlay_states_query: Query<(Entity, &mut SelectorOverlayState, &SelectableLevel)>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut selector_state: Res<State<SelectorState>>,
-    mut save_data: Query<&mut SaveData>,
+    mut save_data_query: Query<&mut SaveData>,
 ) {
     let Ok(window) = primary_window.get_single() else {
         return;
@@ -394,6 +394,10 @@ pub fn update_interactables(
 
     for (entity, mut overlay_state, SelectableLevel(level_index)) in overlay_states_query.iter_mut()
     {
+        let save_data = save_data_query.single();
+
+        let level_playable = *level_index <= save_data.completed_index;
+
         let new_overlay_state = match (intersection, pressed) {
             (Some(intersected_entity), _) if intersected_entity != entity => {
                 SelectorOverlayState::None
@@ -403,7 +407,7 @@ pub fn update_interactables(
             {
                 SelectorOverlayState::Pressed
             }
-            (Some(intersected_entity), false) if intersected_entity == entity => {
+            (Some(intersected_entity), false) if intersected_entity == entity && level_playable => {
                 SelectorOverlayState::Hovered
             }
             _ => SelectorOverlayState::None,
@@ -412,7 +416,7 @@ pub fn update_interactables(
         if *overlay_state == SelectorOverlayState::Pressed
             && new_overlay_state == SelectorOverlayState::Hovered
         {
-            save_data.single_mut().current_index = *level_index;
+            save_data_query.single_mut().current_index = *level_index;
             next_game_state.set(GameState::Playing);
         }
 
