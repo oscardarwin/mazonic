@@ -9,7 +9,7 @@ use bevy_rapier3d::prelude::*;
 
 use crate::{
     assets::{
-        materials::GameMaterialHandles,
+        materials::MaterialHandles,
         mesh_generators::{FaceMeshGenerator, TriangleFaceMeshGenerator},
         shaders::MenuSelectionHoverMaterial,
     },
@@ -90,7 +90,7 @@ pub fn load(
     mut materials: ResMut<Assets<StandardMaterial>>,
     save_data_query: Query<&SaveData>,
     game_settings: Res<GameSettings>,
-    game_materials: Res<GameMaterialHandles>,
+    game_materials: Res<MaterialHandles>,
     mut mouse_button_event_reader: EventReader<MouseButtonInput>,
 ) {
     mouse_button_event_reader.clear();
@@ -432,7 +432,7 @@ pub fn update_selection_overlay(
         (&SelectorOverlayState, &Children),
         Changed<SelectorOverlayState>,
     >,
-    game_material_handles: Res<GameMaterialHandles>,
+    game_material_handles: Res<MaterialHandles>,
     mut overlay_query: Query<
         (
             &mut MeshMaterial3d<ExtendedMaterial<StandardMaterial, MenuSelectionHoverMaterial>>,

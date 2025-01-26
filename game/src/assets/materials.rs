@@ -109,7 +109,7 @@ pub struct SelectorMaterialHandles {
 }
 
 #[derive(Resource)]
-pub struct GameMaterialHandles {
+pub struct MaterialHandles {
     pub player_halo_material: Handle<ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>>,
     pub player_material: Handle<StandardMaterial>,
     pub line_material: Handle<StandardMaterial>,
@@ -136,6 +136,21 @@ pub fn setup_materials(
     asset_server: Res<AssetServer>,
     game_settings: Res<GameSettings>,
 ) {
+    let bright_player_color = player_color.to_linear().to_vec3() * 2.0;
+    let player_halo_material = player_halo_materials.add(ExtendedMaterial {
+        base: StandardMaterial {
+            base_color: game_settings.palette.player_color,
+            emissive: LinearRgba::from_vec3(bright_player_color),
+            alpha_mode: AlphaMode::Blend,
+            diffuse_transmission: 1.0,
+            thickness: 0.17,
+            metallic: 0.2,
+            fog_enabled: true,
+            double_sided: true,
+            ..Default::default()
+        },
+        extension: PlayerHaloMaterial {},
+    });
     let player_color = &game_settings.palette.player_color;
     let player_material = materials.add(StandardMaterial {
         base_color: *player_color,
@@ -179,22 +194,6 @@ pub fn setup_materials(
         })
     });
 
-    let bright_player_color = player_color.to_linear().to_vec3() * 2.0;
-    let player_halo_material = player_halo_materials.add(ExtendedMaterial {
-        base: StandardMaterial {
-            base_color: game_settings.palette.player_color,
-            emissive: LinearRgba::from_vec3(bright_player_color),
-            alpha_mode: AlphaMode::Blend,
-            diffuse_transmission: 1.0,
-            thickness: 0.17,
-            metallic: 0.2,
-            fog_enabled: true,
-            double_sided: true,
-            ..Default::default()
-        },
-        extension: PlayerHaloMaterial {},
-    });
-
     let selection_hover = menu_selection_hover_materials.add(ExtendedMaterial {
         base: StandardMaterial {
             base_color: line_color.with_alpha(0.75),
@@ -223,8 +222,7 @@ pub fn setup_materials(
         selection_hover,
     };
 
-    // This could just be an entity with lots of little components.
-    commands.insert_resource(GameMaterialHandles {
+    commands.insert_resource(MaterialHandles {
         player_halo_material,
         player_material,
         line_material: line_material_handle,

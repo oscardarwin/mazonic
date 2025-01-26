@@ -42,7 +42,7 @@ use crate::{
 };
 
 use super::{cube, dodecahedron, icosahedron, octahedron, tetrahedron};
-use crate::assets::materials::GameMaterialHandles;
+use crate::assets::materials::MaterialHandles;
 use crate::levels::LEVELS;
 use crate::maze::maze_mesh_builder::MazeMeshBuilder;
 
@@ -148,7 +148,7 @@ pub fn spawn_mesh(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     level_query: Query<&GameLevel>,
-    asset_handles: Res<GameMaterialHandles>,
+    asset_handles: Res<MaterialHandles>,
 ) {
     let Ok(level) = level_query.get_single() else {
         return;

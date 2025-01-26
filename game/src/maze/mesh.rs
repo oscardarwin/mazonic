@@ -1,7 +1,7 @@
 use bevy::{math::NormedVectorSpace, prelude::*};
 
 use crate::{
-    assets::materials::GameMaterialHandles,
+    assets::materials::MaterialHandles,
     is_room_junction::is_junction,
     levels::{GameLevel, LevelData},
     maze::maze_mesh_builder::MazeMeshBuilder,
@@ -17,7 +17,7 @@ pub fn spawn(
     mut materials: Res<Assets<StandardMaterial>>,
     level_query: Query<(&MazeMeshBuilder, &GameLevel)>,
     maze_query: Query<(&GraphComponent, &SolutionComponent)>,
-    asset_handles: Res<GameMaterialHandles>,
+    asset_handles: Res<MaterialHandles>,
 ) {
     let Ok((mesh_builder, level)) = level_query.get_single() else {
         return;

@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use crate::{
-    assets::materials::GameMaterialHandles, assets::shaders::PlayerHaloMaterial,
+    assets::materials::MaterialHandles, assets::shaders::PlayerHaloMaterial,
     game_settings::GameSettings, levels::LevelData, maze::maze_mesh_builder::MazeMeshBuilder,
     room::Room, shape::loader::SolutionComponent,
 };
@@ -52,7 +52,7 @@ pub fn spawn_player_halo(
     settings: Res<GameSettings>,
     player_query: Query<&Transform, With<Player>>,
     mesh_builder_query: Query<&MazeMeshBuilder>,
-    asset_handles: Res<GameMaterialHandles>,
+    asset_handles: Res<MaterialHandles>,
 ) {
     let Ok(mesh_builder) = mesh_builder_query.get_single() else {
         return;
@@ -87,12 +87,12 @@ pub fn turn_off_player_halo(mut player_halo_query: Query<&mut PlayerHalo>) {
 
 pub fn update_halo_follow_player(
     mut player_halo_query: Query<(&mut Transform, &PlayerHalo)>,
-    player_query: Query<&Transform, (With<Player>, Without<PlayerHalo>)>,
+    player_query: Query<(&Transform, &mut MeshMaterial3d<>), (With<Player>, Without<PlayerHalo>)>,
     mut player_halo_materials: ResMut<
         Assets<ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>>,
     >,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_handles: Res<GameMaterialHandles>,
+    asset_handles: Res<MaterialHandles>,
 ) {
     let Ok((mut player_halo_transform, halo)) = player_halo_query.get_single_mut() else {
         return;
@@ -148,7 +148,7 @@ pub fn spawn_player(
     mesh_builder_query: Query<&MazeMeshBuilder>,
     solution_query: Query<&SolutionComponent>,
     settings: Res<GameSettings>,
-    asset_handles: Res<GameMaterialHandles>,
+    asset_handles: Res<MaterialHandles>,
 ) {
     let Ok(mesh_builder) = mesh_builder_query.get_single() else {
         return;
