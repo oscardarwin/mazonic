@@ -25,7 +25,7 @@ use crate::{
     },
     sound::play_note,
     statistics::{setup_statistics, update_player_path},
-    ui,
+    ui::{self, update_next_level_button_visibility, update_previous_level_button_visibility},
 };
 
 #[derive(Default)]
@@ -45,6 +45,8 @@ impl Plugin for GameSystemsPlugin {
             spawn_player,
             trigger_camera_resize_on_level_change.after(spawn_player),
             spawn_player_halo.after(spawn_player),
+            update_previous_level_button_visibility,
+            update_next_level_button_visibility,
         )
             .into_configs();
 

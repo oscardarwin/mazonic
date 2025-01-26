@@ -32,7 +32,7 @@ pub fn spawn_navigation_ui(mut commands: Commands, asset_server: Res<AssetServer
     let font = asset_server.load(FONT_PATH);
     let font_size = 50.0;
 
-    let get_text_node = |text: String| {
+    let get_text_node = |text: &str| {
         (
             Text::new(text),
             TextFont {
@@ -91,12 +91,12 @@ pub fn spawn_navigation_ui(mut commands: Commands, asset_server: Res<AssetServer
                 parent
                     .spawn(button.clone())
                     .insert(ReplayLevelButton)
-                    .with_child(get_text_node("↻".to_string()));
+                    .with_child(get_text_node("↻"));
 
                 parent
                     .spawn(button.clone())
                     .insert(PreviousLevelButton)
-                    .with_child(get_text_node("←".to_string()));
+                    .with_child(get_text_node("←"));
             });
 
             parent.spawn(side_bar_node).with_children(|parent| {
@@ -115,7 +115,7 @@ pub fn spawn_navigation_ui(mut commands: Commands, asset_server: Res<AssetServer
                 parent
                     .spawn(button)
                     .insert(NextLevelButton)
-                    .with_child(get_text_node("→".to_string()));
+                    .with_child(get_text_node("→"));
             });
         });
 }
@@ -262,6 +262,47 @@ pub fn update_level_complete_ui(
             }
         }
     }
+}
+
+pub fn update_previous_level_button_visibility(
+    mut previous_level_button_query: Query<&mut Visibility, With<PreviousLevelButton>>,
+    save_data_query: Query<&SaveData>,
+) {
+    let Ok(save_data) = save_data_query.get_single() else {
+        return;
+    };
+
+    let Ok(mut previous_level_button_visibility) = previous_level_button_query.get_single_mut()
+    else {
+        return;
+    };
+
+    *previous_level_button_visibility = if save_data.current_index == 0 {
+        Visibility::Hidden
+    } else {
+        Visibility::Visible
+    }
+}
+
+pub fn update_next_level_button_visibility(
+    mut next_level_button_query: Query<&mut Visibility, With<NextLevelButton>>,
+    save_data_query: Query<&SaveData>,
+) {
+    let Ok(save_data) = save_data_query.get_single() else {
+        return;
+    };
+
+    let Ok(mut next_level_button_visibility) = next_level_button_query.get_single_mut() else {
+        return;
+    };
+
+    let max_level_index = LEVELS.len() - 1;
+
+    *next_level_button_visibility = if save_data.current_index == max_level_index {
+        Visibility::Hidden
+    } else {
+        Visibility::Visible
+    };
 }
 
 pub fn previous_level(
