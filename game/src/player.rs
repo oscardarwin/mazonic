@@ -1,9 +1,14 @@
 use std::fmt::Debug;
 
 use crate::{
-    assets::materials::MaterialHandles, assets::shaders::PlayerHaloMaterial,
-    game_settings::GameSettings, levels::LevelData, maze::maze_mesh_builder::MazeMeshBuilder,
-    room::Room, shape::loader::SolutionComponent,
+    assets::{
+        material_handles::MaterialHandles, mesh_handles::MeshHandles, shaders::PlayerHaloMaterial,
+    },
+    game_settings::GameSettings,
+    levels::LevelData,
+    maze::maze_mesh_builder::MazeMeshBuilder,
+    room::Room,
+    shape::loader::SolutionComponent,
 };
 use bevy::{math::NormedVectorSpace, pbr::ExtendedMaterial, prelude::*};
 
@@ -46,33 +51,6 @@ pub struct PlayerHalo {
     visible: bool,
 }
 
-pub fn spawn_player_halo(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    settings: Res<GameSettings>,
-    player_query: Query<&Transform, With<Player>>,
-    mesh_builder_query: Query<&MazeMeshBuilder>,
-    asset_handles: Res<MaterialHandles>,
-) {
-    let Ok(mesh_builder) = mesh_builder_query.get_single() else {
-        return;
-    };
-
-    let Ok(player_transform) = player_query.get_single() else {
-        return;
-    };
-
-    let player_halo_mesh = mesh_builder.player_halo_mesh();
-    let player_mesh_handle = meshes.add(player_halo_mesh);
-
-    commands
-        .spawn(Mesh3d(player_mesh_handle))
-        .insert(MeshMaterial3d(asset_handles.player_halo_material.clone()))
-        .insert(*player_transform)
-        .insert(LevelData)
-        .insert(PlayerHalo { visible: true });
-}
-
 pub fn turn_on_player_halo(mut player_halo_query: Query<&mut PlayerHalo>) {
     if let Ok(mut player_halo) = player_halo_query.get_single_mut() {
         player_halo.visible = true;
@@ -86,23 +64,21 @@ pub fn turn_off_player_halo(mut player_halo_query: Query<&mut PlayerHalo>) {
 }
 
 pub fn update_halo_follow_player(
-    mut player_halo_query: Query<(&mut Transform, &PlayerHalo)>,
-    player_query: Query<(&Transform, &mut MeshMaterial3d<>), (With<Player>, Without<PlayerHalo>)>,
+    mut player_halo_query: Query<&PlayerHalo>,
+    player_query: Query<&Transform, (With<Player>, Without<PlayerHalo>)>,
     mut player_halo_materials: ResMut<
         Assets<ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>>,
     >,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_handles: Res<MaterialHandles>,
 ) {
-    let Ok((mut player_halo_transform, halo)) = player_halo_query.get_single_mut() else {
+    let Ok(halo) = player_halo_query.get_single_mut() else {
         return;
     };
 
     let Ok(player_transform) = player_query.get_single() else {
         return;
     };
-
-    player_halo_transform.translation = player_transform.translation.clone();
 
     let mut player_material = materials.get_mut(&asset_handles.player_material).unwrap();
     let target_luminance_factor = if halo.visible { 2.0 } else { 0.003 };
@@ -144,7 +120,7 @@ pub fn update_halo_follow_player(
 
 pub fn spawn_player(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
+    mesh_handles: Res<MeshHandles>,
     mesh_builder_query: Query<&MazeMeshBuilder>,
     solution_query: Query<&SolutionComponent>,
     settings: Res<GameSettings>,
@@ -158,25 +134,33 @@ pub fn spawn_player(
     };
 
     let initial_node = solution.first().unwrap().clone();
-    let player_mesh = mesh_builder.player_mesh();
-    let player_mesh_handle = meshes.add(player_mesh);
+    let player_size = mesh_builder.player_mesh_size();
 
-    let height_above_node = settings.player_elevation + player_mesh.radius;
+    let height_above_node = settings.player_elevation + player_size;
     let player_transform = compute_initial_player_transform(initial_node, height_above_node);
 
     commands
-        .spawn(PbrBundle {
-            mesh: Mesh3d(player_mesh_handle),
-            material: MeshMaterial3d(asset_handles.player_material.clone()),
-            transform: player_transform,
-            ..default()
-        })
-        .insert(Player {
-            size: player_mesh.radius,
-        })
-        .insert(PlayerMazeState::Node(initial_node))
-        .insert(Collider::ball(player_mesh.radius))
-        .insert(LevelData);
+        .spawn((
+            player_transform,
+            Player { size: player_size },
+            PlayerMazeState::Node(initial_node),
+            Collider::ball(player_size),
+            LevelData,
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Transform::IDENTITY.with_scale(Vec3::splat(2.0 * player_size)),
+                Mesh3d(mesh_handles.player.clone()),
+                MeshMaterial3d(asset_handles.player_material.clone()),
+            ));
+
+            parent.spawn((
+                Mesh3d(mesh_handles.player_halo.clone()),
+                MeshMaterial3d(asset_handles.player_halo_material.clone()),
+                Transform::IDENTITY.with_scale(Vec3::splat(2.0 * player_size * 1.1)),
+                PlayerHalo { visible: true },
+            ));
+        });
 }
 
 fn compute_initial_player_transform(start_node: Room, player_elevation: f32) -> Transform {

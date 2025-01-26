@@ -136,6 +136,7 @@ pub fn setup_materials(
     asset_server: Res<AssetServer>,
     game_settings: Res<GameSettings>,
 ) {
+    let player_color = &game_settings.palette.player_color;
     let bright_player_color = player_color.to_linear().to_vec3() * 2.0;
     let player_halo_material = player_halo_materials.add(ExtendedMaterial {
         base: StandardMaterial {
@@ -151,7 +152,6 @@ pub fn setup_materials(
         },
         extension: PlayerHaloMaterial {},
     });
-    let player_color = &game_settings.palette.player_color;
     let player_material = materials.add(StandardMaterial {
         base_color: *player_color,
         emissive: (*player_color).into(),

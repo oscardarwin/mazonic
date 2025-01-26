@@ -9,7 +9,7 @@ use bevy_rapier3d::prelude::*;
 
 use crate::{
     assets::{
-        materials::MaterialHandles,
+        material_handles::MaterialHandles,
         mesh_generators::{FaceMeshGenerator, TriangleFaceMeshGenerator},
         shaders::MenuSelectionHoverMaterial,
     },

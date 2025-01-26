@@ -22,11 +22,12 @@ use petgraph::{graphmap::GraphMap, Directed};
 
 use crate::{
     assets::{
-        materials::FaceMaterialHandles,
+        material_handles::FaceMaterialHandles,
         mesh_generators::{
             FaceMeshGenerator, PentagonFaceMeshGenerator, SquareFaceMeshGenerator,
             TriangleFaceMeshGenerator,
         },
+        mesh_handles::MeshHandles,
         shaders::ShapeFaceMaterial,
     },
     constants::{SQRT_3, TAN_27},
@@ -35,14 +36,14 @@ use crate::{
     is_room_junction::is_junction,
     level_selector::SaveData,
     levels::{GameLevel, LevelData, Shape},
-    maze::border_type::BorderType,
+    maze::{border_type::BorderType, mesh},
     player::{Player, PlayerMazeState},
     room::{Edge, Face, Room},
     sound::{Note, NoteMapping},
 };
 
 use super::{cube, dodecahedron, icosahedron, octahedron, tetrahedron};
-use crate::assets::materials::MaterialHandles;
+use crate::assets::material_handles::MaterialHandles;
 use crate::levels::LEVELS;
 use crate::maze::maze_mesh_builder::MazeMeshBuilder;
 
@@ -68,7 +69,7 @@ pub struct MazeSaveDataHandle(Handle<MazeLevelData>);
 
 pub fn despawn_level_data(mut commands: Commands, level_entities: Query<Entity, With<LevelData>>) {
     for entity in level_entities.iter() {
-        commands.entity(entity).despawn();
+        commands.entity(entity).despawn_recursive();
     }
 }
 
@@ -146,7 +147,7 @@ pub fn spawn_level_data(
 
 pub fn spawn_mesh(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
+    mesh_handles: Res<MeshHandles>,
     level_query: Query<&GameLevel>,
     asset_handles: Res<MaterialHandles>,
 ) {
@@ -165,19 +166,19 @@ pub fn spawn_mesh(
             Shape::Icosahedron => face_materials_handles.icosahedron().into_iter().collect(),
         };
 
-    let face_meshes = match &level.shape {
-        Shape::Cube => SquareFaceMeshGenerator::get_face_meshes(cube::faces()),
-        Shape::Tetrahedron => TriangleFaceMeshGenerator::get_face_meshes(tetrahedron::faces()),
-        Shape::Octahedron => TriangleFaceMeshGenerator::get_face_meshes(octahedron::faces()),
-        Shape::Dodecahedron => PentagonFaceMeshGenerator::get_face_meshes(dodecahedron::faces()),
-        Shape::Icosahedron => TriangleFaceMeshGenerator::get_face_meshes(icosahedron::faces()),
+    let face_mesh_handles = match &level.shape {
+        Shape::Cube => &mesh_handles.cube_faces,
+        Shape::Tetrahedron => &mesh_handles.tetrahedron_faces,
+        Shape::Octahedron => &mesh_handles.octahedron_faces,
+        Shape::Dodecahedron => &mesh_handles.dodecahedron_faces,
+        Shape::Icosahedron => &mesh_handles.icosahedron_faces,
     };
 
-    for (face_mesh, face_material_handle) in face_meshes.into_iter().zip(materials.into_iter()) {
-        let face_mesh_handle = meshes.add(face_mesh);
-
+    for (face_mesh_handle, face_material_handle) in
+        face_mesh_handles.into_iter().zip(materials.into_iter())
+    {
         commands
-            .spawn(Mesh3d(face_mesh_handle))
+            .spawn(Mesh3d(face_mesh_handle.clone()))
             .insert(MeshMaterial3d(face_material_handle))
             .insert(LevelData);
     }

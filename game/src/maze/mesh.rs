@@ -1,7 +1,7 @@
 use bevy::{math::NormedVectorSpace, prelude::*};
 
 use crate::{
-    assets::materials::MaterialHandles,
+    assets::material_handles::MaterialHandles,
     is_room_junction::is_junction,
     levels::{GameLevel, LevelData},
     maze::maze_mesh_builder::MazeMeshBuilder,

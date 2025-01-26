@@ -1,7 +1,7 @@
 use bevy::{ecs::schedule::SystemConfigs, prelude::*, text::Update2dText};
 
 use crate::{
-    assets::materials::setup_materials,
+    assets::{material_handles::setup_materials, mesh_handles::setup_mesh_handles},
     camera::{
         camera_dolly, camera_follow_player, camera_move_to_target, camera_setup,
         trigger_camera_resize_on_level_change, trigger_camera_resize_on_window_change,
@@ -16,7 +16,7 @@ use crate::{
     light::{light_follow_camera, setup_light},
     maze, menu,
     player::{
-        move_player, spawn_player, spawn_player_halo, turn_off_player_halo, turn_on_player_halo,
+        move_player, spawn_player, turn_off_player_halo, turn_on_player_halo,
         update_halo_follow_player,
     },
     shape::{
@@ -44,7 +44,6 @@ impl Plugin for GameSystemsPlugin {
             setup_statistics,
             spawn_player,
             trigger_camera_resize_on_level_change.after(spawn_player),
-            spawn_player_halo.after(spawn_player),
             update_previous_level_button_visibility,
             update_next_level_button_visibility,
         )
@@ -70,6 +69,7 @@ impl Plugin for GameSystemsPlugin {
             setup_node_arrival_particle,
             setup_materials,
             setup_save_data,
+            setup_mesh_handles,
         );
 
         let update_systems = get_update_systems();
