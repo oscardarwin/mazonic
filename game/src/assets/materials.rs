@@ -114,6 +114,8 @@ pub struct GameMaterialHandles {
     pub player_material: Handle<StandardMaterial>,
     pub line_material: Handle<StandardMaterial>,
     pub dashed_arrow_material: Handle<ExtendedMaterial<StandardMaterial, DashedArrowMaterial>>,
+    pub bright_dashed_arrow_material:
+        Handle<ExtendedMaterial<StandardMaterial, DashedArrowMaterial>>,
     pub face_materials: FaceMaterialHandles,
     pub selector_handles: SelectorMaterialHandles,
 }
@@ -141,14 +143,25 @@ pub fn setup_materials(
         reflectance: 0.1,
         ..Default::default()
     });
-    let line_material = materials.add(StandardMaterial::from_color(
-        game_settings.palette.line_color,
-    ));
+
+    let line_color = &game_settings.palette.line_color;
+    let line_color_vec = line_color.to_linear().to_vec3();
+    let line_material_handle = materials.add(*line_color);
 
     let dashed_arrow_material = dashed_arrow_materials.add(ExtendedMaterial {
         base: StandardMaterial {
-            base_color: game_settings.palette.line_color,
+            base_color: *line_color,
             alpha_mode: AlphaMode::Blend,
+            ..Default::default()
+        },
+        extension: DashedArrowMaterial {},
+    });
+
+    let bright_dashed_arrow_material = dashed_arrow_materials.add(ExtendedMaterial {
+        base: StandardMaterial {
+            base_color: *line_color,
+            alpha_mode: AlphaMode::Blend,
+            emissive: LinearRgba::from_vec3(line_color_vec * 20.0),
             ..Default::default()
         },
         extension: DashedArrowMaterial {},
@@ -182,8 +195,6 @@ pub fn setup_materials(
         extension: PlayerHaloMaterial {},
     });
 
-    let line_color = &game_settings.palette.line_color;
-    let line_color_vec = line_color.to_linear().to_vec3();
     let selection_hover = menu_selection_hover_materials.add(ExtendedMaterial {
         base: StandardMaterial {
             base_color: line_color.with_alpha(0.75),
@@ -216,8 +227,9 @@ pub fn setup_materials(
     commands.insert_resource(GameMaterialHandles {
         player_halo_material,
         player_material,
-        line_material,
+        line_material: line_material_handle,
         dashed_arrow_material,
+        bright_dashed_arrow_material,
         face_materials: FaceMaterialHandles {
             materials: face_materials,
         },

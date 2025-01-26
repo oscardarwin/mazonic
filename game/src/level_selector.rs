@@ -218,7 +218,9 @@ pub fn load(
 
         commands
             .spawn(Mesh3d(edge_mesh_handle.clone()))
-            .insert(MeshMaterial3d(game_materials.dashed_arrow_material.clone()))
+            .insert(MeshMaterial3d(
+                game_materials.bright_dashed_arrow_material.clone(),
+            ))
             .insert(edge_transform)
             .insert(SelectorEntity);
     }
