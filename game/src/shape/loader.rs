@@ -41,12 +41,10 @@ use crate::{
     sound::{Note, NoteMapping},
 };
 
-use super::{
-    cube, dodecahedron, icosahedron, octahedron, platonic_mesh_builder::MazeMeshBuilder,
-    tetrahedron,
-};
+use super::{cube, dodecahedron, icosahedron, octahedron, tetrahedron};
 use crate::assets::materials::GameMaterialHandles;
 use crate::levels::LEVELS;
+use crate::maze::maze_mesh_builder::MazeMeshBuilder;
 
 use serde::{Deserialize, Serialize};
 

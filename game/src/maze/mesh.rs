@@ -4,11 +4,9 @@ use crate::{
     assets::materials::GameMaterialHandles,
     is_room_junction::is_junction,
     levels::{GameLevel, LevelData},
+    maze::maze_mesh_builder::MazeMeshBuilder,
     room::Room,
-    shape::{
-        loader::{GraphComponent, SolutionComponent},
-        platonic_mesh_builder::MazeMeshBuilder,
-    },
+    shape::loader::{GraphComponent, SolutionComponent},
 };
 
 use super::border_type::BorderType;

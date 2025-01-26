@@ -18,10 +18,9 @@ use crate::{
     game_settings::GameSettings,
     game_state::GameState,
     levels::{Shape, LEVELS},
+    maze::maze_mesh_builder::MazeMeshBuilder,
     maze::mesh::get_cross_face_edge_transform,
-    shape::{
-        icosahedron, platonic_mesh_builder::MazeMeshBuilder, shape_utils::compute_face_normal,
-    },
+    shape::{icosahedron, shape_utils::compute_face_normal},
 };
 
 const SYMBOL_TEXTURE_DIMENSIONS: Vec2 = Vec2::new(5.0, 3.0);

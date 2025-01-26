@@ -1,12 +1,9 @@
 use std::fmt::Debug;
 
 use crate::{
-    assets::materials::GameMaterialHandles,
-    assets::shaders::PlayerHaloMaterial,
-    game_settings::GameSettings,
-    levels::LevelData,
-    room::Room,
-    shape::{loader::SolutionComponent, platonic_mesh_builder::MazeMeshBuilder},
+    assets::materials::GameMaterialHandles, assets::shaders::PlayerHaloMaterial,
+    game_settings::GameSettings, levels::LevelData, maze::maze_mesh_builder::MazeMeshBuilder,
+    room::Room, shape::loader::SolutionComponent,
 };
 use bevy::{math::NormedVectorSpace, pbr::ExtendedMaterial, prelude::*};
 
