@@ -12,6 +12,7 @@ use bevy::{
 use bevy_rustysynth::{MidiAudio, MidiNote};
 
 use std::{
+    collections::VecDeque,
     f32::consts::FRAC_PI_2,
     fs::{self, File},
     hash::{DefaultHasher, Hash, Hasher},
@@ -39,7 +40,7 @@ use crate::{
     maze::{border_type::BorderType, mesh},
     player::{Player, PlayerMazeState},
     room::{Edge, Face, Room},
-    sound::{Note, NoteMapping},
+    sound::{MelodyPuzzleTracker, Note, NoteMapping},
 };
 
 use super::{cube, dodecahedron, icosahedron, octahedron, tetrahedron};
@@ -55,13 +56,18 @@ pub struct GraphComponent(pub GraphMap<Room, Edge, Directed>);
 #[derive(Component)]
 pub struct SolutionComponent(pub Vec<Room>);
 
+#[derive(Serialize, Deserialize)]
+pub struct EncryptedMelody {
+    pub encrypted_melody_bytes: Vec<u8>,
+    pub melody_length: usize,
+}
+
 #[derive(Serialize, Deserialize, Asset, TypePath)]
 pub struct MazeLevelData {
     pub graph: GraphMap<Room, Edge, Directed>,
     pub solution: Vec<Room>,
     pub node_id_to_note: HashMap<u64, Note>,
-    //pub encrypted_song: Vec<u8>,
-    //pub song_melody_length: u8,
+    pub encrypted_melody: Option<EncryptedMelody>,
 }
 
 #[derive(Component)]
@@ -118,6 +124,7 @@ pub fn spawn_level_data(
         graph,
         solution,
         node_id_to_note,
+        encrypted_melody,
     }) = maze_save_data_assets.get(maze_save_data_handle)
     else {
         return;
@@ -131,9 +138,24 @@ pub fn spawn_level_data(
             let midi_note = note.clone().into();
             let audio = MidiAudio::Sequence(vec![midi_note]);
             let audio_handle = asset_server.add::<MidiAudio>(audio);
-            (*node_id, audio_handle)
+            (*node_id, (audio_handle, note.clone()))
         })
-        .collect::<HashMap<u64, Handle<MidiAudio>>>();
+        .collect::<HashMap<u64, (Handle<MidiAudio>, Note)>>();
+
+    if let Some(EncryptedMelody {
+        encrypted_melody_bytes,
+        melody_length,
+    }) = encrypted_melody
+    {
+        let room_ids = VecDeque::with_capacity(*melody_length);
+        commands.spawn((
+            MelodyPuzzleTracker {
+                notes: room_ids,
+                encrypted_melody_bytes: encrypted_melody_bytes.clone(),
+            },
+            LevelData,
+        ));
+    }
 
     // TODO: perhaps think about how not to duplicate the data here.
     commands.spawn((

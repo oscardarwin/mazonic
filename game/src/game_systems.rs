@@ -23,7 +23,7 @@ use crate::{
         self,
         loader::{despawn_level_data, load_level_asset, spawn_level_data},
     },
-    sound::play_note,
+    sound::{check_melody_solved, play_note},
     statistics::{setup_statistics, update_player_path},
     ui::{self, update_next_level_button_visibility, update_previous_level_button_visibility},
 };
@@ -115,6 +115,7 @@ fn get_update_systems() -> SystemConfigs {
         victory_transition.run_if(in_state(PlayState::Playing)),
         update_player_path.run_if(in_state(PlayState::Playing)),
         play_note.run_if(in_state(PlayState::Playing)),
+        check_melody_solved.run_if(in_state(PlayState::Playing)),
         camera_move_to_target.run_if(in_state(ControllerState::IdlePostSolve)),
         spawn_node_arrival_particles,
         (
