@@ -98,7 +98,7 @@ pub struct NoteMapping(pub HashMap<u64, (Handle<MidiAudio>, Note)>);
 
 #[derive(Component)]
 pub struct MelodyPuzzleTracker {
-    pub notes: VecDeque<Note>,
+    pub room_ids: VecDeque<u64>,
     pub encrypted_melody_bytes: Vec<u8>,
 }
 
@@ -133,11 +133,11 @@ pub fn play_note(
     let (note_handle, note) = note_mapping.get(&room.id).unwrap().clone();
 
     if let Ok(mut melody_tracker) = melody_tracker_query.get_single_mut() {
-        if melody_tracker.notes.len() == melody_tracker.notes.capacity() {
-            melody_tracker.notes.pop_front();
+        if melody_tracker.room_ids.len() == melody_tracker.room_ids.capacity() {
+            melody_tracker.room_ids.pop_front();
         }
 
-        melody_tracker.notes.push_back(note.clone());
+        melody_tracker.room_ids.push_back(room.id);
     }
     commands.spawn(AudioSourceBundle {
         source: AudioPlayer(note_handle),
@@ -147,16 +147,32 @@ pub fn play_note(
 
 pub fn check_melody_solved(
     melody_tracker_query: Query<&MelodyPuzzleTracker, Changed<MelodyPuzzleTracker>>,
+    room_id_note_mapping_query: Query<&NoteMapping>,
 ) {
     let Ok(melody_tracker) = melody_tracker_query.get_single() else {
         return;
     };
 
-    let notes = Notes(melody_tracker.notes.iter().cloned().collect_vec());
+    let Ok(NoteMapping(room_id_note_mapping)) = room_id_note_mapping_query.get_single() else {
+        return;
+    };
+
+    let notes = Notes(
+        melody_tracker
+            .room_ids
+            .iter()
+            .map(|room_id| {
+                let (_, note) = room_id_note_mapping.get(room_id).unwrap();
+                note.clone()
+            })
+            .collect_vec(),
+    );
 
     let Some(melody) = try_decrypt_melody(&notes, &melody_tracker.encrypted_melody_bytes) else {
         return;
     };
+
+    // save the room ids
 
     println!("Solved Melody: {}", melody.name);
 }

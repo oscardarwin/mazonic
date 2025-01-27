@@ -150,7 +150,7 @@ pub fn spawn_level_data(
         let room_ids = VecDeque::with_capacity(*melody_length);
         commands.spawn((
             MelodyPuzzleTracker {
-                notes: room_ids,
+                room_ids,
                 encrypted_melody_bytes: encrypted_melody_bytes.clone(),
             },
             LevelData,
