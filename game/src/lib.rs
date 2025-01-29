@@ -38,6 +38,7 @@ pub mod shape;
 pub mod sound;
 mod statistics;
 mod ui;
+mod victory;
 
 pub fn run() {
     App::new()

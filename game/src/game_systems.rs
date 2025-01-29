@@ -30,6 +30,7 @@ use crate::{
     sound::{check_melody_solved, play_note},
     statistics::update_player_path,
     ui::{self, update_next_level_button_visibility, update_previous_level_button_visibility},
+    victory::{self},
 };
 
 #[derive(Default)]
@@ -40,7 +41,8 @@ impl Plugin for GameSystemsPlugin {
         app.init_state::<GameState>()
             .add_sub_state::<PlayState>()
             .add_sub_state::<SelectorState>()
-            .add_sub_state::<CameraResizeState>();
+            .add_sub_state::<CameraResizeState>()
+            .add_sub_state::<victory::VictoryState>();
 
         let enter_play_systems = (
             shape::loader::spawn_mesh,
@@ -120,15 +122,8 @@ fn get_update_systems() -> SystemConfigs {
         .into_configs();
 
     (
-        move_player,
-        update_save_data.run_if(in_state(GameState::Playing)),
-        solve.run_if(in_state(ControllerState::Solving)),
-        victory_transition.run_if(in_state(PlayState::Playing)),
-        update_player_path.run_if(in_state(PlayState::Playing)),
-        play_note.run_if(in_state(PlayState::Playing)),
-        check_melody_solved.run_if(in_state(PlayState::Playing)),
-        camera_move_to_target.run_if(in_state(ControllerState::IdlePostSolve)),
-        spawn_node_arrival_particles,
+        (move_player, update_save_data, update_halo_follow_player)
+            .run_if(in_state(GameState::Playing)),
         (
             ui::update_level_complete_ui,
             ui::next_level,
@@ -137,19 +132,26 @@ fn get_update_systems() -> SystemConfigs {
             ui::level_selector,
         )
             .run_if(in_state(GameState::Playing)),
+        victory_transition.run_if(in_state(PlayState::Playing)),
+        update_player_path.run_if(in_state(PlayState::Playing)),
+        play_note.run_if(in_state(PlayState::Playing)),
+        check_melody_solved.run_if(in_state(PlayState::Playing)),
+        shape::loader::spawn_level_data.run_if(in_state(PlayState::Loading)),
+        camera_move_to_target.run_if(in_state(ControllerState::IdlePostSolve)),
+        solve.run_if(in_state(ControllerState::Solving)),
+        spawn_node_arrival_particles,
         idle.run_if(
             in_state(ControllerState::IdlePostSolve).or(in_state(ControllerState::IdlePostView)),
         ),
         view.run_if(in_state(ControllerState::Viewing)),
-        camera_dolly.run_if(in_state(ControllerState::Viewing)),
-        update_halo_follow_player.run_if(in_state(GameState::Playing)),
+        camera_dolly.run_if(in_state(ControllerState::Viewing).or(in_state(VictoryState::Viewing))),
+        victory::update_state,
         (
             update_camera_distance.run_if(in_state(CameraResizeState::Resizing)),
             trigger_camera_resize_on_window_change.run_if(in_state(CameraResizeState::Fixed)),
         ),
         light_follow_camera,
         update_node_arrival_particles,
-        shape::loader::spawn_level_data.run_if(in_state(PlayState::Loading)),
         selector_systems,
     )
         .into_configs()
