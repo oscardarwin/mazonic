@@ -29,13 +29,13 @@ use crate::{
             TriangleFaceMeshGenerator,
         },
         mesh_handles::MeshHandles,
-        shaders::ShapeFaceMaterial,
+        shaders::GlobalShader,
     },
     constants::{SQRT_3, TAN_27},
+    game_save::CurrentLevelIndex,
     game_settings::{FaceColorPalette, GameSettings},
     game_state::PlayState,
     is_room_junction::is_junction,
-    level_selector::SaveData,
     levels::{GameLevel, LevelData, Shape},
     maze::{border_type::BorderType, mesh},
     player::{Player, PlayerMazeState},
@@ -81,13 +81,13 @@ pub fn despawn_level_data(mut commands: Commands, level_entities: Query<Entity, 
 
 pub fn load_level_asset(
     mut commands: Commands,
-    save_data_query: Query<&SaveData>,
+    current_level_index_query: Query<&CurrentLevelIndex>,
     mut game_state: ResMut<NextState<PlayState>>,
     asset_server: Res<AssetServer>,
 ) {
-    let save_data = save_data_query.single();
+    let CurrentLevelIndex(current_level_index) = current_level_index_query.single();
 
-    let level = &LEVELS[save_data.current_index];
+    let level = &LEVELS[*current_level_index];
 
     let file_path = level.filename();
 
@@ -177,9 +177,9 @@ pub fn spawn_mesh(
         return;
     };
 
-    let face_materials_handles = &asset_handles.face_materials;
+    let face_materials_handles = &asset_handles.face_handles;
 
-    let materials: Vec<Handle<ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>>> =
+    let materials: Vec<Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>> =
         match &level.shape {
             Shape::Cube => face_materials_handles.cube().into_iter().collect(),
             Shape::Tetrahedron => face_materials_handles.tetrahedron().into_iter().collect(),

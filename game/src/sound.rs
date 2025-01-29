@@ -13,9 +13,10 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::game_save::{CurrentLevelIndex, DiscoveredMelodies, DiscoveredMelody};
 use crate::{
     is_room_junction::is_junction, player::PlayerMazeState, room::Room,
-    shape::loader::GraphComponent, statistics::PlayerPath,
+    shape::loader::GraphComponent,
 };
 
 const CROTCHET_DURATION: f32 = 0.8;
@@ -148,6 +149,8 @@ pub fn play_note(
 pub fn check_melody_solved(
     melody_tracker_query: Query<&MelodyPuzzleTracker, Changed<MelodyPuzzleTracker>>,
     room_id_note_mapping_query: Query<&NoteMapping>,
+    mut discovered_melodies_query: Query<&mut DiscoveredMelodies>,
+    current_level_index_query: Query<&CurrentLevelIndex>,
 ) {
     let Ok(melody_tracker) = melody_tracker_query.get_single() else {
         return;
@@ -172,9 +175,15 @@ pub fn check_melody_solved(
         return;
     };
 
-    // save the room ids
+    let discovered_melody = DiscoveredMelody {
+        melody,
+        room_ids: melody_tracker.room_ids.clone().into(),
+    };
 
-    println!("Solved Melody: {}", melody.name);
+    let CurrentLevelIndex(index) = current_level_index_query.single();
+    let DiscoveredMelodies(discovered_melodies) =
+        discovered_melodies_query.single_mut().into_inner();
+    discovered_melodies.insert(*index, discovered_melody);
 }
 
 fn try_decrypt_melody(notes: &Notes, encrypted_melody: &Vec<u8>) -> Option<Melody> {
