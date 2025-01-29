@@ -16,7 +16,7 @@ use crate::{
 
 use super::border_type::BorderType;
 
-const ROOM_HEIGHT: f32 = 0.002;
+const ROOM_HEIGHT: f32 = 0.003;
 const SAME_FACE_EDGE_HEIGHT: f32 = 0.001;
 const CROSS_FACE_EDGE_HEIGHT: f32 = 0.0005;
 
@@ -75,9 +75,9 @@ pub fn spawn(
             (true, _) => {
                 entity_commands.insert(MeshMaterial3d(material_handles.goal_handle.clone()))
             }
-            (false, true) => {
-                entity_commands.insert(MeshMaterial3d(material_handles.bright_line_handle.clone()))
-            }
+            (false, true) => entity_commands.insert(MeshMaterial3d(
+                material_handles.bright_pulsing_line_handle.clone(),
+            )),
             (false, false) => {
                 entity_commands.insert(MeshMaterial3d(material_handles.line_handle.clone()))
             }
@@ -121,14 +121,14 @@ pub fn spawn(
 
         match (bidirectional, is_discovered) {
             (false, true) => entity_commands.insert(MeshMaterial3d(
-                material_handles.bright_dashed_arrow_handle.clone(),
+                material_handles.bright_pulsing_dashed_arrow_handle.clone(),
             )),
             (false, false) => {
                 entity_commands.insert(MeshMaterial3d(material_handles.dashed_arrow_handle.clone()))
             }
-            (true, true) => {
-                entity_commands.insert(MeshMaterial3d(material_handles.bright_line_handle.clone()))
-            }
+            (true, true) => entity_commands.insert(MeshMaterial3d(
+                material_handles.bright_pulsing_line_handle.clone(),
+            )),
             (true, false) => {
                 entity_commands.insert(MeshMaterial3d(material_handles.line_handle.clone()))
             }

@@ -16,6 +16,8 @@ impl Plugin for ShadersPlugin {
             MaterialPlugin::<ExtendedMaterial<StandardMaterial, MenuSelectionHoverShader>>::default(
             ),
             MaterialPlugin::<ExtendedMaterial<StandardMaterial, PulsingShader>>::default(),
+            MaterialPlugin::<ExtendedMaterial<StandardMaterial, PulsingDashedArrowShader>>::default(
+            ),
         ));
     }
 }
@@ -62,5 +64,14 @@ pub struct PulsingShader {}
 impl MaterialExtension for PulsingShader {
     fn fragment_shader() -> ShaderRef {
         "shaders/pulsing.wgsl".into()
+    }
+}
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct PulsingDashedArrowShader {}
+
+impl MaterialExtension for PulsingDashedArrowShader {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/pulsing_dashed_line.wgsl".into()
     }
 }

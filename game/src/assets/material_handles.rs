@@ -5,7 +5,8 @@ use bevy::{
 };
 
 use super::shaders::{
-    DashedArrowShader, GlobalShader, MenuSelectionHoverShader, PlayerHaloShader, PulsingShader,
+    DashedArrowShader, GlobalShader, MenuSelectionHoverShader, PlayerHaloShader,
+    PulsingDashedArrowShader, PulsingShader,
 };
 
 pub struct FaceMaterialHandles {
@@ -110,9 +111,11 @@ pub struct MaterialHandles {
     pub player_halo_handle: Handle<ExtendedMaterial<StandardMaterial, PlayerHaloShader>>,
     pub player_handle: Handle<StandardMaterial>,
     pub line_handle: Handle<StandardMaterial>,
-    pub bright_line_handle: Handle<StandardMaterial>,
+    pub bright_pulsing_line_handle: Handle<ExtendedMaterial<StandardMaterial, PulsingShader>>,
     pub dashed_arrow_handle: Handle<ExtendedMaterial<StandardMaterial, DashedArrowShader>>,
     pub bright_dashed_arrow_handle: Handle<ExtendedMaterial<StandardMaterial, DashedArrowShader>>,
+    pub bright_pulsing_dashed_arrow_handle:
+        Handle<ExtendedMaterial<StandardMaterial, PulsingDashedArrowShader>>,
     pub face_handles: FaceMaterialHandles,
     pub selector_handles: SelectorMaterialHandles,
     pub goal_handle: Handle<ExtendedMaterial<StandardMaterial, PulsingShader>>,
@@ -126,6 +129,9 @@ pub fn setup_materials(
     >,
     mut player_halo_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, PlayerHaloShader>>>,
     mut pulsing_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, PulsingShader>>>,
+    mut pulsing_dashed_materials: ResMut<
+        Assets<ExtendedMaterial<StandardMaterial, PulsingDashedArrowShader>>,
+    >,
     mut menu_selection_hover_materials: ResMut<
         Assets<ExtendedMaterial<StandardMaterial, MenuSelectionHoverShader>>,
     >,
@@ -174,7 +180,15 @@ pub fn setup_materials(
         ..Default::default()
     };
 
-    let bright_line_handle = materials.add(bright_line.clone());
+    let bright_pulsing_line_handle = pulsing_materials.add(ExtendedMaterial {
+        base: bright_line.clone(),
+        extension: PulsingShader {},
+    });
+
+    let bright_pulsing_dashed_arrow_handle = pulsing_dashed_materials.add(ExtendedMaterial {
+        base: bright_line.clone(),
+        extension: PulsingDashedArrowShader {},
+    });
 
     let dashed_arrow_handle = dashed_arrow_materials.add(ExtendedMaterial {
         base: StandardMaterial {
@@ -234,9 +248,10 @@ pub fn setup_materials(
         player_halo_handle,
         player_handle,
         line_handle,
-        bright_line_handle,
+        bright_pulsing_line_handle,
         dashed_arrow_handle,
         bright_dashed_arrow_handle,
+        bright_pulsing_dashed_arrow_handle,
         face_handles: FaceMaterialHandles { face_handles },
         selector_handles,
         goal_handle,

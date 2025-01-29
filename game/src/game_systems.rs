@@ -144,7 +144,9 @@ fn get_update_systems() -> SystemConfigs {
             in_state(ControllerState::IdlePostSolve).or(in_state(ControllerState::IdlePostView)),
         ),
         view.run_if(in_state(ControllerState::Viewing)),
-        camera_dolly.run_if(in_state(ControllerState::Viewing).or(in_state(VictoryState::Viewing))),
+        camera_dolly.run_if(
+            in_state(ControllerState::Viewing).or(in_state(victory::VictoryState::Viewing)),
+        ),
         victory::update_state,
         (
             update_camera_distance.run_if(in_state(CameraResizeState::Resizing)),
