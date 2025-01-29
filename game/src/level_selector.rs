@@ -11,16 +11,17 @@ use crate::{
     assets::{
         material_handles::MaterialHandles,
         mesh_generators::{FaceMeshGenerator, TriangleFaceMeshGenerator},
-        shaders::MenuSelectionHoverMaterial,
+        shaders::MenuSelectionHoverShader,
     },
     camera::{CameraTarget, MainCamera},
     constants::SQRT_3,
+    game_save::{CurrentLevelIndex, PerfectScoreLevelIndices, WorkingLevelIndex},
     game_settings::GameSettings,
     game_state::GameState,
     levels::{Shape, LEVELS},
-    maze::maze_mesh_builder::MazeMeshBuilder,
-    maze::mesh::get_cross_face_edge_transform,
+    maze::{maze_mesh_builder::MazeMeshBuilder, mesh::get_cross_face_edge_transform},
     shape::{icosahedron, shape_utils::compute_face_normal},
+    sound::Melody,
 };
 
 const SYMBOL_TEXTURE_DIMENSIONS: Vec2 = Vec2::new(5.0, 3.0);
@@ -28,30 +29,6 @@ const SYMBOL_TEXTURE_DIMENSIONS: Vec2 = Vec2::new(5.0, 3.0);
 const FACE_ORDER: [usize; 20] = [
     0, 2, 1, 4, 3, 11, 12, 5, 6, 7, 8, 19, 17, 16, 15, 14, 13, 10, 9, 18,
 ];
-
-#[derive(Component, Debug, Clone)]
-pub struct SaveData {
-    pub current_index: usize,
-    pub completed_index: usize,
-    pub melody_found_indices: HashSet<usize>,
-    pub perfect_score_indices: HashSet<usize>,
-}
-
-impl Default for SaveData {
-    fn default() -> Self {
-        SaveData {
-            current_index: 0,
-            completed_index: 4,
-            melody_found_indices: HashSet::new(),
-            perfect_score_indices: HashSet::new(),
-        }
-    }
-}
-
-pub fn setup_save_data(mut commands: Commands) {
-    let save_data = SaveData::default();
-    commands.spawn(save_data);
-}
 
 #[derive(SubStates, Hash, Eq, Clone, PartialEq, Debug, Default)]
 #[source(GameState = GameState::Selector)]
@@ -88,14 +65,17 @@ pub fn load(
     mut asset_server: ResMut<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    save_data_query: Query<&SaveData>,
+    game_save_query: Query<(&WorkingLevelIndex, &PerfectScoreLevelIndices)>,
     game_settings: Res<GameSettings>,
     game_materials: Res<MaterialHandles>,
     mut mouse_button_event_reader: EventReader<MouseButtonInput>,
 ) {
     mouse_button_event_reader.clear();
 
-    let save_data = save_data_query.single();
+    let (
+        WorkingLevelIndex(completed_level_index),
+        PerfectScoreLevelIndices(perfect_score_level_indices),
+    ) = game_save_query.single();
 
     let material_handles = &game_materials.selector_handles;
     let ready_easy_color = &game_settings.palette.face_colors.colors[0];
@@ -132,13 +112,13 @@ pub fn load(
         .collect::<Vec<Transform>>();
 
     for (level_index, level) in LEVELS.iter().enumerate() {
-        let face_material_handle = if level_index > save_data.completed_index {
+        let face_material_handle = if level_index > *completed_level_index {
             material_handles.unavailable.clone()
-        } else if level_index == save_data.completed_index {
+        } else if level_index == *completed_level_index {
             let mix_factor = (level_index as f32) / (LEVELS.len() as f32);
             let color = ready_easy_color.mix(ready_hard_color, mix_factor);
             materials.add(StandardMaterial::from_color(color))
-        } else if save_data.perfect_score_indices.contains(&level_index) {
+        } else if perfect_score_level_indices.contains(&level_index) {
             material_handles.perfect_score.clone()
         } else {
             material_handles.completed.clone()
@@ -219,7 +199,7 @@ pub fn load(
         commands
             .spawn(Mesh3d(edge_mesh_handle.clone()))
             .insert(MeshMaterial3d(
-                game_materials.bright_dashed_arrow_material.clone(),
+                game_materials.bright_dashed_arrow_handle.clone(),
             ))
             .insert(edge_transform)
             .insert(SelectorEntity);
@@ -361,7 +341,8 @@ pub fn update_interactables(
     mut overlay_states_query: Query<(Entity, &mut SelectorOverlayState, &SelectableLevel)>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut selector_state: Res<State<SelectorState>>,
-    mut save_data_query: Query<&mut SaveData>,
+    mut current_level_index_query: Query<&mut CurrentLevelIndex>,
+    completed_level_index_query: Query<&WorkingLevelIndex>,
 ) {
     let Ok(window) = primary_window.get_single() else {
         return;
@@ -395,9 +376,9 @@ pub fn update_interactables(
 
     for (entity, mut overlay_state, SelectableLevel(level_index)) in overlay_states_query.iter_mut()
     {
-        let save_data = save_data_query.single();
+        let WorkingLevelIndex(completed_level_index) = completed_level_index_query.single();
 
-        let level_playable = *level_index <= save_data.completed_index;
+        let level_playable = level_index <= completed_level_index;
 
         let new_overlay_state = match (intersection, pressed) {
             (Some(intersected_entity), _) if intersected_entity != entity => {
@@ -417,7 +398,7 @@ pub fn update_interactables(
         if *overlay_state == SelectorOverlayState::Pressed
             && new_overlay_state == SelectorOverlayState::Hovered
         {
-            save_data_query.single_mut().current_index = *level_index;
+            *current_level_index_query.single_mut() = CurrentLevelIndex(*level_index);
             next_game_state.set(GameState::Playing);
         }
 
@@ -435,7 +416,7 @@ pub fn update_selection_overlay(
     game_material_handles: Res<MaterialHandles>,
     mut overlay_query: Query<
         (
-            &mut MeshMaterial3d<ExtendedMaterial<StandardMaterial, MenuSelectionHoverMaterial>>,
+            &mut MeshMaterial3d<ExtendedMaterial<StandardMaterial, MenuSelectionHoverShader>>,
             &mut Visibility,
         ),
         With<SelectionOverlay>,
@@ -475,21 +456,21 @@ pub fn update_selection_overlay(
 pub fn set_initial_camera_target(
     selectable: Query<(&CameraTargetTransform, &SelectableLevel)>,
     mut camera_target_query: Query<&mut CameraTarget>,
-    save_data_query: Query<&SaveData>,
+    current_level_index_query: Query<&CurrentLevelIndex>,
     game_settings: Res<GameSettings>,
 ) {
     let mut camera_target = camera_target_query.single_mut();
 
-    let save_data = save_data_query.single();
+    let CurrentLevelIndex(current_level_index) = current_level_index_query.single();
 
     println!(
         "Setting selector look at level index: {:?}",
-        save_data.current_index
+        current_level_index
     );
 
     let face_transform = selectable
         .iter()
-        .filter(|(_, SelectableLevel(level_index))| *level_index == save_data.current_index)
+        .filter(|(_, SelectableLevel(level_index))| level_index == current_level_index)
         .map(|(CameraTargetTransform(transform), _)| transform)
         .next()
         .unwrap();

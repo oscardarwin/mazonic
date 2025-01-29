@@ -2,7 +2,7 @@ use crate::{
     constants::PHI,
     game_settings::GameSettings,
     game_state::GameState,
-    level_selector::{SaveData, SelectableLevel},
+    level_selector::SelectableLevel,
     levels::{GameLevel, LevelData, Shape},
     player::{Player, PlayerMazeState},
 };

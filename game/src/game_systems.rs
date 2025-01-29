@@ -11,8 +11,12 @@ use crate::{
     effects::{
         setup_node_arrival_particle, spawn_node_arrival_particles, update_node_arrival_particles,
     },
-    game_state::{victory_transition, GameState, PlayState},
-    level_selector::{self, setup_save_data, SelectorState},
+    game_save::{setup_save_data, update_save_data},
+    game_state::{
+        update_perfect_score_on_victory, update_working_level_on_victory, victory_transition,
+        GameState, PlayState,
+    },
+    level_selector::{self, SelectorState},
     light::{light_follow_camera, setup_light},
     maze, menu,
     player::{
@@ -24,7 +28,7 @@ use crate::{
         loader::{despawn_level_data, load_level_asset, spawn_level_data},
     },
     sound::{check_melody_solved, play_note},
-    statistics::{setup_statistics, update_player_path},
+    statistics::update_player_path,
     ui::{self, update_next_level_button_visibility, update_previous_level_button_visibility},
 };
 
@@ -41,7 +45,6 @@ impl Plugin for GameSystemsPlugin {
         let enter_play_systems = (
             shape::loader::spawn_mesh,
             maze::mesh::spawn,
-            setup_statistics,
             spawn_player,
             trigger_camera_resize_on_level_change.after(spawn_player),
             update_previous_level_button_visibility,
@@ -50,6 +53,12 @@ impl Plugin for GameSystemsPlugin {
             .into_configs();
 
         let exit_play_systems = (ui::despawn_level_complete_ui, despawn_level_data).into_configs();
+
+        let enter_victory_systems = (
+            update_working_level_on_victory,
+            update_next_level_button_visibility.after(update_working_level_on_victory),
+            update_perfect_score_on_victory,
+        );
 
         let enter_selector_init_systems = (
             level_selector::load,
@@ -84,6 +93,7 @@ impl Plugin for GameSystemsPlugin {
             )
             .add_systems(OnEnter(PlayState::Loading), enter_loading_systems)
             .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
+            .add_systems(OnEnter(PlayState::Victory), enter_victory_systems)
             .add_systems(OnEnter(GameState::Playing), ui::spawn_navigation_ui)
             .add_systems(OnExit(GameState::Playing), exit_play_systems)
             .add_systems(OnEnter(ControllerState::Solving), turn_off_player_halo)
@@ -111,6 +121,7 @@ fn get_update_systems() -> SystemConfigs {
 
     (
         move_player,
+        update_save_data.run_if(in_state(GameState::Playing)),
         solve.run_if(in_state(ControllerState::Solving)),
         victory_transition.run_if(in_state(PlayState::Playing)),
         update_player_path.run_if(in_state(PlayState::Playing)),

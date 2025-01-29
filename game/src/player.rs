@@ -2,13 +2,14 @@ use std::fmt::Debug;
 
 use crate::{
     assets::{
-        material_handles::MaterialHandles, mesh_handles::MeshHandles, shaders::PlayerHaloMaterial,
+        material_handles::MaterialHandles, mesh_handles::MeshHandles, shaders::PlayerHaloShader,
     },
     game_settings::GameSettings,
     levels::LevelData,
     maze::maze_mesh_builder::MazeMeshBuilder,
     room::Room,
     shape::loader::SolutionComponent,
+    statistics::PlayerPath,
 };
 use bevy::{math::NormedVectorSpace, pbr::ExtendedMaterial, prelude::*};
 
@@ -66,9 +67,7 @@ pub fn turn_off_player_halo(mut player_halo_query: Query<&mut PlayerHalo>) {
 pub fn update_halo_follow_player(
     mut player_halo_query: Query<&PlayerHalo>,
     player_query: Query<&Transform, (With<Player>, Without<PlayerHalo>)>,
-    mut player_halo_materials: ResMut<
-        Assets<ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>>,
-    >,
+    mut player_halo_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, PlayerHaloShader>>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_handles: Res<MaterialHandles>,
 ) {
@@ -80,7 +79,7 @@ pub fn update_halo_follow_player(
         return;
     };
 
-    let mut player_material = materials.get_mut(&asset_handles.player_material).unwrap();
+    let mut player_material = materials.get_mut(&asset_handles.player_handle).unwrap();
     let target_luminance_factor = if halo.visible { 2.0 } else { 0.003 };
     let luminance_rate = if halo.visible { 0.005 } else { 0.2 };
 
@@ -103,7 +102,7 @@ pub fn update_halo_follow_player(
     }
 
     let mut player_halo_material = player_halo_materials
-        .get_mut(&asset_handles.player_halo_material)
+        .get_mut(&asset_handles.player_halo_handle)
         .unwrap();
 
     let target_alpha = if halo.visible { 0.8 } else { -0.1 };
@@ -144,6 +143,7 @@ pub fn spawn_player(
             player_transform,
             Player { size: player_size },
             PlayerMazeState::Node(initial_node),
+            PlayerPath::default(),
             Collider::ball(player_size),
             LevelData,
         ))
@@ -151,12 +151,12 @@ pub fn spawn_player(
             parent.spawn((
                 Transform::IDENTITY.with_scale(Vec3::splat(2.0 * player_size)),
                 Mesh3d(mesh_handles.player.clone()),
-                MeshMaterial3d(asset_handles.player_material.clone()),
+                MeshMaterial3d(asset_handles.player_handle.clone()),
             ));
 
             parent.spawn((
                 Mesh3d(mesh_handles.player_halo.clone()),
-                MeshMaterial3d(asset_handles.player_halo_material.clone()),
+                MeshMaterial3d(asset_handles.player_halo_handle.clone()),
                 Transform::IDENTITY.with_scale(Vec3::splat(2.0 * player_size * 1.1)),
                 PlayerHalo { visible: true },
             ));

@@ -4,8 +4,8 @@ use bevy::{
 };
 
 use crate::{
+    game_save::{CurrentLevelIndex, GameSave, WorkingLevelIndex},
     game_state::{GameState, PlayState},
-    level_selector::SaveData,
     levels::LEVELS,
     shape::loader::{GraphComponent, SolutionComponent},
     statistics::PlayerPath,
@@ -120,119 +120,6 @@ pub fn spawn_navigation_ui(mut commands: Commands, asset_server: Res<AssetServer
         });
 }
 
-pub fn spawn_level_complete_ui(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    save_data_query: Query<&SaveData>,
-    player_path_resource: Res<PlayerPath>,
-    solution_component: Query<&SolutionComponent>,
-) {
-    let Ok(SolutionComponent(solution)) = solution_component.get_single() else {
-        return;
-    };
-
-    let max_level = LEVELS.len();
-    let save_data = save_data_query.single();
-    let PlayerPath(path) = player_path_resource.into_inner();
-    let path_length = path.len();
-
-    let solution_length = solution.len();
-    let solution_text = format!(
-        "Level {}\nScore {}\nSolution {}",
-        save_data.current_index + 1,
-        path_length,
-        solution_length
-    );
-
-    commands
-        .spawn(Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            justify_content: JustifyContent::Center,
-            ..default()
-        })
-        .insert(PickingBehavior::IGNORE)
-        .with_children(|parent| {
-            parent
-                .spawn(Node {
-                    width: Val::Px(384.),
-                    height: Val::Percent(100.),
-                    flex_direction: FlexDirection::Column,
-                    justify_content: JustifyContent::End,
-                    padding: UiRect::all(Val::Px(5.)),
-                    row_gap: Val::Px(5.),
-                    ..default()
-                })
-                .with_children(|parent| {
-                    parent
-                        .spawn((
-                            Node {
-                                width: Val::Percent(100.),
-                                height: Val::Px(96.),
-                                flex_direction: FlexDirection::Row,
-                                padding: UiRect::all(Val::Px(5.)),
-                                row_gap: Val::Px(5.),
-                                ..default()
-                            },
-                            BackgroundColor(Color::srgb(0.95, 0.85, 0.85)),
-                        ))
-                        .with_children(|parent| {
-                            parent
-                                .spawn((
-                                    Node {
-                                        width: Val::Percent(25.),
-                                        height: Val::Percent(100.),
-                                        border: UiRect::all(Val::Px(5.0)),
-                                        // horizontally center child text
-                                        justify_content: JustifyContent::Center,
-                                        // vertically center child text
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    BackgroundColor(NORMAL_BUTTON),
-                                ))
-                                .with_child((
-                                    Text::new(solution_text),
-                                    TextFont {
-                                        font: asset_server.load(FONT_PATH),
-                                        font_size: 12.0,
-                                        ..default()
-                                    },
-                                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                                ));
-
-                            parent
-                                .spawn((
-                                    Button,
-                                    Node {
-                                        width: Val::Percent(25.),
-                                        height: Val::Percent(100.),
-                                        border: UiRect::all(Val::Px(5.0)),
-                                        // horizontally center child text
-                                        justify_content: JustifyContent::Center,
-                                        // vertically center child text
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    BorderColor(Color::BLACK),
-                                    BorderRadius::MAX,
-                                    BackgroundColor(NORMAL_BUTTON),
-                                ))
-                                .insert(ReplayLevelButton)
-                                .with_child((
-                                    Text::new("↻"),
-                                    TextFont {
-                                        font: asset_server.load(FONT_PATH),
-                                        font_size: 33.0,
-                                        ..default()
-                                    },
-                                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                                ));
-                        });
-                });
-        });
-}
-
 pub fn despawn_level_complete_ui(mut commands: Commands, ui_entities: Query<Entity, With<Node>>) {
     println!("despawn_level_complete_ui");
     for entity in ui_entities.iter() {
@@ -266,9 +153,9 @@ pub fn update_level_complete_ui(
 
 pub fn update_previous_level_button_visibility(
     mut previous_level_button_query: Query<&mut Visibility, With<PreviousLevelButton>>,
-    save_data_query: Query<&SaveData>,
+    current_level_index_query: Query<&CurrentLevelIndex>,
 ) {
-    let Ok(save_data) = save_data_query.get_single() else {
+    let Ok(CurrentLevelIndex(current_level_index)) = current_level_index_query.get_single() else {
         return;
     };
 
@@ -277,7 +164,7 @@ pub fn update_previous_level_button_visibility(
         return;
     };
 
-    *previous_level_button_visibility = if save_data.current_index == 0 {
+    *previous_level_button_visibility = if *current_level_index == 0 {
         Visibility::Hidden
     } else {
         Visibility::Visible
@@ -286,9 +173,10 @@ pub fn update_previous_level_button_visibility(
 
 pub fn update_next_level_button_visibility(
     mut next_level_button_query: Query<&mut Visibility, With<NextLevelButton>>,
-    save_data_query: Query<&SaveData>,
+    current_level_index_query: Query<&CurrentLevelIndex>,
+    working_level_index_query: Query<&WorkingLevelIndex>,
 ) {
-    let Ok(save_data) = save_data_query.get_single() else {
+    let Ok(CurrentLevelIndex(current_level_index)) = current_level_index_query.get_single() else {
         return;
     };
 
@@ -296,12 +184,18 @@ pub fn update_next_level_button_visibility(
         return;
     };
 
-    let max_level_index = LEVELS.len() - 1;
+    let Ok(WorkingLevelIndex(working_level_index)) = working_level_index_query.get_single() else {
+        return;
+    };
 
-    *next_level_button_visibility = if save_data.current_index == max_level_index {
-        Visibility::Hidden
-    } else {
+    let max_level_index = LEVELS.len() - 1;
+    let is_level_completed = current_level_index < working_level_index;
+
+    *next_level_button_visibility = if *current_level_index < max_level_index && is_level_completed
+    {
         Visibility::Visible
+    } else {
+        Visibility::Hidden
     };
 }
 
@@ -314,10 +208,10 @@ pub fn previous_level(
             With<PreviousLevelButton>,
         ),
     >,
-    mut save_data_query: Query<&mut SaveData>,
+    mut current_level_index_query: Query<&mut CurrentLevelIndex>,
     mut play_state: ResMut<NextState<PlayState>>,
 ) {
-    let Ok(mut save_data) = save_data_query.get_single_mut() else {
+    let Ok(mut current_level_index) = current_level_index_query.get_single_mut() else {
         return;
     };
 
@@ -325,9 +219,9 @@ pub fn previous_level(
         return;
     };
 
-    if *interaction == Interaction::Pressed && save_data.current_index > 0 {
+    if *interaction == Interaction::Pressed && current_level_index.0 > 0 {
         println!("previous level");
-        save_data.current_index -= 1;
+        current_level_index.0 -= 1;
         play_state.set(PlayState::Loading);
     }
 }
@@ -354,10 +248,10 @@ pub fn next_level(
         &Interaction,
         (Changed<Interaction>, With<Button>, With<NextLevelButton>),
     >,
-    mut save_data_query: Query<&mut SaveData>,
+    mut current_level_index_query: Query<&mut CurrentLevelIndex>,
     mut play_state: ResMut<NextState<PlayState>>,
 ) {
-    let Ok(mut save_data) = save_data_query.get_single_mut() else {
+    let Ok(mut current_level_index) = current_level_index_query.get_single_mut() else {
         return;
     };
 
@@ -365,10 +259,10 @@ pub fn next_level(
         return;
     };
 
-    if *interaction == Interaction::Pressed && save_data.current_index < LEVELS.len() - 1 {
+    if *interaction == Interaction::Pressed && current_level_index.0 < LEVELS.len() - 1 {
         println!("next level");
 
-        save_data.current_index += 1;
+        current_level_index.0 += 1;
         play_state.set(PlayState::Loading);
     }
 }
