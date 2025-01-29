@@ -141,12 +141,11 @@ pub fn setup_materials(
         extension: PulsingShader {},
     });
 
-    let player_color = &game_settings.palette.player_color;
-    let bright_player_color = player_color.to_linear().to_vec3() * 2.0;
+    let player_color = &game_settings.palette.player_color.to_linear();
     let player_halo_handle = player_halo_materials.add(ExtendedMaterial {
         base: StandardMaterial {
-            base_color: game_settings.palette.player_color,
-            emissive: LinearRgba::from_vec3(bright_player_color),
+            base_color: Color::LinearRgba(*player_color),
+            emissive: LinearRgba::from_vec3(player_color.to_vec3() * 2.0),
             alpha_mode: AlphaMode::Blend,
             diffuse_transmission: 1.0,
             thickness: 0.17,
@@ -158,8 +157,8 @@ pub fn setup_materials(
         extension: PlayerHaloShader {},
     });
     let player_handle = materials.add(StandardMaterial {
-        base_color: *player_color,
-        emissive: (*player_color).into(),
+        base_color: Color::LinearRgba(*player_color),
+        emissive: LinearRgba::from_vec3(player_color.to_vec3() * 1.5),
         reflectance: 0.1,
         ..Default::default()
     });
