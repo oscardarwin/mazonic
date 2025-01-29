@@ -1,41 +1,66 @@
 use bevy::{
-    pbr::MaterialExtension,
+    pbr::{ExtendedMaterial, MaterialExtension},
     prelude::*,
     render::render_resource::{AsBindGroup, ShaderRef},
 };
 
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct DashedArrowMaterial {}
+#[derive(Default)]
+pub struct ShadersPlugin;
 
-impl MaterialExtension for DashedArrowMaterial {
+impl Plugin for ShadersPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((
+            MaterialPlugin::<ExtendedMaterial<StandardMaterial, DashedArrowShader>>::default(),
+            MaterialPlugin::<ExtendedMaterial<StandardMaterial, PlayerHaloShader>>::default(),
+            MaterialPlugin::<ExtendedMaterial<StandardMaterial, GlobalShader>>::default(),
+            MaterialPlugin::<ExtendedMaterial<StandardMaterial, MenuSelectionHoverShader>>::default(
+            ),
+            MaterialPlugin::<ExtendedMaterial<StandardMaterial, PulsingShader>>::default(),
+        ));
+    }
+}
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct DashedArrowShader {}
+
+impl MaterialExtension for DashedArrowShader {
     fn fragment_shader() -> ShaderRef {
         "shaders/dashed_line.wgsl".into()
     }
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct PlayerHaloMaterial {}
+pub struct PlayerHaloShader {}
 
-impl MaterialExtension for PlayerHaloMaterial {
+impl MaterialExtension for PlayerHaloShader {
     fn fragment_shader() -> ShaderRef {
         "shaders/halo.wgsl".into()
     }
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct ShapeFaceMaterial {}
+pub struct GlobalShader {}
 
-impl MaterialExtension for ShapeFaceMaterial {
+impl MaterialExtension for GlobalShader {
     fn fragment_shader() -> ShaderRef {
-        "shaders/face_material.wgsl".into()
+        "shaders/global.wgsl".into()
     }
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct MenuSelectionHoverMaterial {}
+pub struct MenuSelectionHoverShader {}
 
-impl MaterialExtension for MenuSelectionHoverMaterial {
+impl MaterialExtension for MenuSelectionHoverShader {
     fn fragment_shader() -> ShaderRef {
         "shaders/selection_hover.wgsl".into()
+    }
+}
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct PulsingShader {}
+
+impl MaterialExtension for PulsingShader {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/pulsing.wgsl".into()
     }
 }

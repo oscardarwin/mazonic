@@ -2,12 +2,13 @@
 use std::io::Cursor;
 
 use assets::shaders::{
-    DashedArrowMaterial, MenuSelectionHoverMaterial, PlayerHaloMaterial, ShapeFaceMaterial,
+    DashedArrowShader, GlobalShader, MenuSelectionHoverShader, PlayerHaloShader, ShadersPlugin,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::pbr::wireframe::WireframePlugin;
 use bevy::{pbr::ExtendedMaterial, prelude::*};
 use bevy_common_assets::json::JsonAssetPlugin;
+use bevy_pkv::PkvStore;
 use bevy_rapier3d::prelude::*;
 use bevy_rustysynth::RustySynthPlugin;
 use controller::Controller;
@@ -21,6 +22,7 @@ mod camera;
 pub mod constants;
 mod controller;
 mod effects;
+mod game_save;
 mod game_settings;
 mod game_state;
 mod game_systems;
@@ -49,21 +51,11 @@ pub fn run() {
         .add_plugins(GameSettingsPlugin::default())
         .add_plugins(Controller::default())
         .add_plugins(GameSystemsPlugin::default())
-        .add_plugins(MaterialPlugin::<
-            ExtendedMaterial<StandardMaterial, DashedArrowMaterial>,
-        >::default())
-        .add_plugins(MaterialPlugin::<
-            ExtendedMaterial<StandardMaterial, PlayerHaloMaterial>,
-        >::default())
-        .add_plugins(MaterialPlugin::<
-            ExtendedMaterial<StandardMaterial, ShapeFaceMaterial>,
-        >::default())
-        .add_plugins(MaterialPlugin::<
-            ExtendedMaterial<StandardMaterial, MenuSelectionHoverMaterial>,
-        >::default())
         .add_plugins(NoisyShaderPlugin)
+        .add_plugins(ShadersPlugin::default())
         .add_plugins(RustySynthPlugin {
             soundfont: Cursor::new(include_bytes!("../../app/assets/marimba_chiapaneca.sf2")),
         })
+        .insert_resource(PkvStore::new("hallayus", "mazonic"))
         .run();
 }
