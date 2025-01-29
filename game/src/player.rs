@@ -80,14 +80,13 @@ pub fn update_halo_follow_player(
     };
 
     let mut player_material = materials.get_mut(&asset_handles.player_handle).unwrap();
-    let target_luminance_factor = if halo.visible { 2.0 } else { 0.003 };
-    let luminance_rate = if halo.visible { 0.005 } else { 0.2 };
+    let target_luminance_factor = if halo.visible { 3.0 } else { 1.5 };
+    let luminance_rate = if halo.visible { 0.02 } else { 0.2 };
 
-    let target_color = Color::linear_rgb(
-        1.0 * target_luminance_factor,
-        0.81 * target_luminance_factor,
-        0.4 * target_luminance_factor,
-    );
+    let target_color_vec3 =
+        player_material.base_color.to_linear().to_vec3() * target_luminance_factor;
+
+    let target_color = Color::LinearRgba(LinearRgba::from_vec3(target_color_vec3));
     let new_color = player_material
         .emissive
         .mix(&target_color.into(), luminance_rate);
