@@ -1,9 +1,13 @@
 use bevy::prelude::*;
 
 use crate::{
-    assets::material_handles::MaterialHandles, game_settings::GameSettings,
-    is_room_junction::is_junction, levels::LevelData, player::PlayerMazeState, room::Room,
-    shape::loader::GraphComponent,
+    assets::material_handles::MaterialHandles,
+    game_settings::GameSettings,
+    is_room_junction::is_junction,
+    levels::LevelData,
+    player::PlayerMazeState,
+    room::Room,
+    shape::loader::{GraphComponent, SolutionComponent},
 };
 
 #[derive(Resource)]
@@ -27,6 +31,7 @@ pub fn spawn_node_arrival_particles(
     node_arrival_mesh: Res<NodeArrivalEffectMesh>,
     player_maze_state: Query<&PlayerMazeState>,
     graph_component: Query<&GraphComponent>,
+    solution_component_query: Query<(&SolutionComponent)>,
     mut last_room_local: Local<Option<Room>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     game_materials: Res<MaterialHandles>,
@@ -41,6 +46,10 @@ pub fn spawn_node_arrival_particles(
         return;
     };
 
+    let Ok(SolutionComponent(rooms)) = solution_component_query.get_single() else {
+        return;
+    };
+
     let last_room = last_room_local.unwrap_or(*room);
 
     *last_room_local = Some(*room);
@@ -49,7 +58,13 @@ pub fn spawn_node_arrival_particles(
         return;
     }
 
-    let effect_color = settings.palette.line_color.clone().with_alpha(0.99);
+    let is_goal_node = rooms.last().unwrap() == room;
+
+    let effect_color = if is_goal_node {
+        settings.palette.player_color.clone().with_alpha(0.99)
+    } else {
+        settings.palette.line_color.clone().with_alpha(0.99)
+    };
 
     let material_handle = materials.add(effect_color);
 
