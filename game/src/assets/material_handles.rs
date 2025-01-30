@@ -181,7 +181,11 @@ pub fn setup_materials(
     };
 
     let bright_pulsing_line_handle = pulsing_materials.add(ExtendedMaterial {
-        base: bright_line.clone(),
+        base: StandardMaterial {
+            base_color: *line_color,
+            emissive: LinearRgba::from_vec3(line_color_vec * 20.0),
+            ..Default::default()
+        },
         extension: PulsingShader {},
     });
 

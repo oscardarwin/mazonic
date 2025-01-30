@@ -16,9 +16,9 @@ use crate::{
 
 use super::border_type::BorderType;
 
-const ROOM_HEIGHT: f32 = 0.003;
+const ROOM_HEIGHT: f32 = 0.002;
 const SAME_FACE_EDGE_HEIGHT: f32 = 0.001;
-const CROSS_FACE_EDGE_HEIGHT: f32 = 0.0005;
+const CROSS_FACE_EDGE_HEIGHT: f32 = 0.001;
 
 pub fn spawn(
     mut commands: Commands,
