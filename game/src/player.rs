@@ -4,6 +4,7 @@ use crate::{
     assets::{
         material_handles::MaterialHandles, mesh_handles::MeshHandles, shaders::PlayerHaloShader,
     },
+    effects::player_particles::{PlayerParticleEffect, PlayerParticlesHandle},
     game_settings::GameSettings,
     levels::LevelData,
     maze::maze_mesh_builder::MazeMeshBuilder,
@@ -13,6 +14,7 @@ use crate::{
 };
 use bevy::{math::NormedVectorSpace, pbr::ExtendedMaterial, prelude::*};
 
+use bevy_hanabi::prelude::*;
 use bevy_rapier3d::geometry::Collider;
 
 #[derive(Component)]
@@ -122,7 +124,8 @@ pub fn spawn_player(
     mesh_builder_query: Query<&MazeMeshBuilder>,
     solution_query: Query<&SolutionComponent>,
     settings: Res<GameSettings>,
-    asset_handles: Res<MaterialHandles>,
+    material_handles: Res<MaterialHandles>,
+    player_particle_handle_query: Query<&PlayerParticlesHandle>,
 ) {
     let Ok(mesh_builder) = mesh_builder_query.get_single() else {
         return;
@@ -130,6 +133,7 @@ pub fn spawn_player(
     let Ok(SolutionComponent(solution)) = solution_query.get_single() else {
         return;
     };
+    let PlayerParticlesHandle(effect_handle) = player_particle_handle_query.single();
 
     let initial_node = solution.first().unwrap().clone();
     let player_size = mesh_builder.player_mesh_size();
@@ -150,15 +154,23 @@ pub fn spawn_player(
             parent.spawn((
                 Transform::IDENTITY.with_scale(Vec3::splat(2.0 * player_size)),
                 Mesh3d(mesh_handles.player.clone()),
-                MeshMaterial3d(asset_handles.player_handle.clone()),
+                MeshMaterial3d(material_handles.player_handle.clone()),
             ));
 
             parent.spawn((
                 Mesh3d(mesh_handles.player_halo.clone()),
-                MeshMaterial3d(asset_handles.player_halo_handle.clone()),
+                MeshMaterial3d(material_handles.player_halo_handle.clone()),
                 Transform::IDENTITY.with_scale(Vec3::splat(2.0 * player_size * 1.1)),
                 PlayerHalo { visible: true },
             ));
+
+            parent
+                .spawn(ParticleEffectBundle {
+                    effect: ParticleEffect::new(effect_handle.clone()),
+                    transform: Transform::IDENTITY,
+                    ..Default::default()
+                })
+                .insert(PlayerParticleEffect);
         });
 }
 

@@ -8,6 +8,7 @@ use assets::shaders::{
 use bevy::pbr::wireframe::WireframePlugin;
 use bevy::{pbr::ExtendedMaterial, prelude::*};
 use bevy_common_assets::json::JsonAssetPlugin;
+use bevy_hanabi::HanabiPlugin;
 use bevy_pkv::PkvStore;
 use bevy_rapier3d::prelude::*;
 use bevy_rustysynth::RustySynthPlugin;
@@ -57,6 +58,7 @@ pub fn run() {
         .add_plugins(RustySynthPlugin {
             soundfont: Cursor::new(include_bytes!("../../app/assets/marimba_chiapaneca.sf2")),
         })
+        .add_plugins(HanabiPlugin)
         .insert_resource(PkvStore::new("hallayus", "mazonic"))
         .run();
 }

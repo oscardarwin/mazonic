@@ -3,9 +3,13 @@ use bevy::{
     prelude::*,
     utils::{HashMap, HashSet},
 };
+use bevy_hanabi::prelude::*;
+use rand::{seq::IteratorRandom, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 
 use crate::{
     assets::material_handles::MaterialHandles,
+    effects::musical_notes::MusicalNoteEffectHandle,
     game_save::{CurrentLevelIndex, DiscoveredMelodies, DiscoveredMelody},
     is_room_junction::is_junction,
     levels::{GameLevel, LevelData},
@@ -29,6 +33,7 @@ pub fn spawn(
     material_handles: Res<MaterialHandles>,
     discovered_melodies_query: Query<&DiscoveredMelodies>,
     current_level_index_query: Query<&CurrentLevelIndex>,
+    musical_note_effect_handle: Query<&MusicalNoteEffectHandle>,
 ) {
     let Ok((mesh_builder, level)) = level_query.get_single() else {
         return;
@@ -46,6 +51,15 @@ pub fn spawn(
         return;
     };
 
+    let Ok(MusicalNoteEffectHandle {
+        effect_handles,
+        crotchet_handle,
+        quaver_handle,
+    }) = musical_note_effect_handle.get_single()
+    else {
+        return;
+    };
+
     let discovered_melody_rooms =
         make_discovered_melody_room_set(*current_level_index, discovered_melodies);
 
@@ -53,6 +67,9 @@ pub fn spawn(
     let goal_mesh_handle = meshes.add(mesh_builder.goal_mesh());
 
     let goal_node = solution.last().unwrap();
+
+    let rng = &mut ChaCha8Rng::seed_from_u64(0);
+
     for node in graph.nodes().filter(|room| is_junction(room, &graph)) {
         let is_goal_node = node == *goal_node;
         let is_discovered_melody_room = discovered_melody_rooms.contains(&node.id);
@@ -71,6 +88,38 @@ pub fn spawn(
         };
 
         let mut entity_commands = commands.spawn((Mesh3d(mesh_handle), transform, LevelData));
+
+        if is_discovered_melody_room {
+            let crotchet_effect_handle_index = node.id as usize % effect_handles.len();
+            let quaver_effect_handle_index = (node.id + 1) as usize % effect_handles.len();
+
+            entity_commands.with_children(|parent| {
+                parent
+                    .spawn(ParticleEffectBundle {
+                        effect: ParticleEffect::new(
+                            effect_handles[crotchet_effect_handle_index].clone(),
+                        ),
+                        transform: Transform::IDENTITY,
+                        ..Default::default()
+                    })
+                    .insert(EffectMaterial {
+                        images: vec![crotchet_handle.clone()],
+                    });
+
+                parent
+                    .spawn(ParticleEffectBundle {
+                        effect: ParticleEffect::new(
+                            effect_handles[quaver_effect_handle_index].clone(),
+                        ),
+                        transform: Transform::IDENTITY,
+                        ..Default::default()
+                    })
+                    .insert(EffectMaterial {
+                        images: vec![quaver_handle.clone()],
+                    });
+            });
+        }
+
         let material_handle = match (is_goal_node, is_discovered_melody_room) {
             (true, _) => {
                 entity_commands.insert(MeshMaterial3d(material_handles.goal_handle.clone()))

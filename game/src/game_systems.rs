@@ -9,7 +9,11 @@ use crate::{
     },
     controller::{idle, solve, view, ControllerState},
     effects::{
-        setup_node_arrival_particle, spawn_node_arrival_particles, update_node_arrival_particles,
+        self,
+        node_arrival::{
+            setup_node_arrival_particle, spawn_node_arrival_particles,
+            update_node_arrival_particles,
+        },
     },
     game_save::{setup_save_data, update_save_data},
     game_state::{
@@ -56,6 +60,15 @@ impl Plugin for GameSystemsPlugin {
 
         let exit_play_systems = (ui::despawn_level_complete_ui, despawn_level_data).into_configs();
 
+        let enter_solving_systems = (
+            turn_off_player_halo,
+            effects::player_particles::turn_off_player_particles,
+        );
+        let exit_solving_systems = (
+            turn_on_player_halo,
+            effects::player_particles::turn_on_player_particles,
+        );
+
         let enter_victory_systems = (
             update_working_level_on_victory,
             update_next_level_button_visibility.after(update_working_level_on_victory),
@@ -81,6 +94,8 @@ impl Plugin for GameSystemsPlugin {
             setup_materials,
             setup_save_data,
             setup_mesh_handles,
+            effects::player_particles::setup,
+            effects::musical_notes::setup,
         );
 
         let update_systems = get_update_systems();
@@ -98,7 +113,7 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(OnEnter(PlayState::Victory), enter_victory_systems)
             .add_systems(OnEnter(GameState::Playing), ui::spawn_navigation_ui)
             .add_systems(OnExit(GameState::Playing), exit_play_systems)
-            .add_systems(OnEnter(ControllerState::Solving), turn_off_player_halo)
+            .add_systems(OnEnter(ControllerState::Solving), enter_solving_systems)
             .add_systems(
                 OnEnter(ControllerState::IdlePostSolve),
                 camera_follow_player,
@@ -107,7 +122,7 @@ impl Plugin for GameSystemsPlugin {
                 OnExit(SelectorState::Clicked),
                 level_selector::set_camera_target_to_closest_face,
             )
-            .add_systems(OnExit(ControllerState::Solving), turn_on_player_halo);
+            .add_systems(OnExit(ControllerState::Solving), exit_solving_systems);
     }
 }
 
@@ -122,7 +137,12 @@ fn get_update_systems() -> SystemConfigs {
         .into_configs();
 
     (
-        (move_player, update_save_data, update_halo_follow_player)
+        (
+            move_player,
+            update_save_data,
+            update_halo_follow_player,
+            effects::player_particles::update_player_particles,
+        )
             .run_if(in_state(GameState::Playing)),
         (
             ui::update_level_complete_ui,
