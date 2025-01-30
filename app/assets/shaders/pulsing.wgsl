@@ -13,7 +13,7 @@ fn fragment(
     var pbr_input = pbr_input_from_standard_material(in, is_front);
   
     let cos_wave = cos(1.6 * globals.time) + 1.0;
-    let emissive_factor = pow(0.7 * cos_wave, 4.0);
+    let emissive_factor = pow(0.7 * cos_wave, 5.0);
     pbr_input.material.emissive.x = emissive_factor * pbr_input.material.base_color.x;
     pbr_input.material.emissive.y = emissive_factor * pbr_input.material.base_color.y;
     pbr_input.material.emissive.z = emissive_factor * pbr_input.material.base_color.z;
