@@ -171,7 +171,7 @@ pub fn solve(
 
     let (mut player_maze_state, Player { radius: size }) = player_query.single_mut();
     let player_elevation = game_settings.player_elevation + size;
-    let node_snap_threshold = shape.node_distance() * 0.2;
+    let node_snap_threshold = shape.node_distance() * 0.1;
 
     if let Some(new_player_maze_state) = match player_maze_state.as_ref() {
         PlayerMazeState::Node(node) => {
