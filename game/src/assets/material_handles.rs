@@ -97,7 +97,7 @@ impl FaceMaterialHandles {
     }
 }
 
-pub struct SelectorMaterialHandles {
+pub struct SelectorHandles {
     pub unavailable: Handle<StandardMaterial>,
     pub completed: Handle<StandardMaterial>,
     pub perfect_score: Handle<StandardMaterial>,
@@ -117,7 +117,7 @@ pub struct MaterialHandles {
     pub bright_pulsing_dashed_arrow_handle:
         Handle<ExtendedMaterial<StandardMaterial, PulsingDashedArrowShader>>,
     pub face_handles: FaceMaterialHandles,
-    pub selector_handles: SelectorMaterialHandles,
+    pub selector: SelectorHandles,
     pub goal_handle: Handle<ExtendedMaterial<StandardMaterial, PulsingShader>>,
 }
 
@@ -239,7 +239,7 @@ pub fn setup_materials(
         extension: MenuSelectionHoverShader {},
     });
     let face_colors = &game_settings.palette.face_colors.colors;
-    let selector_handles = SelectorMaterialHandles {
+    let selector_handles = SelectorHandles {
         unavailable: materials.add(get_face_material_from_color(face_colors[4])),
         completed: materials.add(get_face_material_from_color(face_colors[2])),
         perfect_score: materials.add(get_face_material_from_color(face_colors[1])),
@@ -257,7 +257,7 @@ pub fn setup_materials(
         bright_dashed_arrow_handle,
         bright_pulsing_dashed_arrow_handle,
         face_handles: FaceMaterialHandles { face_handles },
-        selector_handles,
+        selector: selector_handles,
         goal_handle,
     })
 }

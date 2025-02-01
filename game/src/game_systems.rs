@@ -10,10 +10,7 @@ use crate::{
     controller::{idle, solve, view, ControllerState},
     effects::{
         self,
-        node_arrival::{
-            setup_node_arrival_particle, spawn_node_arrival_particles,
-            update_node_arrival_particles,
-        },
+        node_arrival::{spawn_node_arrival_particles, update_node_arrival_particles},
     },
     game_save::{setup_save_data, update_save_data},
     game_state::{
@@ -90,7 +87,6 @@ impl Plugin for GameSystemsPlugin {
         let startup_systems = (
             camera_setup,
             setup_light,
-            setup_node_arrival_particle,
             setup_materials,
             setup_save_data,
             setup_mesh_handles,

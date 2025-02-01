@@ -32,6 +32,7 @@ pub struct MeshHandles {
     pub player_halo: Handle<Mesh>,
     pub goal_room: Handle<Mesh>,
     pub junction_room: Handle<Mesh>,
+    pub node_arrival_effect: Handle<Mesh>,
     pub shapes: ShapesMeshHandles,
 }
 
@@ -40,41 +41,44 @@ pub fn setup_mesh_handles(mut meshes: ResMut<Assets<Mesh>>, mut commands: Comman
     let player_halo = meshes.add(Sphere::new(0.27));
     let goal_room = meshes.add(Circle::new(1.0 / 5.5));
     let junction_room = meshes.add(Circle::new(1.0 / 6.0));
-    let shapes = setup_shapes_mesh_handles(meshes);
+    let node_arrival_effect = meshes.add(Circle::new(0.1));
+
+    let shapes = setup_shapes_mesh_handles(&mut meshes);
 
     commands.insert_resource(MeshHandles {
         player,
         player_halo,
         goal_room,
         junction_room,
+        node_arrival_effect,
         shapes,
     })
 }
 
-fn setup_shapes_mesh_handles(mut meshes: ResMut<Assets<Mesh>>) -> ShapesMeshHandles {
+fn setup_shapes_mesh_handles(mut meshes: &mut ResMut<Assets<Mesh>>) -> ShapesMeshHandles {
     ShapesMeshHandles {
         tetrahedron: setup_shape_mesh_handles(
-            &mut meshes,
+            meshes,
             TriangleFaceMeshGenerator::get_face_meshes(tetrahedron::faces()),
             MazeMeshBuilder::tetrahedron(1.0),
         ),
         cube: setup_shape_mesh_handles(
-            &mut meshes,
+            meshes,
             SquareFaceMeshGenerator::get_face_meshes(cube::faces()),
             MazeMeshBuilder::cube(1.0),
         ),
         octahedron: setup_shape_mesh_handles(
-            &mut meshes,
+            meshes,
             TriangleFaceMeshGenerator::get_face_meshes(octahedron::faces()),
             MazeMeshBuilder::octahedron(1.0),
         ),
         dodecahedron: setup_shape_mesh_handles(
-            &mut meshes,
+            meshes,
             PentagonFaceMeshGenerator::get_face_meshes(dodecahedron::faces()),
             MazeMeshBuilder::dodecahedron(1.0),
         ),
         icosahedron: setup_shape_mesh_handles(
-            &mut meshes,
+            meshes,
             TriangleFaceMeshGenerator::get_face_meshes(icosahedron::faces()),
             MazeMeshBuilder::icosahedron(1.0),
         ),

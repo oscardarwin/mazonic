@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    assets::material_handles::MaterialHandles,
+    assets::{material_handles::MaterialHandles, mesh_handles::MeshHandles},
     game_settings::GameSettings,
     is_room_junction::is_junction,
     levels::LevelData,
@@ -10,31 +10,21 @@ use crate::{
     shape::loader::{GraphComponent, SolutionComponent},
 };
 
-#[derive(Resource)]
-pub struct NodeArrivalEffectMesh(Handle<Mesh>);
-
 #[derive(Component)]
 pub struct NodeArrivalEffectInstance {
     lifetime: f32,
     birth_time: f32,
 }
 
-pub fn setup_node_arrival_particle(mut meshes: ResMut<Assets<Mesh>>, mut commands: Commands) {
-    let circle = Circle::new(0.1);
-    let mesh_handle = meshes.add(Mesh::from(circle));
-
-    commands.insert_resource(NodeArrivalEffectMesh(mesh_handle));
-}
-
 pub fn spawn_node_arrival_particles(
     mut commands: Commands,
-    node_arrival_mesh: Res<NodeArrivalEffectMesh>,
+    mesh_handles: Res<MeshHandles>,
     player_maze_state: Query<&PlayerMazeState>,
     graph_component: Query<&GraphComponent>,
     solution_component_query: Query<(&SolutionComponent)>,
     mut last_room_local: Local<Option<Room>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    game_materials: Res<MaterialHandles>,
+    material_handles: Res<MaterialHandles>,
     settings: Res<GameSettings>,
     time: Res<Time>,
 ) {
@@ -68,15 +58,13 @@ pub fn spawn_node_arrival_particles(
 
     let material_handle = materials.add(effect_color);
 
-    let NodeArrivalEffectMesh(mesh_handle) = node_arrival_mesh.into_inner();
-
     let position = room.position();
     let normal = room.face().normal();
     let forward_direction = normal.any_orthogonal_vector();
 
     commands
         .spawn(PbrBundle {
-            mesh: Mesh3d(mesh_handle.clone()),
+            mesh: Mesh3d(mesh_handles.node_arrival_effect.clone()),
             material: MeshMaterial3d(material_handle.clone()),
             transform: Transform::IDENTITY
                 .looking_to(-normal, forward_direction)

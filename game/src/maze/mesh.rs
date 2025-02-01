@@ -26,8 +26,6 @@ const CROSS_FACE_EDGE_HEIGHT: f32 = 0.001;
 
 pub fn spawn(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: Res<Assets<StandardMaterial>>,
     level_query: Query<&GameLevel>,
     maze_query: Query<(&GraphComponent, &SolutionComponent)>,
     mesh_handles: Res<MeshHandles>,

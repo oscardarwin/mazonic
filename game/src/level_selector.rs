@@ -77,7 +77,7 @@ pub fn load(
         PerfectScoreLevelIndices(perfect_score_level_indices),
     ) = game_save_query.single();
 
-    let material_handles = &game_materials.selector_handles;
+    let material_handles = &game_materials.selector;
     let ready_easy_color = &game_settings.palette.face_colors.colors[0];
     let ready_hard_color = &game_settings.palette.face_colors.colors[3];
     let faces = icosahedron::faces();
@@ -148,7 +148,7 @@ pub fn load(
 
         let selection_overlay_object = (
             Mesh3d(face_mesh_handle.clone()),
-            MeshMaterial3d(game_materials.selector_handles.selection_hover.clone()),
+            MeshMaterial3d(game_materials.selector.selection_hover.clone()),
         );
 
         let symbol_object = (
@@ -436,17 +436,11 @@ pub fn update_selection_overlay(
                 *visibility = Visibility::Hidden;
             }
             SelectorOverlayState::Hovered => {
-                material.0 = game_material_handles
-                    .selector_handles
-                    .selection_hover
-                    .clone();
+                material.0 = game_material_handles.selector.selection_hover.clone();
                 *visibility = Visibility::Visible;
             }
             SelectorOverlayState::Pressed => {
-                material.0 = game_material_handles
-                    .selector_handles
-                    .selection_pressed
-                    .clone();
+                material.0 = game_material_handles.selector.selection_pressed.clone();
                 *visibility = Visibility::Visible;
             }
         }
