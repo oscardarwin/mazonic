@@ -1,48 +1,37 @@
 # TODO:
 
 Main Menu
+Test out android build?
 
-Make path highlight on discovered melody
-different material for goal node.
+Fix flicking between edges?
 
-Pather animation on level success.
-Grey out UI buttons when it's not possible to advance yet.
+add remaining hidden melodies.
+
+Social Media?
+
 Fix backlinks making the level too easy.
-
-Replace edges with arrows.
 Make some nodes inaccessable
-Make small animation for level selected with increasing triangle size.
 
+UI popup on level complete? / Melody found
+re-assign materials on Melody found
+
+smoother symbols in UI.
+
+better sounding marimba
+reverb?
+
+## Animation
 Particles move towards face for current level.
-Particles emit quavers for completed music.
-
-update level ui
-
-## Tech Debt
-Move all materials generation to their own file.
 
 ## Menu
 Play
 Daily
 Time Challenge
-Settings
-Statistics
+Settings - Dodecahedron?
+Statistics - Icosahedron
 Credits
 
-## Higher Level Navigation
-Menu
-- Play
-- Settings
-- Daily
-- Credits
-
-Play 
-- 20 levels
-
 ## Selector
-Not available - Dark Blue
-Available To Play - Orange
-Completed - Green
 Perfect Score - Blue - Particles
 Hidden Melody - Gold Symbol - Particles (with quaver symbols)
 

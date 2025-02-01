@@ -159,6 +159,7 @@ pub fn spawn_level_data(
 
 pub fn spawn_mesh(
     mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
     mesh_handles: Res<MeshHandles>,
     level_query: Query<&GameLevel>,
     asset_handles: Res<MaterialHandles>,
@@ -178,17 +179,17 @@ pub fn spawn_mesh(
             Shape::Icosahedron => face_materials_handles.icosahedron().into_iter().collect(),
         };
 
-    let face_mesh_handles = match &level.shape {
-        Shape::Cube => &mesh_handles.shapes.cube.faces,
-        Shape::Tetrahedron => &mesh_handles.shapes.tetrahedron.faces,
-        Shape::Octahedron => &mesh_handles.shapes.octahedron.faces,
-        Shape::Dodecahedron => &mesh_handles.shapes.dodecahedron.faces,
-        Shape::Icosahedron => &mesh_handles.shapes.icosahedron.faces,
+    let face_meshes = match &level.shape {
+        Shape::Tetrahedron => TriangleFaceMeshGenerator::get_face_meshes(tetrahedron::faces()),
+        Shape::Cube => SquareFaceMeshGenerator::get_face_meshes(cube::faces()),
+        Shape::Octahedron => TriangleFaceMeshGenerator::get_face_meshes(octahedron::faces()),
+        Shape::Dodecahedron => PentagonFaceMeshGenerator::get_face_meshes(dodecahedron::faces()),
+        Shape::Icosahedron => TriangleFaceMeshGenerator::get_face_meshes(icosahedron::faces()),
     };
 
-    for (face_mesh_handle, face_material_handle) in
-        face_mesh_handles.into_iter().zip(materials.into_iter())
-    {
+    for (face_mesh, face_material_handle) in face_meshes.into_iter().zip(materials.into_iter()) {
+        let face_mesh_handle = meshes.add(face_mesh);
+
         commands
             .spawn(Mesh3d(face_mesh_handle.clone()))
             .insert(MeshMaterial3d(face_material_handle))
