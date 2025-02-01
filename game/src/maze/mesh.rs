@@ -8,11 +8,11 @@ use rand::{seq::IteratorRandom, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
 use crate::{
-    assets::material_handles::MaterialHandles,
+    assets::{material_handles::MaterialHandles, mesh_handles::MeshHandles},
     effects::musical_notes::MusicalNoteEffectHandle,
     game_save::{CurrentLevelIndex, DiscoveredMelodies, DiscoveredMelody},
     is_room_junction::is_junction,
-    levels::{GameLevel, LevelData},
+    levels::{GameLevel, LevelData, Shape},
     maze::maze_mesh_builder::MazeMeshBuilder,
     room::Room,
     shape::loader::{GraphComponent, SolutionComponent},
@@ -28,14 +28,15 @@ pub fn spawn(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: Res<Assets<StandardMaterial>>,
-    level_query: Query<(&MazeMeshBuilder, &GameLevel)>,
+    level_query: Query<&GameLevel>,
     maze_query: Query<(&GraphComponent, &SolutionComponent)>,
+    mesh_handles: Res<MeshHandles>,
     material_handles: Res<MaterialHandles>,
     discovered_melodies_query: Query<&DiscoveredMelodies>,
     current_level_index_query: Query<&CurrentLevelIndex>,
     musical_note_effect_handle: Query<&MusicalNoteEffectHandle>,
 ) {
-    let Ok((mesh_builder, level)) = level_query.get_single() else {
+    let Ok(level) = level_query.get_single() else {
         return;
     };
 
@@ -63,13 +64,9 @@ pub fn spawn(
     let discovered_melody_rooms =
         make_discovered_melody_room_set(*current_level_index, discovered_melodies);
 
-    let room_mesh_handle = meshes.add(mesh_builder.intersection_room_mesh());
-    let goal_mesh_handle = meshes.add(mesh_builder.goal_mesh());
+    let distance_between_nodes = level.node_distance();
 
     let goal_node = solution.last().unwrap();
-
-    let rng = &mut ChaCha8Rng::seed_from_u64(0);
-
     for node in graph.nodes().filter(|room| is_junction(room, &graph)) {
         let is_goal_node = node == *goal_node;
         let is_discovered_melody_room = discovered_melody_rooms.contains(&node.id);
@@ -81,17 +78,14 @@ pub fn spawn(
             )
             .with_translation(node.position() + node.face().normal() * ROOM_HEIGHT);
 
-        let mesh_handle = if node == *goal_node {
-            goal_mesh_handle.clone()
-        } else {
-            room_mesh_handle.clone()
-        };
-
-        let mut entity_commands = commands.spawn((Mesh3d(mesh_handle), transform, LevelData));
+        let mut entity_commands = commands.spawn((transform, LevelData));
 
         if is_discovered_melody_room {
-            let crotchet_effect_handle_index = node.id as usize % effect_handles.len();
-            let quaver_effect_handle_index = (node.id + 1) as usize % effect_handles.len();
+            let num_effect_handles = effect_handles.len();
+
+            let crotchet_effect_handle_index = node.id as usize % num_effect_handles;
+            let quaver_effect_handle_index =
+                (node.id as usize + num_effect_handles / 2) as usize % num_effect_handles;
 
             entity_commands.with_children(|parent| {
                 parent
@@ -120,26 +114,40 @@ pub fn spawn(
             });
         }
 
-        let material_handle = match (is_goal_node, is_discovered_melody_room) {
-            (true, _) => {
-                entity_commands.insert(MeshMaterial3d(material_handles.goal_handle.clone()))
-            }
-            (false, true) => entity_commands.insert(MeshMaterial3d(
-                material_handles.bright_pulsing_line_handle.clone(),
-            )),
-            (false, false) => {
-                entity_commands.insert(MeshMaterial3d(material_handles.line_handle.clone()))
-            }
+        let mesh_handle = if node == *goal_node {
+            mesh_handles.goal_room.clone()
+        } else {
+            mesh_handles.junction_room.clone()
         };
+
+        entity_commands.with_children(|parent| {
+            let mut child_entity_commands = parent.spawn((
+                Mesh3d(mesh_handle),
+                Transform::IDENTITY.with_scale(Vec3::splat(distance_between_nodes)),
+            ));
+
+            let material_handle = match (is_goal_node, is_discovered_melody_room) {
+                (true, _) => child_entity_commands
+                    .insert(MeshMaterial3d(material_handles.goal_handle.clone())),
+                (false, true) => child_entity_commands.insert(MeshMaterial3d(
+                    material_handles.bright_pulsing_line_handle.clone(),
+                )),
+                (false, false) => child_entity_commands
+                    .insert(MeshMaterial3d(material_handles.line_handle.clone())),
+            };
+        });
     }
 
     let discovered_melody_room_pairs =
         make_room_pairs_from_discovered_melodies(*current_level_index, discovered_melodies);
 
-    let edge_mesh = meshes.add(mesh_builder.edge());
-    let one_way_edge_mesh = meshes.add(mesh_builder.one_way_edge());
-    let cross_face_edge_mesh = meshes.add(mesh_builder.cross_face_edge());
-    let cross_face_one_way_edge_mesh = meshes.add(mesh_builder.cross_face_one_way_edge());
+    let shape_mesh_handles = match &level.shape {
+        Shape::Cube => &mesh_handles.shapes.cube,
+        Shape::Tetrahedron => &mesh_handles.shapes.tetrahedron,
+        Shape::Octahedron => &mesh_handles.shapes.octahedron,
+        Shape::Dodecahedron => &mesh_handles.shapes.dodecahedron,
+        Shape::Icosahedron => &mesh_handles.shapes.icosahedron,
+    };
 
     for (source_node, target_node, _) in graph.all_edges() {
         let bidirectional = graph.contains_edge(target_node, source_node);
@@ -153,10 +161,10 @@ pub fn spawn(
         };
 
         let mesh_handle = match (&border_type, bidirectional) {
-            (BorderType::SameFace, true) => edge_mesh.clone(),
-            (BorderType::SameFace, false) => one_way_edge_mesh.clone(),
-            (BorderType::Connected, true) => cross_face_edge_mesh.clone(),
-            (BorderType::Connected, false) => cross_face_one_way_edge_mesh.clone(),
+            (BorderType::SameFace, true) => shape_mesh_handles.same_face_edge.clone(),
+            (BorderType::SameFace, false) => shape_mesh_handles.one_way_same_face_edge.clone(),
+            (BorderType::Connected, true) => shape_mesh_handles.cross_face_edge.clone(),
+            (BorderType::Connected, false) => shape_mesh_handles.one_way_cross_face_edge.clone(),
         };
 
         let transform = get_connection_transform(source_node, target_node, &border_type);
@@ -165,23 +173,28 @@ pub fn spawn(
             .contains(&(source_node.id, target_node.id))
             || discovered_melody_room_pairs.contains(&(target_node.id, source_node.id));
 
-        let mut entity_commands =
-            commands.spawn((Mesh3d(mesh_handle), transform.clone(), LevelData));
+        let mut entity_commands = commands
+            .spawn((transform.clone(), LevelData))
+            .with_children(|parent| {
+                let mut entity_commands = parent.spawn((
+                    Mesh3d(mesh_handle),
+                    Transform::IDENTITY.with_scale(Vec3::splat(distance_between_nodes)),
+                ));
 
-        match (bidirectional, is_discovered) {
-            (false, true) => entity_commands.insert(MeshMaterial3d(
-                material_handles.bright_pulsing_dashed_arrow_handle.clone(),
-            )),
-            (false, false) => {
-                entity_commands.insert(MeshMaterial3d(material_handles.dashed_arrow_handle.clone()))
-            }
-            (true, true) => entity_commands.insert(MeshMaterial3d(
-                material_handles.bright_pulsing_line_handle.clone(),
-            )),
-            (true, false) => {
-                entity_commands.insert(MeshMaterial3d(material_handles.line_handle.clone()))
-            }
-        };
+                match (bidirectional, is_discovered) {
+                    (false, true) => entity_commands.insert(MeshMaterial3d(
+                        material_handles.bright_pulsing_dashed_arrow_handle.clone(),
+                    )),
+                    (false, false) => entity_commands
+                        .insert(MeshMaterial3d(material_handles.dashed_arrow_handle.clone())),
+                    (true, true) => entity_commands.insert(MeshMaterial3d(
+                        material_handles.bright_pulsing_line_handle.clone(),
+                    )),
+                    (true, false) => {
+                        entity_commands.insert(MeshMaterial3d(material_handles.line_handle.clone()))
+                    }
+                };
+            });
     }
 }
 

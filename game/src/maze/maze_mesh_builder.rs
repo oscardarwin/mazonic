@@ -65,18 +65,6 @@ impl MazeMeshBuilder {
         Self::new(distance_between_nodes, (-5.0_f32.sqrt() / 3.0).acos())
     }
 
-    pub fn player_mesh_size(&self) -> f32 {
-        self.distance_between_nodes / 4.0
-    }
-
-    pub fn intersection_room_mesh(&self) -> Mesh {
-        Circle::new(self.distance_between_nodes / 6.0).into()
-    }
-
-    pub fn goal_mesh(&self) -> Mesh {
-        Circle::new(self.distance_between_nodes / 5.5).into()
-    }
-
     fn line(&self, length: f32, uv_start: f32, uv_end: f32) -> Mesh {
         let mut line = Rectangle::new(self.dash_width, length)
             .mesh()
@@ -113,11 +101,11 @@ impl MazeMeshBuilder {
         mesh
     }
 
-    pub fn edge(&self) -> Mesh {
+    pub fn same_face_edge(&self) -> Mesh {
         self.line(self.distance_between_nodes, 0., 0.5)
     }
 
-    pub fn one_way_edge(&self) -> Mesh {
+    pub fn one_way_same_face_edge(&self) -> Mesh {
         let rectangle_section_length =
             0.9 * self.distance_between_nodes - self.arrow_head_length * 0.5;
         let mut rectangle_mesh = self.line(rectangle_section_length, 0.0, 0.5);
@@ -130,7 +118,7 @@ impl MazeMeshBuilder {
         rectangle_mesh
     }
 
-    pub fn cross_face_one_way_edge(&self) -> Mesh {
+    pub fn one_way_cross_face_edge(&self) -> Mesh {
         let first_length = self.distance_between_nodes / 2.0;
         let second_length = 0.4 * self.distance_between_nodes - self.arrow_head_length * 0.5;
         let uv_mid_point = 0.5 * first_length / (first_length + second_length);

@@ -183,7 +183,7 @@ pub fn load(
     }
 
     let mesh_builder = MazeMeshBuilder::icosahedron(1.0 / SQRT_3 / 3.0);
-    let edge_mesh_handle = meshes.add(mesh_builder.cross_face_one_way_edge());
+    let edge_mesh_handle = meshes.add(mesh_builder.one_way_cross_face_edge());
 
     for (from_level_index, to_level_index) in (0..).zip(1..LEVELS.len()) {
         let from_transform = face_local_transforms[from_level_index];

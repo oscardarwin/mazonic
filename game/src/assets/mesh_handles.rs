@@ -1,55 +1,100 @@
 use bevy::prelude::*;
 
-use crate::shape::{cube, dodecahedron, icosahedron, octahedron, tetrahedron};
+use crate::{
+    maze::maze_mesh_builder::MazeMeshBuilder,
+    shape::{cube, dodecahedron, icosahedron, octahedron, tetrahedron},
+};
 
 use super::mesh_generators::{
     FaceMeshGenerator, PentagonFaceMeshGenerator, SquareFaceMeshGenerator,
     TriangleFaceMeshGenerator,
 };
 
+pub struct ShapeMeshHandles {
+    pub faces: Vec<Handle<Mesh>>,
+    pub same_face_edge: Handle<Mesh>,
+    pub one_way_same_face_edge: Handle<Mesh>,
+    pub cross_face_edge: Handle<Mesh>,
+    pub one_way_cross_face_edge: Handle<Mesh>,
+}
+
+pub struct ShapesMeshHandles {
+    pub tetrahedron: ShapeMeshHandles,
+    pub cube: ShapeMeshHandles,
+    pub octahedron: ShapeMeshHandles,
+    pub dodecahedron: ShapeMeshHandles,
+    pub icosahedron: ShapeMeshHandles,
+}
+
 #[derive(Resource)]
 pub struct MeshHandles {
     pub player: Handle<Mesh>,
     pub player_halo: Handle<Mesh>,
-    pub tetrahedron_faces: Vec<Handle<Mesh>>,
-    pub cube_faces: Vec<Handle<Mesh>>,
-    pub octahedron_faces: Vec<Handle<Mesh>>,
-    pub dodecahedron_faces: Vec<Handle<Mesh>>,
-    pub icosahedron_faces: Vec<Handle<Mesh>>,
+    pub goal_room: Handle<Mesh>,
+    pub junction_room: Handle<Mesh>,
+    pub shapes: ShapesMeshHandles,
 }
 
 pub fn setup_mesh_handles(mut meshes: ResMut<Assets<Mesh>>, mut commands: Commands) {
-    let player = meshes.add(Sphere::default());
-    let player_halo = meshes.add(Sphere::default());
-
-    let tetrahedron_faces = TriangleFaceMeshGenerator::get_face_meshes(tetrahedron::faces())
-        .into_iter()
-        .map(|mesh| meshes.add(mesh))
-        .collect();
-    let cube_faces = SquareFaceMeshGenerator::get_face_meshes(cube::faces())
-        .into_iter()
-        .map(|mesh| meshes.add(mesh))
-        .collect();
-    let octahedron_faces = TriangleFaceMeshGenerator::get_face_meshes(octahedron::faces())
-        .into_iter()
-        .map(|mesh| meshes.add(mesh))
-        .collect();
-    let dodecahedron_faces = PentagonFaceMeshGenerator::get_face_meshes(dodecahedron::faces())
-        .into_iter()
-        .map(|mesh| meshes.add(mesh))
-        .collect();
-    let icosahedron_faces = TriangleFaceMeshGenerator::get_face_meshes(icosahedron::faces())
-        .into_iter()
-        .map(|mesh| meshes.add(mesh))
-        .collect();
+    let player = meshes.add(Sphere::new(0.25));
+    let player_halo = meshes.add(Sphere::new(0.27));
+    let goal_room = meshes.add(Circle::new(1.0 / 5.5));
+    let junction_room = meshes.add(Circle::new(1.0 / 6.0));
+    let shapes = setup_shapes_mesh_handles(meshes);
 
     commands.insert_resource(MeshHandles {
         player,
         player_halo,
-        tetrahedron_faces,
-        cube_faces,
-        octahedron_faces,
-        dodecahedron_faces,
-        icosahedron_faces,
+        goal_room,
+        junction_room,
+        shapes,
     })
+}
+
+fn setup_shapes_mesh_handles(mut meshes: ResMut<Assets<Mesh>>) -> ShapesMeshHandles {
+    ShapesMeshHandles {
+        tetrahedron: setup_shape_mesh_handles(
+            &mut meshes,
+            TriangleFaceMeshGenerator::get_face_meshes(tetrahedron::faces()),
+            MazeMeshBuilder::tetrahedron(1.0),
+        ),
+        cube: setup_shape_mesh_handles(
+            &mut meshes,
+            SquareFaceMeshGenerator::get_face_meshes(cube::faces()),
+            MazeMeshBuilder::cube(1.0),
+        ),
+        octahedron: setup_shape_mesh_handles(
+            &mut meshes,
+            TriangleFaceMeshGenerator::get_face_meshes(octahedron::faces()),
+            MazeMeshBuilder::octahedron(1.0),
+        ),
+        dodecahedron: setup_shape_mesh_handles(
+            &mut meshes,
+            PentagonFaceMeshGenerator::get_face_meshes(dodecahedron::faces()),
+            MazeMeshBuilder::dodecahedron(1.0),
+        ),
+        icosahedron: setup_shape_mesh_handles(
+            &mut meshes,
+            TriangleFaceMeshGenerator::get_face_meshes(icosahedron::faces()),
+            MazeMeshBuilder::icosahedron(1.0),
+        ),
+    }
+}
+fn setup_shape_mesh_handles(
+    mut meshes: &mut ResMut<Assets<Mesh>>,
+    face_meshes: Vec<Mesh>,
+    maze_mesh_builder: MazeMeshBuilder,
+) -> ShapeMeshHandles {
+    let faces = face_meshes
+        .into_iter()
+        .map(|mesh| meshes.add(mesh))
+        .collect();
+
+    ShapeMeshHandles {
+        faces,
+        same_face_edge: meshes.add(maze_mesh_builder.same_face_edge()),
+        one_way_same_face_edge: meshes.add(maze_mesh_builder.one_way_same_face_edge()),
+        cross_face_edge: meshes.add(maze_mesh_builder.cross_face_edge()),
+        one_way_cross_face_edge: meshes.add(maze_mesh_builder.one_way_cross_face_edge()),
+    }
 }

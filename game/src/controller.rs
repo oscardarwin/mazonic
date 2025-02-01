@@ -169,7 +169,7 @@ pub fn solve(
         return;
     };
 
-    let (mut player_maze_state, Player { size }) = player_query.single_mut();
+    let (mut player_maze_state, Player { radius: size }) = player_query.single_mut();
     let player_elevation = game_settings.player_elevation + size;
     let node_snap_threshold = shape.node_distance() * 0.2;
 

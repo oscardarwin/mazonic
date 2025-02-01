@@ -82,10 +82,10 @@ fn create_note_effect(
     let init_vel = SetVelocityTangentModifier {
         axis: writer.lit(Vec3::Y).expr(),
         origin: writer.lit(Vec3::ZERO).expr(),
-        speed: writer.lit(0.005).expr(),
+        speed: writer.lit(0.008).expr(),
     };
 
-    let lifetime = writer.lit(5.0 * float_num_effects).expr();
+    let lifetime = writer.lit(4.0 * float_num_effects).expr();
     let init_lifetime = SetAttributeModifier::new(Attribute::LIFETIME, lifetime);
     let init_size = SetAttributeModifier::new(Attribute::SIZE, writer.lit(0.1).expr());
 

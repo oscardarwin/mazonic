@@ -6,8 +6,7 @@ use crate::{
     },
     effects::player_particles::{PlayerParticleEffect, PlayerParticlesHandle},
     game_settings::GameSettings,
-    levels::LevelData,
-    maze::maze_mesh_builder::MazeMeshBuilder,
+    levels::{GameLevel, LevelData},
     room::Room,
     shape::loader::SolutionComponent,
     statistics::PlayerPath,
@@ -19,7 +18,7 @@ use bevy_rapier3d::geometry::Collider;
 
 #[derive(Component)]
 pub struct Player {
-    pub size: f32,
+    pub radius: f32,
 }
 
 #[derive(Component, Debug)]
@@ -32,7 +31,7 @@ pub fn move_player(
     mut player_query: Query<(&mut Transform, &PlayerMazeState, &Player)>,
     settings: Res<GameSettings>,
 ) {
-    let Ok((mut player_transform, player_maze_state, Player { size })) =
+    let Ok((mut player_transform, player_maze_state, Player { radius: size })) =
         player_query.get_single_mut()
     else {
         return;
@@ -121,38 +120,40 @@ pub fn update_halo_follow_player(
 pub fn spawn_player(
     mut commands: Commands,
     mesh_handles: Res<MeshHandles>,
-    mesh_builder_query: Query<&MazeMeshBuilder>,
     solution_query: Query<&SolutionComponent>,
     settings: Res<GameSettings>,
+    level_query: Query<&GameLevel>,
     material_handles: Res<MaterialHandles>,
     player_particle_handle_query: Query<&PlayerParticlesHandle>,
 ) {
-    let Ok(mesh_builder) = mesh_builder_query.get_single() else {
+    let Ok(level) = level_query.get_single() else {
         return;
     };
+
     let Ok(SolutionComponent(solution)) = solution_query.get_single() else {
         return;
     };
     let PlayerParticlesHandle(effect_handle) = player_particle_handle_query.single();
 
     let initial_node = solution.first().unwrap().clone();
-    let player_size = mesh_builder.player_mesh_size();
 
-    let height_above_node = settings.player_elevation + player_size;
+    let node_distance = level.node_distance();
+    let radius = 0.25 * node_distance;
+    let height_above_node = settings.player_elevation + radius;
     let player_transform = compute_initial_player_transform(initial_node, height_above_node);
 
     commands
         .spawn((
             player_transform,
-            Player { size: player_size },
+            Player { radius },
             PlayerMazeState::Node(initial_node),
             PlayerPath::default(),
-            Collider::ball(player_size),
+            Collider::ball(radius),
             LevelData,
         ))
         .with_children(|parent| {
             parent.spawn((
-                Transform::IDENTITY.with_scale(Vec3::splat(2.0 * player_size)),
+                Transform::IDENTITY.with_scale(Vec3::splat(node_distance)),
                 Mesh3d(mesh_handles.player.clone()),
                 MeshMaterial3d(material_handles.player_handle.clone()),
             ));
@@ -160,7 +161,7 @@ pub fn spawn_player(
             parent.spawn((
                 Mesh3d(mesh_handles.player_halo.clone()),
                 MeshMaterial3d(material_handles.player_halo_handle.clone()),
-                Transform::IDENTITY.with_scale(Vec3::splat(2.0 * player_size * 1.1)),
+                Transform::IDENTITY.with_scale(Vec3::splat(node_distance)),
                 PlayerHalo { visible: true },
             ));
 

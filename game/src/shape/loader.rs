@@ -46,7 +46,6 @@ use crate::{
 use super::{cube, dodecahedron, icosahedron, octahedron, tetrahedron};
 use crate::assets::material_handles::MaterialHandles;
 use crate::levels::LEVELS;
-use crate::maze::maze_mesh_builder::MazeMeshBuilder;
 
 use serde::{Deserialize, Serialize};
 
@@ -95,17 +94,8 @@ pub fn load_level_asset(
 
     let distance_between_nodes = level.node_distance();
 
-    let mesh_builder = match &level.shape {
-        Shape::Cube => MazeMeshBuilder::cube(distance_between_nodes),
-        Shape::Tetrahedron => MazeMeshBuilder::tetrahedron(distance_between_nodes),
-        Shape::Octahedron => MazeMeshBuilder::octahedron(distance_between_nodes),
-        Shape::Dodecahedron => MazeMeshBuilder::dodecahedron(distance_between_nodes),
-        Shape::Icosahedron => MazeMeshBuilder::icosahedron(distance_between_nodes),
-    };
-
     commands.spawn((
         level.clone(),
-        mesh_builder,
         MazeSaveDataHandle(maze_save_data_handle),
         LevelData,
     ));
@@ -189,11 +179,11 @@ pub fn spawn_mesh(
         };
 
     let face_mesh_handles = match &level.shape {
-        Shape::Cube => &mesh_handles.cube_faces,
-        Shape::Tetrahedron => &mesh_handles.tetrahedron_faces,
-        Shape::Octahedron => &mesh_handles.octahedron_faces,
-        Shape::Dodecahedron => &mesh_handles.dodecahedron_faces,
-        Shape::Icosahedron => &mesh_handles.icosahedron_faces,
+        Shape::Cube => &mesh_handles.shapes.cube.faces,
+        Shape::Tetrahedron => &mesh_handles.shapes.tetrahedron.faces,
+        Shape::Octahedron => &mesh_handles.shapes.octahedron.faces,
+        Shape::Dodecahedron => &mesh_handles.shapes.dodecahedron.faces,
+        Shape::Icosahedron => &mesh_handles.shapes.icosahedron.faces,
     };
 
     for (face_mesh_handle, face_material_handle) in

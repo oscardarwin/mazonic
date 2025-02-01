@@ -6,7 +6,7 @@ use std::{
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Component)]
 pub struct Face {
     pub id: usize,
     pub normal: Vec3,
@@ -22,7 +22,7 @@ impl Face {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Component)]
 pub struct Room {
     pub position: Vec3,
     pub face: Face,
