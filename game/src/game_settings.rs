@@ -53,7 +53,7 @@ impl Default for GameSettings {
             camera_distance: 3.0,
             light_offset: 3.0,
             camera_follow_speed: 0.08,
-            max_player_speed: 0.6,
+            max_player_speed: 0.8,
             palette: GameColorPalette::default(),
         }
     }

@@ -1,4 +1,8 @@
-use bevy::{ecs::schedule::SystemConfigs, prelude::*, text::Update2dText};
+use bevy::{
+    ecs::{schedule::SystemConfigs, system::SystemId},
+    prelude::*,
+    text::Update2dText,
+};
 
 use crate::{
     assets::{material_handles::setup_materials, mesh_handles::setup_mesh_handles},
@@ -19,7 +23,8 @@ use crate::{
     },
     level_selector::{self, SelectorState},
     light::{light_follow_camera, setup_light},
-    maze, menu,
+    maze::{self, mesh::update_on_melody_discovered},
+    menu,
     player::{
         move_player, spawn_player, turn_off_player_halo, turn_on_player_halo,
         update_halo_follow_player,
@@ -44,6 +49,8 @@ impl Plugin for GameSystemsPlugin {
             .add_sub_state::<SelectorState>()
             .add_sub_state::<CameraResizeState>()
             .add_sub_state::<victory::VictoryState>();
+
+        app.init_resource::<SystemHandles>();
 
         let enter_play_systems = (
             shape::loader::spawn_mesh,
@@ -92,6 +99,7 @@ impl Plugin for GameSystemsPlugin {
             setup_mesh_handles,
             effects::player_particles::setup,
             effects::musical_notes::setup,
+            effects::musical_note_burst::setup,
         );
 
         let update_systems = get_update_systems();
@@ -146,6 +154,7 @@ fn get_update_systems() -> SystemConfigs {
             ui::replay_level,
             ui::previous_level,
             ui::level_selector,
+            effects::musical_note_burst::clear_up_effects,
         )
             .run_if(in_state(GameState::Playing)),
         victory_transition.run_if(in_state(PlayState::Playing)),
@@ -173,4 +182,25 @@ fn get_update_systems() -> SystemConfigs {
         selector_systems,
     )
         .into_configs()
+}
+
+#[derive(Resource)]
+pub struct SystemHandles {
+    pub spawn_maze: SystemId,
+    pub note_burst: SystemId,
+    pub update_on_melody_discovered: SystemId,
+}
+
+impl FromWorld for SystemHandles {
+    fn from_world(world: &mut World) -> Self {
+        let spawn_maze = world.register_system(maze::mesh::spawn);
+        let note_burst = world.register_system(effects::musical_note_burst::spawn);
+        let update_on_melody_discovered = world.register_system(update_on_melody_discovered);
+
+        SystemHandles {
+            spawn_maze,
+            note_burst,
+            update_on_melody_discovered,
+        }
+    }
 }

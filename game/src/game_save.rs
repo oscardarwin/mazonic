@@ -17,6 +17,16 @@ pub struct PerfectScoreLevelIndices(pub HashSet<usize>);
 #[derive(Component, Debug, Clone)]
 pub struct DiscoveredMelodies(pub HashMap<usize, DiscoveredMelody>);
 
+impl DiscoveredMelodies {
+    pub fn get_room_ids_for_level(&self, level_index: usize) -> HashSet<u64> {
+        if let Some(DiscoveredMelody { room_ids, .. }) = self.0.get(&level_index) {
+            room_ids.iter().cloned().collect()
+        } else {
+            HashSet::new()
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscoveredMelody {
     pub melody: Melody,

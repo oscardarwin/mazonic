@@ -56,8 +56,6 @@ pub fn move_player(
         );
         let delta = lerped_delta.normalize() * clamped_delta_norm;
 
-        println!("{:?}", delta);
-
         player_transform.translation = player_transform.translation + delta;
     }
 }

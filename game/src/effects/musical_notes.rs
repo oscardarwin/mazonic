@@ -7,6 +7,10 @@ use crate::game_settings::GameSettings;
 #[derive(Component, Debug, Clone)]
 pub struct MusicalNoteEffectHandle {
     pub effect_handles: Vec<Handle<EffectAsset>>,
+}
+
+#[derive(Component, Debug, Clone)]
+pub struct MusicalNoteImageHandles {
     pub crotchet_handle: Handle<Image>,
     pub quaver_handle: Handle<Image>,
 }
@@ -29,8 +33,9 @@ pub fn setup(
         })
         .collect();
 
-    commands.spawn(MusicalNoteEffectHandle {
-        effect_handles,
+    commands.spawn(MusicalNoteEffectHandle { effect_handles });
+
+    commands.spawn(MusicalNoteImageHandles {
         crotchet_handle,
         quaver_handle,
     });

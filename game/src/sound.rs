@@ -14,6 +14,8 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::game_save::{CurrentLevelIndex, DiscoveredMelodies, DiscoveredMelody};
+use crate::game_systems::SystemHandles;
+use crate::maze::mesh::MazeMarker;
 use crate::{
     is_room_junction::is_junction, player::PlayerMazeState, room::Room,
     shape::loader::GraphComponent,
@@ -151,6 +153,9 @@ pub fn check_melody_solved(
     room_id_note_mapping_query: Query<&NoteMapping>,
     mut discovered_melodies_query: Query<&mut DiscoveredMelodies>,
     current_level_index_query: Query<&CurrentLevelIndex>,
+    system_handles: Res<SystemHandles>,
+    mut commands: Commands,
+    maze_entities_query: Query<Entity, With<MazeMarker>>,
 ) {
     let Ok(melody_tracker) = melody_tracker_query.get_single() else {
         return;
@@ -184,6 +189,9 @@ pub fn check_melody_solved(
     let DiscoveredMelodies(discovered_melodies) =
         discovered_melodies_query.single_mut().into_inner();
     discovered_melodies.insert(*index, discovered_melody);
+
+    commands.run_system(system_handles.update_on_melody_discovered);
+    commands.run_system(system_handles.note_burst);
 }
 
 fn try_decrypt_melody(notes: &Notes, encrypted_melody: &Vec<u8>) -> Option<Melody> {

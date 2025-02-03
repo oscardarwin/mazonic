@@ -1,5 +1,6 @@
 use bevy::{
     math::NormedVectorSpace,
+    pbr::ExtendedMaterial,
     prelude::*,
     utils::{HashMap, HashSet},
 };
@@ -8,9 +9,14 @@ use rand::{seq::IteratorRandom, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
 use crate::{
-    assets::{material_handles::MaterialHandles, mesh_handles::MeshHandles},
-    effects::musical_notes::MusicalNoteEffectHandle,
+    assets::{
+        material_handles::MaterialHandles,
+        mesh_handles::MeshHandles,
+        shaders::{DashedArrowShader, PulsingShader},
+    },
+    effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles},
     game_save::{CurrentLevelIndex, DiscoveredMelodies, DiscoveredMelody},
+    game_systems::SystemHandles,
     is_room_junction::is_junction,
     levels::{GameLevel, LevelData, Shape},
     maze::maze_mesh_builder::MazeMeshBuilder,
@@ -24,6 +30,9 @@ const ROOM_HEIGHT: f32 = 0.002;
 const SAME_FACE_EDGE_HEIGHT: f32 = 0.001;
 const CROSS_FACE_EDGE_HEIGHT: f32 = 0.001;
 
+#[derive(Component, Debug, Clone)]
+pub struct MazeMarker;
+
 pub fn spawn(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -34,6 +43,7 @@ pub fn spawn(
     discovered_melodies_query: Query<&DiscoveredMelodies>,
     current_level_index_query: Query<&CurrentLevelIndex>,
     musical_note_effect_handle: Query<&MusicalNoteEffectHandle>,
+    musical_note_image_handle_query: Query<&MusicalNoteImageHandles>,
 ) {
     let Ok(level) = level_query.get_single() else {
         return;
@@ -43,7 +53,7 @@ pub fn spawn(
         return;
     };
 
-    let Ok(DiscoveredMelodies(discovered_melodies)) = discovered_melodies_query.get_single() else {
+    let Ok(discovered_melodies) = discovered_melodies_query.get_single() else {
         return;
     };
 
@@ -51,40 +61,43 @@ pub fn spawn(
         return;
     };
 
-    let Ok(MusicalNoteEffectHandle {
-        effect_handles,
-        crotchet_handle,
-        quaver_handle,
-    }) = musical_note_effect_handle.get_single()
+    let Ok(MusicalNoteEffectHandle { effect_handles }) = musical_note_effect_handle.get_single()
     else {
         return;
     };
 
-    let discovered_melody_rooms =
-        make_discovered_melody_room_set(*current_level_index, discovered_melodies);
+    let Ok(MusicalNoteImageHandles {
+        crotchet_handle,
+        quaver_handle,
+    }) = musical_note_image_handle_query.get_single()
+    else {
+        return;
+    };
+
+    let discovered_melody_rooms = discovered_melodies.get_room_ids_for_level(*current_level_index);
 
     let distance_between_nodes = level.node_distance();
 
     let goal_node = solution.last().unwrap();
-    for node in graph.nodes().filter(|room| is_junction(room, &graph)) {
-        let is_goal_node = node == *goal_node;
-        let is_discovered_melody_room = discovered_melody_rooms.contains(&node.id);
+    for room in graph.nodes().filter(|room| is_junction(room, &graph)) {
+        let is_goal_node = room == *goal_node;
+        let is_discovered_melody_room = discovered_melody_rooms.contains(&room.id);
 
         let transform = Transform::IDENTITY
             .looking_at(
-                -node.face().normal(),
-                node.face().normal().any_orthogonal_vector(),
+                -room.face().normal(),
+                room.face().normal().any_orthogonal_vector(),
             )
-            .with_translation(node.position() + node.face().normal() * ROOM_HEIGHT);
+            .with_translation(room.position() + room.face().normal() * ROOM_HEIGHT);
 
-        let mut entity_commands = commands.spawn((transform, LevelData));
+        let mut entity_commands = commands.spawn((transform, LevelData, room));
 
         if is_discovered_melody_room {
             let num_effect_handles = effect_handles.len();
 
-            let crotchet_effect_handle_index = node.id as usize % num_effect_handles;
+            let crotchet_effect_handle_index = room.id as usize % num_effect_handles;
             let quaver_effect_handle_index =
-                (node.id as usize + num_effect_handles / 2) as usize % num_effect_handles;
+                (room.id as usize + num_effect_handles / 2) as usize % num_effect_handles;
 
             entity_commands.with_children(|parent| {
                 parent
@@ -113,7 +126,7 @@ pub fn spawn(
             });
         }
 
-        let mesh_handle = if node == *goal_node {
+        let mesh_handle = if room == *goal_node {
             mesh_handles.goal_room.clone()
         } else {
             mesh_handles.junction_room.clone()
@@ -123,6 +136,7 @@ pub fn spawn(
             let mut child_entity_commands = parent.spawn((
                 Mesh3d(mesh_handle),
                 Transform::IDENTITY.with_scale(Vec3::splat(distance_between_nodes)),
+                MazeMarker,
             ));
 
             let material_handle = match (is_goal_node, is_discovered_melody_room) {
@@ -138,7 +152,7 @@ pub fn spawn(
     }
 
     let discovered_melody_room_pairs =
-        make_room_pairs_from_discovered_melodies(*current_level_index, discovered_melodies);
+        make_room_pairs_from_discovered_melodies(*current_level_index, &discovered_melodies.0);
 
     let maze_mesh_builder = match &level.shape {
         Shape::Tetrahedron => MazeMeshBuilder::tetrahedron(),
@@ -183,6 +197,7 @@ pub fn spawn(
                 let mut entity_commands = parent.spawn((
                     Mesh3d(mesh_handle),
                     Transform::IDENTITY.with_scale(Vec3::splat(distance_between_nodes)),
+                    MazeMarker,
                 ));
 
                 match (bidirectional, is_discovered) {
@@ -239,17 +254,6 @@ pub fn get_cross_face_edge_transform(
         .with_translation(intersection_point + average_normal * CROSS_FACE_EDGE_HEIGHT)
 }
 
-pub fn make_discovered_melody_room_set(
-    current_level_index: usize,
-    discovered_melodies: &HashMap<usize, DiscoveredMelody>,
-) -> HashSet<u64> {
-    if let Some(DiscoveredMelody { room_ids, .. }) = discovered_melodies.get(&current_level_index) {
-        room_ids.iter().cloned().collect()
-    } else {
-        HashSet::new()
-    }
-}
-
 pub fn make_room_pairs_from_discovered_melodies(
     current_level_index: usize,
     discovered_melodies: &HashMap<usize, DiscoveredMelody>,
@@ -266,4 +270,15 @@ pub fn make_room_pairs_from_discovered_melodies(
     }
 
     room_pairs
+}
+
+pub fn update_on_melody_discovered(
+    mut commands: Commands,
+    system_handles: Res<SystemHandles>,
+    maze_entities_query: Query<Entity, With<MazeMarker>>,
+) {
+    commands.run_system(system_handles.spawn_maze);
+    for maze_entity in maze_entities_query.iter() {
+        commands.entity(maze_entity).despawn();
+    }
 }
