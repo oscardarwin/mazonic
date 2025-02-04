@@ -192,6 +192,40 @@ pub fn check_melody_solved(
 
     commands.run_system(system_handles.update_on_melody_discovered);
     commands.run_system(system_handles.note_burst);
+    commands.run_system(system_handles.play_melody);
+}
+
+pub fn play_melody(
+    current_level_index_query: Query<&CurrentLevelIndex>,
+    discovered_melodies_query: Query<&DiscoveredMelodies>,
+    asset_server: ResMut<AssetServer>,
+    mut commands: Commands,
+) {
+    let CurrentLevelIndex(index) = current_level_index_query.single();
+    let DiscoveredMelodies(discovered_melodies) = discovered_melodies_query.single();
+    let discovered_melody = discovered_melodies.get(index).unwrap();
+
+    let Notes(notes) = &discovered_melody.melody.notes;
+    let midi_notes = notes
+        .iter()
+        .map(|note| {
+            let duration_millis = note.duration.as_secs_f32();
+            let duration = Duration::from_secs_f32(duration_millis / 3.0);
+
+            MidiNote {
+                key: note.key,
+                velocity: note.velocity,
+                duration,
+                ..Default::default()
+            }
+        })
+        .collect_vec();
+    let midi_audio = MidiAudio::Sequence(midi_notes);
+    let audio_handle = asset_server.add::<MidiAudio>(midi_audio);
+    commands.spawn(AudioSourceBundle {
+        source: AudioPlayer(audio_handle),
+        ..Default::default()
+    });
 }
 
 fn try_decrypt_melody(notes: &Notes, encrypted_melody: &Vec<u8>) -> Option<Melody> {
