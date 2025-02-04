@@ -5,20 +5,22 @@ use serde::{Deserialize, Serialize};
 
 use crate::sound::Melody;
 
-#[derive(Component, Debug, Clone)]
-pub struct CurrentLevelIndex(pub usize);
+type LevelIndex = usize;
 
 #[derive(Component, Debug, Clone)]
-pub struct WorkingLevelIndex(pub usize);
+pub struct CurrentLevelIndex(pub LevelIndex);
 
 #[derive(Component, Debug, Clone)]
-pub struct PerfectScoreLevelIndices(pub HashSet<usize>);
+pub struct WorkingLevelIndex(pub LevelIndex);
 
 #[derive(Component, Debug, Clone)]
-pub struct DiscoveredMelodies(pub HashMap<usize, DiscoveredMelody>);
+pub struct PerfectScoreLevelIndices(pub HashSet<LevelIndex>);
+
+#[derive(Component, Debug, Clone)]
+pub struct DiscoveredMelodies(pub HashMap<LevelIndex, DiscoveredMelody>);
 
 impl DiscoveredMelodies {
-    pub fn get_room_ids_for_level(&self, level_index: usize) -> HashSet<u64> {
+    pub fn get_room_ids_for_level(&self, level_index: LevelIndex) -> HashSet<u64> {
         if let Some(DiscoveredMelody { room_ids, .. }) = self.0.get(&level_index) {
             room_ids.iter().cloned().collect()
         } else {
@@ -35,17 +37,17 @@ pub struct DiscoveredMelody {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameSave {
-    pub current_index: usize,
-    pub completed_index: usize,
-    pub perfect_score_level_indices: HashSet<usize>,
-    pub discovered_melodies: HashMap<usize, DiscoveredMelody>,
+    pub current_index: LevelIndex,
+    pub completed_index: LevelIndex,
+    pub perfect_score_level_indices: HashSet<LevelIndex>,
+    pub discovered_melodies: HashMap<LevelIndex, DiscoveredMelody>,
 }
 
 impl Default for GameSave {
     fn default() -> Self {
         GameSave {
-            current_index: 0,
-            completed_index: 0,
+            current_index: 3,
+            completed_index: 3,
             perfect_score_level_indices: HashSet::new(),
             discovered_melodies: HashMap::new(),
         }
