@@ -206,7 +206,7 @@ pub fn play_melody(
     let discovered_melody = discovered_melodies.get(index).unwrap();
 
     let Notes(notes) = &discovered_melody.melody.notes;
-    let midi_notes = notes
+    let mut midi_notes = notes
         .iter()
         .map(|note| {
             let duration_millis = note.duration.as_secs_f32();
@@ -220,6 +220,13 @@ pub fn play_melody(
             }
         })
         .collect_vec();
+
+    let pause_note = MidiNote {
+        velocity: 0,
+        duration: Duration::from_millis(800),
+        ..Default::default()
+    };
+    midi_notes.insert(0, pause_note);
     let midi_audio = MidiAudio::Sequence(midi_notes);
     let audio_handle = asset_server.add::<MidiAudio>(midi_audio);
     commands.spawn(AudioSourceBundle {
