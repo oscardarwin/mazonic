@@ -137,7 +137,6 @@ fn get_update_systems() -> SystemConfigs {
         level_selector::update_selection_overlay.run_if(in_state(GameState::Selector)),
         camera_move_to_target.run_if(in_state(SelectorState::Idle)),
         camera_dolly.run_if(in_state(SelectorState::Clicked)),
-        effects::musical_notes::spawn_notes.run_if(in_state(GameState::Selector)),
     )
         .into_configs();
 
@@ -180,6 +179,7 @@ fn get_update_systems() -> SystemConfigs {
         ),
         light_follow_camera,
         update_node_arrival_particles,
+        effects::musical_notes::spawn_notes,
         selector_systems,
     )
         .into_configs()

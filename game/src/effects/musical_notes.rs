@@ -150,8 +150,6 @@ pub fn spawn_notes(
         let crotchet_effect_handle_index = index % num_effect_handles;
         let quaver_effect_handle_index = (index + num_effect_handles / 2) % num_effect_handles;
 
-        println!("spawning note effect {index}");
-
         let particle_effect_entity = entity_commands.with_children(|parent| {
             parent
                 .spawn(ParticleEffectBundle {
