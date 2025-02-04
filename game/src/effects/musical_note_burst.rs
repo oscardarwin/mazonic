@@ -65,8 +65,6 @@ pub fn setup(
         sample_mapping: ImageSampleMapping::Modulate,
     };
 
-    //let accel = RadialAccelModifier::new(writer.lit(Vec3::ZERO).expr(), writer.lit(-1.2).expr());
-
     let sphere_radius = writer.lit(1.4).expr();
     let accel = RadialAccelModifier::new(zero_vec.clone(), writer.lit(-0.01).expr());
     let mut module = writer.finish();
@@ -85,15 +83,11 @@ pub fn setup(
     .render(orient)
     .render(render_image)
     .with_simulation_condition(SimulationCondition::Always)
-    .render(ColorOverLifetimeModifier {
-        gradient: gradient.clone(),
-    });
+    .render(ColorOverLifetimeModifier { gradient });
 
-    let effect_handle = effects.add(effect.with_name(format!("Note Burst")));
+    let burst_handle = effects.add(effect.with_name(format!("Note Burst")));
 
-    commands.spawn(NoteBurstEffectHandles {
-        burst_handle: effect_handle,
-    });
+    commands.spawn(NoteBurstEffectHandles { burst_handle });
 }
 
 pub fn clear_up_effects(
@@ -144,14 +138,16 @@ pub fn spawn(
 
     let melody_room_ids = discovered_melodies.get_room_ids_for_level(*current_level_index);
 
-    for (room, transform) in rooms_query.iter() {
+    println!("spawning note burst");
+    for (room, transform) in rooms_query
+        .iter()
+        .filter(|(room, _)| melody_room_ids.contains(&room.id))
+    {
         let texture_handle = if room.id % 2 == 0 {
             crotchet_handle.clone()
         } else {
             quaver_handle.clone()
         };
-
-        println!("spawning note burst");
 
         commands
             .spawn(ParticleEffectBundle {
