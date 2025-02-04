@@ -33,7 +33,7 @@ use crate::{
         self,
         loader::{despawn_level_data, load_level_asset, spawn_level_data},
     },
-    sound::{check_melody_solved, play_note},
+    sound::{self, check_melody_solved, play_note},
     statistics::update_player_path,
     ui::{self, update_next_level_button_visibility, update_previous_level_button_visibility},
     victory::{self},
@@ -137,6 +137,7 @@ fn get_update_systems() -> SystemConfigs {
         level_selector::update_selection_overlay.run_if(in_state(GameState::Selector)),
         camera_move_to_target.run_if(in_state(SelectorState::Idle)),
         camera_dolly.run_if(in_state(SelectorState::Clicked)),
+        effects::musical_notes::spawn_notes.run_if(in_state(GameState::Selector)),
     )
         .into_configs();
 
@@ -189,6 +190,7 @@ pub struct SystemHandles {
     pub spawn_maze: SystemId,
     pub note_burst: SystemId,
     pub update_on_melody_discovered: SystemId,
+    pub play_melody: SystemId,
 }
 
 impl FromWorld for SystemHandles {
@@ -196,11 +198,13 @@ impl FromWorld for SystemHandles {
         let spawn_maze = world.register_system(maze::mesh::spawn);
         let note_burst = world.register_system(effects::musical_note_burst::spawn);
         let update_on_melody_discovered = world.register_system(update_on_melody_discovered);
+        let play_melody = world.register_system(sound::play_melody);
 
         SystemHandles {
             spawn_maze,
             note_burst,
             update_on_melody_discovered,
+            play_melody,
         }
     }
 }

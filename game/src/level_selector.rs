@@ -5,17 +5,21 @@ use bevy::{
     utils::{hashbrown::HashSet, HashMap},
     window::PrimaryWindow,
 };
+use bevy_hanabi::{EffectMaterial, ParticleEffectBundle};
 use bevy_rapier3d::prelude::*;
 
 use crate::{
     assets::{
         material_handles::MaterialHandles,
         mesh_generators::{FaceMeshGenerator, TriangleFaceMeshGenerator},
-        shaders::MenuSelectionHoverShader,
+        shaders::{MenuSelectionHoverShader, PulsingShader},
     },
     camera::{CameraTarget, MainCamera},
     constants::SQRT_3,
-    game_save::{CurrentLevelIndex, PerfectScoreLevelIndices, WorkingLevelIndex},
+    effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
+    game_save::{
+        CurrentLevelIndex, DiscoveredMelodies, PerfectScoreLevelIndices, WorkingLevelIndex,
+    },
     game_settings::GameSettings,
     game_state::GameState,
     levels::{Shape, LEVELS},
@@ -65,7 +69,12 @@ pub fn load(
     mut asset_server: ResMut<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    game_save_query: Query<(&WorkingLevelIndex, &PerfectScoreLevelIndices)>,
+    mut pulsing_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, PulsingShader>>>,
+    game_save_query: Query<(
+        &WorkingLevelIndex,
+        &PerfectScoreLevelIndices,
+        &DiscoveredMelodies,
+    )>,
     game_settings: Res<GameSettings>,
     game_materials: Res<MaterialHandles>,
     mut mouse_button_event_reader: EventReader<MouseButtonInput>,
@@ -75,6 +84,7 @@ pub fn load(
     let (
         WorkingLevelIndex(completed_level_index),
         PerfectScoreLevelIndices(perfect_score_level_indices),
+        DiscoveredMelodies(discovered_melodies),
     ) = game_save_query.single();
 
     let material_handles = &game_materials.selector;
@@ -85,13 +95,26 @@ pub fn load(
 
     let line_color_vec = game_settings.palette.line_color.to_linear().to_vec3();
     let level_symbol_sprite_sheet = asset_server.load("sprites/symbols_sprite_sheet.png");
-    let sprite_sheet_material_handle = materials.add(StandardMaterial {
+    let sprite_sheet_material_handle = MeshMaterial3d(materials.add(StandardMaterial {
         base_color_texture: Some(level_symbol_sprite_sheet.clone()),
         base_color: game_settings.palette.line_color,
         alpha_mode: AlphaMode::Blend,
         emissive: LinearRgba::from_vec3(line_color_vec * 30.0),
         ..Default::default()
-    });
+    }));
+
+    let player_color_vec = game_settings.palette.player_color.to_linear().to_vec3();
+    let sprite_sheet_melody_found_material_handle =
+        MeshMaterial3d(pulsing_materials.add(ExtendedMaterial {
+            base: StandardMaterial {
+                base_color: game_settings.palette.player_color,
+                base_color_texture: Some(level_symbol_sprite_sheet.clone()),
+                emissive: LinearRgba::from_vec3(player_color_vec * 2.0),
+                alpha_mode: AlphaMode::Blend,
+                ..Default::default()
+            },
+            extension: PulsingShader {},
+        }));
 
     let tetrahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(4, 0));
     let cube_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(3, 0));
@@ -151,29 +174,45 @@ pub fn load(
             MeshMaterial3d(game_materials.selector.selection_hover.clone()),
         );
 
-        let symbol_object = (
-            Mesh3d(symbol_mesh_handle),
-            MeshMaterial3d(sprite_sheet_material_handle.clone()),
-        );
-
-        let number_mesh_handle = number_mesh_handles.get(&level.nodes_per_edge).unwrap();
-        let number_object = (
-            Mesh3d(number_mesh_handle.clone()),
-            MeshMaterial3d(sprite_sheet_material_handle.clone()),
-        );
-
+        let is_melody_discovered = discovered_melodies.contains_key(&level_index);
         commands
-            .spawn(face_object)
-            .insert(triangle_collider)
+            .spawn(triangle_collider)
+            .insert(face_object)
             .insert(SelectorEntity)
             .insert(SelectorOverlayState::None)
             .insert(SelectableLevel(level_index))
             .insert(CameraTargetTransform(transform.clone()))
             .with_children(|parent| {
                 parent.spawn(transform).with_children(|parent| {
-                    parent.spawn(symbol_object);
-                    parent.spawn(number_object);
+                    let mut symbol_entity_commands = parent.spawn(Mesh3d(symbol_mesh_handle));
+                    if is_melody_discovered {
+                        symbol_entity_commands
+                            .insert(sprite_sheet_melody_found_material_handle.clone());
+                    } else {
+                        symbol_entity_commands.insert(sprite_sheet_material_handle.clone());
+                    };
+
+                    let number_mesh_handle =
+                        number_mesh_handles.get(&level.nodes_per_edge).unwrap();
+                    let mut number_entity_commands =
+                        parent.spawn(Mesh3d(number_mesh_handle.clone()));
+
+                    if is_melody_discovered {
+                        number_entity_commands
+                            .insert(sprite_sheet_melody_found_material_handle.clone());
+                    } else {
+                        number_entity_commands.insert(sprite_sheet_material_handle.clone());
+                    };
                 });
+
+                if is_melody_discovered {
+                    let face_center = face_vertices.iter().sum::<Vec3>() / 3.0;
+                    let spawner_transform = Transform::IDENTITY
+                        .looking_at(-face_center, face_center.any_orthogonal_vector())
+                        .with_translation(face_center * 1.05);
+
+                    parent.spawn((spawner_transform, MusicalNoteMarker));
+                }
                 parent
                     .spawn(Transform::from_translation(transform.translation * 0.00001))
                     .insert(selection_overlay_object)

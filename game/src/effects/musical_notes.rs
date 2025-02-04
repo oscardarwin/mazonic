@@ -15,6 +15,9 @@ pub struct MusicalNoteImageHandles {
     pub quaver_handle: Handle<Image>,
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct MusicalNoteMarker;
+
 pub fn setup(
     mut effects: ResMut<Assets<EffectAsset>>,
     mut assets: Res<AssetServer>,
@@ -114,4 +117,63 @@ fn create_note_effect(
         .render(render_image)
         .with_simulation_condition(SimulationCondition::Always)
         .render(ColorOverLifetimeModifier { gradient })
+}
+
+pub fn spawn_notes(
+    mut commands: Commands,
+    musical_note_effect_handle: Query<&MusicalNoteEffectHandle>,
+    musical_note_image_handle_query: Query<&MusicalNoteImageHandles>,
+    musical_note_marker_query: Query<(Entity, &Transform), Added<MusicalNoteMarker>>,
+) {
+    if musical_note_marker_query.is_empty() {
+        return;
+    }
+
+    let Ok(MusicalNoteEffectHandle { effect_handles }) = musical_note_effect_handle.get_single()
+    else {
+        return;
+    };
+    let num_effect_handles = effect_handles.len();
+
+    let Ok(MusicalNoteImageHandles {
+        crotchet_handle,
+        quaver_handle,
+    }) = musical_note_image_handle_query.get_single()
+    else {
+        return;
+    };
+
+    for (entity, transform) in musical_note_marker_query.iter() {
+        let mut entity_commands = commands.entity(entity);
+        let index = entity.index() as usize;
+
+        let crotchet_effect_handle_index = index % num_effect_handles;
+        let quaver_effect_handle_index = (index + num_effect_handles / 2) % num_effect_handles;
+
+        println!("spawning note effect {index}");
+
+        let particle_effect_entity = entity_commands.with_children(|parent| {
+            parent
+                .spawn(ParticleEffectBundle {
+                    effect: ParticleEffect::new(
+                        effect_handles[crotchet_effect_handle_index].clone(),
+                    ),
+                    transform: Transform::IDENTITY,
+                    ..Default::default()
+                })
+                .insert(EffectMaterial {
+                    images: vec![crotchet_handle.clone()],
+                });
+
+            parent
+                .spawn(ParticleEffectBundle {
+                    effect: ParticleEffect::new(effect_handles[quaver_effect_handle_index].clone()),
+                    transform: Transform::IDENTITY,
+                    ..Default::default()
+                })
+                .insert(EffectMaterial {
+                    images: vec![quaver_handle.clone()],
+                });
+        });
+    }
 }
