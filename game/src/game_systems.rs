@@ -35,7 +35,7 @@ use crate::{
     },
     sound::{self, check_melody_solved, play_note},
     statistics::update_player_path,
-    ui::{self, update_next_level_button_visibility, update_previous_level_button_visibility},
+    ui,
     victory::{self},
 };
 
@@ -57,12 +57,16 @@ impl Plugin for GameSystemsPlugin {
             maze::mesh::spawn,
             spawn_player,
             trigger_camera_resize_on_level_change.after(spawn_player),
-            update_previous_level_button_visibility,
-            update_next_level_button_visibility,
+            ui::navigation::update_previous_level_button_visibility,
+            ui::navigation::update_next_level_button_visibility,
         )
             .into_configs();
 
-        let exit_play_systems = (ui::despawn_level_complete_ui, despawn_level_data).into_configs();
+        let exit_play_systems = (
+            ui::navigation::despawn_level_navigation_ui,
+            despawn_level_data,
+        )
+            .into_configs();
 
         let enter_solving_systems = (
             turn_off_player_halo,
@@ -75,7 +79,8 @@ impl Plugin for GameSystemsPlugin {
 
         let enter_victory_systems = (
             update_working_level_on_victory,
-            update_next_level_button_visibility.after(update_working_level_on_victory),
+            ui::navigation::update_next_level_button_visibility
+                .after(update_working_level_on_victory),
             update_perfect_score_on_victory,
         );
 
@@ -115,7 +120,10 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(OnEnter(PlayState::Loading), enter_loading_systems)
             .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
             .add_systems(OnEnter(PlayState::Victory), enter_victory_systems)
-            .add_systems(OnEnter(GameState::Playing), ui::spawn_navigation_ui)
+            .add_systems(
+                OnEnter(GameState::Playing),
+                ui::navigation::spawn_navigation_ui,
+            )
             .add_systems(OnExit(GameState::Playing), exit_play_systems)
             .add_systems(OnEnter(ControllerState::Solving), enter_solving_systems)
             .add_systems(
@@ -149,11 +157,11 @@ fn get_update_systems() -> SystemConfigs {
         )
             .run_if(in_state(GameState::Playing)),
         (
-            ui::update_level_complete_ui,
-            ui::next_level,
-            ui::replay_level,
-            ui::previous_level,
-            ui::level_selector,
+            ui::navigation::update_level_complete_ui,
+            ui::navigation::next_level,
+            ui::navigation::replay_level,
+            ui::navigation::previous_level,
+            ui::navigation::level_selector,
             effects::musical_note_burst::clear_up_effects,
         )
             .run_if(in_state(GameState::Playing)),

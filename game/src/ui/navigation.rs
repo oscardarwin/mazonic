@@ -120,7 +120,7 @@ pub fn spawn_navigation_ui(mut commands: Commands, asset_server: Res<AssetServer
         });
 }
 
-pub fn despawn_level_complete_ui(mut commands: Commands, ui_entities: Query<Entity, With<Node>>) {
+pub fn despawn_level_navigation_ui(mut commands: Commands, ui_entities: Query<Entity, With<Node>>) {
     println!("despawn_level_complete_ui");
     for entity in ui_entities.iter() {
         commands.entity(entity).despawn();
