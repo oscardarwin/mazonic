@@ -86,6 +86,7 @@ impl Plugin for GameSystemsPlugin {
 
         let enter_selector_init_systems = (
             level_selector::load,
+            ui::complete_level::spawn,
             level_selector::set_initial_camera_target.after(level_selector::load),
         )
             .into_configs();
@@ -120,10 +121,7 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(OnEnter(PlayState::Loading), enter_loading_systems)
             .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
             .add_systems(OnEnter(PlayState::Victory), enter_victory_systems)
-            .add_systems(
-                OnEnter(GameState::Playing),
-                ui::navigation::spawn_navigation_ui,
-            )
+            .add_systems(OnEnter(GameState::Playing), ui::navigation::spawn)
             .add_systems(OnExit(GameState::Playing), exit_play_systems)
             .add_systems(OnEnter(ControllerState::Solving), enter_solving_systems)
             .add_systems(
@@ -145,6 +143,7 @@ fn get_update_systems() -> SystemConfigs {
         level_selector::update_selection_overlay.run_if(in_state(GameState::Selector)),
         camera_move_to_target.run_if(in_state(SelectorState::Idle)),
         camera_dolly.run_if(in_state(SelectorState::Clicked)),
+        ui::complete_level::fade_system,
     )
         .into_configs();
 
