@@ -306,7 +306,7 @@ fn number_symbol_mesh(number: u8) -> Mesh {
     coordinate_to_symbol_mesh(x_coord, y_coord)
 }
 
-fn coordinate_to_symbol_mesh(x_coord: u8, y_coord: u8) -> Mesh {
+pub fn coordinate_to_symbol_mesh(x_coord: u8, y_coord: u8) -> Mesh {
     let coordinate = UVec2::new(x_coord.into(), y_coord.into());
     let max_uv = (coordinate.as_vec2() + Vec2::ONE) / SYMBOL_TEXTURE_DIMENSIONS;
     let min_uv = coordinate.as_vec2() / SYMBOL_TEXTURE_DIMENSIONS;

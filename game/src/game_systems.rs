@@ -82,6 +82,7 @@ impl Plugin for GameSystemsPlugin {
             ui::navigation::update_next_level_button_visibility
                 .after(update_working_level_on_victory),
             update_perfect_score_on_victory,
+            ui::complete_level::spawn,
         );
 
         let enter_selector_init_systems = (
@@ -120,15 +121,16 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(OnEnter(PlayState::Loading), enter_loading_systems)
             .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
             .add_systems(OnEnter(PlayState::Victory), enter_victory_systems)
-            .add_systems(
-                OnEnter(GameState::Playing),
-                ui::navigation::spawn_navigation_ui,
-            )
+            .add_systems(OnEnter(GameState::Playing), ui::navigation::spawn)
             .add_systems(OnExit(GameState::Playing), exit_play_systems)
             .add_systems(OnEnter(ControllerState::Solving), enter_solving_systems)
             .add_systems(
                 OnEnter(ControllerState::IdlePostSolve),
                 camera_follow_player,
+            )
+            .add_systems(
+                OnEnter(victory::VictoryState::Viewing),
+                ui::complete_level::trigger_fade_out,
             )
             .add_systems(
                 OnExit(SelectorState::Clicked),
@@ -163,6 +165,7 @@ fn get_update_systems() -> SystemConfigs {
             ui::navigation::previous_level,
             ui::navigation::level_selector,
             effects::musical_note_burst::clear_up_effects,
+            ui::complete_level::fade_system,
         )
             .run_if(in_state(GameState::Playing)),
         victory_transition.run_if(in_state(PlayState::Playing)),
