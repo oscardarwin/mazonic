@@ -1,22 +1,23 @@
 # TODO:
-re-assign materials on Melody found
-add gold note particles to completed melody level selector triangles
-add gold lettering to melody found triangles
+Fix backlinks making the level too easy.
+Make some nodes inaccessable
+move melody speed to melody generation
 
 Main Menu
 Test out android build?
 
-add remaining hidden melodies.
-
 Social Media?
 
-Fix backlinks making the level too easy.
-Make some nodes inaccessable
+## UI popup on level complete? / Melody found
+Fade in
+Particles on the UI?
 
-UI popup on level complete? / Melody found
 
 smoother symbols in UI.
 
+Add sound for level completed.
+Implement timing for melodies.
+add remaining hidden melodies.
 better sounding marimba
 reverb?
 

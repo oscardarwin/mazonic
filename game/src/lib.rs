@@ -47,18 +47,18 @@ pub fn run() {
             DefaultPlugins.set(ImagePlugin::default_nearest()),
             #[cfg(not(target_arch = "wasm32"))]
             WireframePlugin,
+            JsonAssetPlugin::<MazeLevelData>::new(&[".json"]),
+            RapierPhysicsPlugin::<NoUserData>::default(),
+            GameSettingsPlugin::default(),
+            Controller::default(),
+            GameSystemsPlugin::default(),
+            NoisyShaderPlugin,
+            ShadersPlugin::default(),
+            RustySynthPlugin {
+                soundfont: Cursor::new(include_bytes!("../../app/assets/marimba_chiapaneca.sf2")),
+            },
+            HanabiPlugin,
         ))
-        .add_plugins(JsonAssetPlugin::<MazeLevelData>::new(&[".json"]))
-        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugins(GameSettingsPlugin::default())
-        .add_plugins(Controller::default())
-        .add_plugins(GameSystemsPlugin::default())
-        .add_plugins(NoisyShaderPlugin)
-        .add_plugins(ShadersPlugin::default())
-        .add_plugins(RustySynthPlugin {
-            soundfont: Cursor::new(include_bytes!("../../app/assets/marimba_chiapaneca.sf2")),
-        })
-        .add_plugins(HanabiPlugin)
         .insert_resource(PkvStore::new("hallayus", "mazonic"))
         .run();
 }
