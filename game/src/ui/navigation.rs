@@ -28,7 +28,7 @@ const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.65, 0.65, 0.65);
 
-pub fn spawn_navigation_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load(FONT_PATH);
     let font_size = 50.0;
 
@@ -43,8 +43,6 @@ pub fn spawn_navigation_ui(mut commands: Commands, asset_server: Res<AssetServer
             TextColor(Color::srgb(0.9, 0.9, 0.9)),
         )
     };
-
-    let level_selector_rect = Rect::new(0., 0., 128., 128.);
 
     let button = (
         Button,
@@ -72,6 +70,7 @@ pub fn spawn_navigation_ui(mut commands: Commands, asset_server: Res<AssetServer
         ..default()
     };
 
+    let level_selector_rect = Rect::new(0., 0., 128., 128.);
     let level_selector_node = (ImageNode::new(
         asset_server.load("sprites/symbols_sprite_sheet.png"),
     )
