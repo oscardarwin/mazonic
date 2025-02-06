@@ -23,7 +23,7 @@ pub struct Fade {
 impl Fade {
     fn fade_in() -> Self {
         Self {
-            timer: Timer::from_seconds(3.0, TimerMode::Once),
+            timer: Timer::from_seconds(0.3, TimerMode::Once),
             fading_in: true,
         }
     }
@@ -42,7 +42,18 @@ pub fn spawn(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     game_settings: Res<GameSettings>,
+    level_query: Query<&GameLevel>,
 ) {
+    let level = level_query.single();
+
+    let symbol_rect_slice = match level.shape {
+        Shape::Tetrahedron => Rect::new(512., 0., 640., 128.),
+        Shape::Cube => Rect::new(384., 0., 512., 128.),
+        Shape::Octahedron => Rect::new(256., 0., 384., 128.),
+        Shape::Dodecahedron => Rect::new(128., 0., 256., 128.),
+        Shape::Icosahedron => Rect::new(0., 0., 128., 128.),
+    };
+
     let font = asset_server.load(FONT_PATH);
     let font_size = 28.0;
 
@@ -76,7 +87,7 @@ pub fn spawn(
             ImageNode {
                 image: asset_server.load("sprites/symbols_sprite_sheet.png"),
                 color: game_settings.palette.line_color.clone(),
-                rect: Some(Rect::new(0., 0., 128., 128.)),
+                rect: Some(symbol_rect_slice),
                 ..default()
             },
             Node {
@@ -103,16 +114,18 @@ pub fn spawn(
                 ..default()
             },
             PickingBehavior::IGNORE,
+            LevelData,
         ))
         .add_child(symbol_node);
 }
 
 pub fn fade_system(
+    mut commands: Commands,
     time: Res<Time>,
-    mut image_node_query: Query<(&mut ImageNode, &mut Fade)>,
+    mut image_node_query: Query<(&mut ImageNode, &mut Fade, &Parent)>,
     mut text_color_query: Query<(&mut TextColor, &mut Fade), Without<ImageNode>>,
 ) {
-    for (mut image_node, mut fade) in image_node_query.iter_mut() {
+    for (mut image_node, mut fade, parent) in image_node_query.iter_mut() {
         fade.timer.tick(time.delta());
         let progress = fade.timer.fraction();
 
@@ -123,6 +136,12 @@ pub fn fade_system(
         };
 
         image_node.color.set_alpha(alpha);
+
+        if alpha < 0.01 {
+            println!("despawn");
+            let parent_entity = parent.get();
+            commands.entity(parent_entity).despawn_recursive();
+        }
     }
 
     for (mut text_color_node, mut fade) in text_color_query.iter_mut() {
@@ -139,10 +158,8 @@ pub fn fade_system(
     }
 }
 
-pub fn trigger_fade_in(mut commands: Commands, entity: Entity) {
-    commands.entity(entity).insert(Fade::fade_in());
-}
-
-pub fn trigger_fade_out(mut commands: Commands, entity: Entity) {
-    commands.entity(entity).insert(Fade::fade_out());
+pub fn trigger_fade_out(mut commands: Commands, fade_query: Query<Entity, With<Fade>>) {
+    for fade in fade_query.iter() {
+        commands.entity(fade).insert(Fade::fade_out());
+    }
 }

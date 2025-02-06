@@ -82,11 +82,11 @@ impl Plugin for GameSystemsPlugin {
             ui::navigation::update_next_level_button_visibility
                 .after(update_working_level_on_victory),
             update_perfect_score_on_victory,
+            ui::complete_level::spawn,
         );
 
         let enter_selector_init_systems = (
             level_selector::load,
-            ui::complete_level::spawn,
             level_selector::set_initial_camera_target.after(level_selector::load),
         )
             .into_configs();
@@ -129,6 +129,10 @@ impl Plugin for GameSystemsPlugin {
                 camera_follow_player,
             )
             .add_systems(
+                OnEnter(victory::VictoryState::Viewing),
+                ui::complete_level::trigger_fade_out,
+            )
+            .add_systems(
                 OnExit(SelectorState::Clicked),
                 level_selector::set_camera_target_to_closest_face,
             )
@@ -143,7 +147,6 @@ fn get_update_systems() -> SystemConfigs {
         level_selector::update_selection_overlay.run_if(in_state(GameState::Selector)),
         camera_move_to_target.run_if(in_state(SelectorState::Idle)),
         camera_dolly.run_if(in_state(SelectorState::Clicked)),
-        ui::complete_level::fade_system,
     )
         .into_configs();
 
@@ -162,6 +165,7 @@ fn get_update_systems() -> SystemConfigs {
             ui::navigation::previous_level,
             ui::navigation::level_selector,
             effects::musical_note_burst::clear_up_effects,
+            ui::complete_level::fade_system,
         )
             .run_if(in_state(GameState::Playing)),
         victory_transition.run_if(in_state(PlayState::Playing)),
