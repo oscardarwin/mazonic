@@ -70,7 +70,13 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
         ..default()
     };
 
-    let level_selector_rect = Rect::new(0., 0., 128., 128.);
+    let selector_symbol_pixel_width = 512.;
+    let level_selector_rect = Rect::new(
+        0.,
+        selector_symbol_pixel_width,
+        selector_symbol_pixel_width,
+        2.0 * selector_symbol_pixel_width,
+    );
     let level_selector_node = (ImageNode::new(
         asset_server.load("sprites/symbols_sprite_sheet.png"),
     )

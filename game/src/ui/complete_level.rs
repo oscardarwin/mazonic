@@ -9,29 +9,53 @@ use crate::{
     game_settings::GameSettings,
     level_selector::coordinate_to_symbol_mesh,
     levels::{GameLevel, LevelData, Shape},
+    statistics::PlayerPath,
 };
 
 #[derive(Component, Debug, Clone)]
 pub struct LevelCompleteBadge;
 
 #[derive(Component, Debug, Clone)]
-pub struct Fade {
+pub struct FadeOut {
     timer: Timer,
-    fading_in: bool,
 }
-
-impl Fade {
-    fn fade_in() -> Self {
+impl FadeOut {
+    fn new() -> Self {
         Self {
-            timer: Timer::from_seconds(0.3, TimerMode::Once),
-            fading_in: true,
+            timer: Timer::from_seconds(1.2, TimerMode::Once),
         }
     }
+}
 
-    fn fade_out() -> Self {
+#[derive(Component, Debug, Clone)]
+pub struct FadeIn {
+    timer: Timer,
+}
+impl FadeIn {
+    fn new() -> Self {
         Self {
-            timer: Timer::from_seconds(1.0, TimerMode::Once),
-            fading_in: false,
+            timer: Timer::from_seconds(0.3, TimerMode::Once),
+        }
+    }
+}
+
+#[derive(Component, Debug, Clone)]
+pub struct Fadeable {
+    pub max_alpha: f32,
+}
+
+#[derive(Component, Debug, Clone)]
+pub struct RootNode(pub Entity);
+
+#[derive(Component, Debug, Clone)]
+pub struct ExpandEffect {
+    pub timer: Timer,
+}
+
+impl ExpandEffect {
+    pub fn new() -> Self {
+        Self {
+            timer: Timer::from_seconds(5.0, TimerMode::Once),
         }
     }
 }
@@ -43,20 +67,50 @@ pub fn spawn(
     asset_server: Res<AssetServer>,
     game_settings: Res<GameSettings>,
     level_query: Query<&GameLevel>,
+    player_path_query: Query<&PlayerPath>,
 ) {
     let level = level_query.single();
 
-    let symbol_rect_slice = match level.shape {
-        Shape::Tetrahedron => Rect::new(512., 0., 640., 128.),
-        Shape::Cube => Rect::new(384., 0., 512., 128.),
-        Shape::Octahedron => Rect::new(256., 0., 384., 128.),
-        Shape::Dodecahedron => Rect::new(128., 0., 256., 128.),
-        Shape::Icosahedron => Rect::new(0., 0., 128., 128.),
-    };
+    let symbol_pixel_width = 512.;
+    let symbol_rect_position = match level.shape {
+        Shape::Tetrahedron => 4,
+        Shape::Cube => 3,
+        Shape::Octahedron => 2,
+        Shape::Dodecahedron => 1,
+        Shape::Icosahedron => 0,
+    } as f32;
+
+    let symbol_rect_slice = Rect::new(
+        symbol_rect_position * symbol_pixel_width,
+        symbol_pixel_width,
+        (symbol_rect_position + 1.0) * symbol_pixel_width,
+        2.0 * symbol_pixel_width,
+    );
+
+    let symbol_background_rect_slice = Rect::new(
+        symbol_rect_position * symbol_pixel_width,
+        0.,
+        (symbol_rect_position + 1.0) * symbol_pixel_width,
+        symbol_pixel_width,
+    );
 
     let font = asset_server.load(FONT_PATH);
     let font_size = 28.0;
 
+    let mut root_node_commands = commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            border: UiRect::all(Val::Px(10.)),
+            ..default()
+        },
+        PickingBehavior::IGNORE,
+        LevelData,
+    ));
+
+    let bright_line_color = game_settings.palette.line_color.to_linear().to_vec3() * 100.0;
     let text_node = commands
         .spawn((
             Text::new("Score"),
@@ -65,8 +119,9 @@ pub fn spawn(
                 font_size: font_size.clone(),
                 ..default()
             },
-            TextColor(game_settings.palette.line_color.clone()),
-            Fade::fade_in(),
+            TextColor(Color::LinearRgba(LinearRgba::from_vec3(bright_line_color))),
+            FadeIn::new(),
+            Fadeable { max_alpha: 1.0 },
         ))
         .id();
 
@@ -82,12 +137,34 @@ pub fn spawn(
         .add_child(text_node)
         .id();
 
+    let image = asset_server.load("sprites/symbols_sprite_sheet.png");
     let symbol_node = commands
         .spawn((
             ImageNode {
-                image: asset_server.load("sprites/symbols_sprite_sheet.png"),
-                color: game_settings.palette.line_color.clone(),
+                image: image.clone(),
+                color: game_settings.palette.line_color,
                 rect: Some(symbol_rect_slice),
+                ..default()
+            },
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            FadeIn::new(),
+            Fadeable { max_alpha: 1.0 },
+        ))
+        .add_child(text_container_node)
+        .id();
+
+    let symbol_background_node = commands
+        .spawn((
+            ImageNode {
+                image: image.clone(),
+                color: game_settings.palette.line_color,
+                rect: Some(symbol_background_rect_slice),
                 ..default()
             },
             Node {
@@ -98,9 +175,47 @@ pub fn spawn(
                 align_items: AlignItems::Center,
                 ..default()
             },
-            Fade::fade_in(),
+            FadeIn::new(),
+            Fadeable { max_alpha: 0.4 },
         ))
-        .add_child(text_container_node)
+        .add_child(symbol_node)
+        .id();
+
+    let root_node = commands
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                border: UiRect::all(Val::Px(10.)),
+                ..default()
+            },
+            PickingBehavior::IGNORE,
+            LevelData,
+        ))
+        .add_child(symbol_background_node)
+        .id();
+
+    let text_entity = commands.entity(text_node).insert(RootNode(root_node));
+
+    let symbol_background_expand_effect = commands
+        .spawn((
+            ImageNode {
+                image,
+                color: game_settings.palette.line_color,
+                rect: Some(symbol_background_rect_slice),
+                ..default()
+            },
+            Node {
+                width: Val::Px(512.),
+                aspect_ratio: Some(1.),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            ExpandEffect::new(),
+        ))
         .id();
 
     commands
@@ -116,50 +231,93 @@ pub fn spawn(
             PickingBehavior::IGNORE,
             LevelData,
         ))
-        .add_child(symbol_node);
+        .add_child(symbol_background_expand_effect);
 }
 
-pub fn fade_system(
+pub fn fade_out_system(
     mut commands: Commands,
     time: Res<Time>,
-    mut image_node_query: Query<(&mut ImageNode, &mut Fade, &Parent)>,
-    mut text_color_query: Query<(&mut TextColor, &mut Fade), Without<ImageNode>>,
+    mut image_node_query: Query<(&mut ImageNode, &mut FadeOut, &Fadeable)>,
+    mut text_color_query: Query<
+        (&mut TextColor, &mut FadeOut, &Fadeable, &RootNode),
+        Without<ImageNode>,
+    >,
 ) {
-    for (mut image_node, mut fade, parent) in image_node_query.iter_mut() {
+    for (mut image_node, mut fade, fadeable) in image_node_query.iter_mut() {
+        fade.timer.tick(time.delta());
+        let progress = fade.timer.fraction();
+        let alpha = fadeable.max_alpha * (1.0 - progress);
+        image_node.color.set_alpha(alpha);
+    }
+
+    for (mut text_color_node, mut fade, fadeable, RootNode(root_node)) in
+        text_color_query.iter_mut()
+    {
         fade.timer.tick(time.delta());
         let progress = fade.timer.fraction();
 
-        let alpha = if fade.fading_in {
-            progress // Fade-in increases alpha
-        } else {
-            1.0 - progress // Fade-out decreases alpha
-        };
+        let alpha = fadeable.max_alpha * (1.0 - progress);
+        text_color_node.0.set_alpha(alpha);
 
-        image_node.color.set_alpha(alpha);
+        if progress > 0.99 {
+            commands.entity(*root_node).despawn_recursive();
+        }
+    }
+}
+pub fn fade_in_system(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut image_node_query: Query<(Entity, &mut ImageNode, &mut FadeIn, &Fadeable)>,
+    mut text_color_query: Query<
+        (Entity, &mut TextColor, &mut FadeIn, &Fadeable),
+        Without<ImageNode>,
+    >,
+) {
+    for (entity, mut image_node, mut fade, fadeable) in image_node_query.iter_mut() {
+        fade.timer.tick(time.delta());
+        let progress = fade.timer.fraction();
+        image_node.color.set_alpha(progress * fadeable.max_alpha);
 
-        if alpha < 0.01 {
-            println!("despawn");
-            let parent_entity = parent.get();
-            commands.entity(parent_entity).despawn_recursive();
+        if progress > 0.99 {
+            commands.entity(entity).remove::<FadeIn>();
         }
     }
 
-    for (mut text_color_node, mut fade) in text_color_query.iter_mut() {
+    for (entity, mut text_color_node, mut fade, fadeable) in text_color_query.iter_mut() {
         fade.timer.tick(time.delta());
         let progress = fade.timer.fraction();
+        text_color_node.0.set_alpha(progress * fadeable.max_alpha);
 
-        let alpha = if fade.fading_in {
-            progress // Fade-in increases alpha
-        } else {
-            1.0 - progress // Fade-out decreases alpha
-        };
-
-        text_color_node.0.set_alpha(alpha);
+        if progress > 0.99 {
+            commands.entity(entity).remove::<FadeIn>();
+        }
     }
 }
 
-pub fn trigger_fade_out(mut commands: Commands, fade_query: Query<Entity, With<Fade>>) {
+pub fn trigger_fade_out(mut commands: Commands, fade_query: Query<Entity, With<Fadeable>>) {
     for fade in fade_query.iter() {
-        commands.entity(fade).insert(Fade::fade_out());
+        commands.entity(fade).insert(FadeOut::new());
+    }
+}
+
+pub fn update_expand_effect(
+    mut commands: Commands,
+    mut expand_effect_query: Query<(Entity, &mut Node, &mut ImageNode, &mut ExpandEffect)>,
+    time: Res<Time>,
+) {
+    for (entity, mut node, mut image_node, mut expand_effect) in expand_effect_query.iter_mut() {
+        expand_effect.timer.tick(time.delta());
+        let progress = expand_effect.timer.elapsed_secs() + 0.3;
+
+        let alpha = progress * (-5.0 * progress).exp();
+        image_node.color.set_alpha(alpha);
+
+        let scaling_factor = (3.0 * progress).exp();
+        node.width = Val::Px(512. * scaling_factor);
+        node.height = Val::Px(512. * scaling_factor);
+
+        if expand_effect.timer.finished() {
+            commands.entity(entity).despawn();
+        }
     }
 }

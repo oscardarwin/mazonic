@@ -165,7 +165,9 @@ fn get_update_systems() -> SystemConfigs {
             ui::navigation::previous_level,
             ui::navigation::level_selector,
             effects::musical_note_burst::clear_up_effects,
-            ui::complete_level::fade_system,
+            ui::complete_level::fade_in_system,
+            ui::complete_level::fade_out_system,
+            ui::complete_level::update_expand_effect,
         )
             .run_if(in_state(GameState::Playing)),
         victory_transition.run_if(in_state(PlayState::Playing)),

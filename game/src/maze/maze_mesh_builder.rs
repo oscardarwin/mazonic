@@ -10,6 +10,8 @@ use bevy::render::{
     render_asset::RenderAssetUsages,
 };
 
+use crate::constants::SQRT_3;
+
 #[derive(Component)]
 pub struct MazeMeshBuilder {
     dash_width: f32,
@@ -17,20 +19,10 @@ pub struct MazeMeshBuilder {
     arrow_head_width: f32,
     face_angle: f32,
     distance_between_nodes: f32,
-    empty_mesh: Mesh,
 }
 
 impl MazeMeshBuilder {
     pub fn new(distance_between_nodes: f32, face_angle: f32) -> Self {
-        let empty_mesh = Mesh::new(
-            PrimitiveTopology::TriangleList,
-            RenderAssetUsages::default(),
-        )
-        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<Vec3>::new())
-        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, Vec::<Vec2>::new())
-        .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<Vec3>::new())
-        .with_inserted_indices(Indices::U32(vec![]));
-
         let dash_width = distance_between_nodes / 6.0;
         let arrow_head_width = dash_width * 1.7;
         let arrow_head_length = distance_between_nodes / 5.0;
@@ -41,7 +33,6 @@ impl MazeMeshBuilder {
             arrow_head_width,
             face_angle,
             distance_between_nodes,
-            empty_mesh,
         }
     }
 
@@ -62,7 +53,17 @@ impl MazeMeshBuilder {
     }
 
     pub fn icosahedron(distance_between_nodes: f32) -> Self {
-        Self::new(distance_between_nodes, (-5.0_f32.sqrt() / 3.0).acos())
+        Self::new(1.0, (-5.0_f32.sqrt() / 3.0).acos())
+    }
+
+    pub fn level_selector() -> Self {
+        Self {
+            dash_width: 0.05,
+            arrow_head_length: 0.1,
+            arrow_head_width: 0.1,
+            face_angle: (-5.0_f32.sqrt() / 3.0).acos(),
+            distance_between_nodes: 1.0 / SQRT_3 / 3.0,
+        }
     }
 
     fn line(&self, length: f32, uv_start: f32, uv_end: f32) -> Mesh {

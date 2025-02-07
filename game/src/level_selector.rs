@@ -28,7 +28,7 @@ use crate::{
     sound::Melody,
 };
 
-const SYMBOL_TEXTURE_DIMENSIONS: Vec2 = Vec2::new(5.0, 3.0);
+const SYMBOL_TEXTURE_DIMENSIONS: Vec2 = Vec2::new(5.0, 4.0);
 
 const FACE_ORDER: [usize; 20] = [
     0, 2, 1, 4, 3, 11, 12, 5, 6, 7, 8, 19, 17, 16, 15, 14, 13, 10, 9, 18,
@@ -116,11 +116,11 @@ pub fn load(
             extension: PulsingShader {},
         }));
 
-    let tetrahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(4, 0));
-    let cube_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(3, 0));
-    let octahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(2, 0));
-    let dodecahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(1, 0));
-    let icosahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(0, 0));
+    let tetrahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(4, 1));
+    let cube_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(3, 1));
+    let octahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(2, 1));
+    let dodecahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(1, 1));
+    let icosahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(0, 1));
 
     let number_mesh_handles = (1..10)
         .map(|number| {
@@ -221,7 +221,7 @@ pub fn load(
             });
     }
 
-    let mesh_builder = MazeMeshBuilder::icosahedron(1.0 / SQRT_3 / 3.0);
+    let mesh_builder = MazeMeshBuilder::level_selector();
     let edge_mesh_handle = meshes.add(mesh_builder.one_way_cross_face_edge());
 
     for (from_level_index, to_level_index) in (0..).zip(1..LEVELS.len()) {
@@ -301,7 +301,7 @@ fn compute_face_transform(level_index: usize, faces: &[[Vec3; 3]; 20]) -> Transf
 }
 
 fn number_symbol_mesh(number: u8) -> Mesh {
-    let y_coord = 1 + (number - 1) / 5;
+    let y_coord = 2 + (number - 1) / 5;
     let x_coord = (number - 1) % 5;
     coordinate_to_symbol_mesh(x_coord, y_coord)
 }
