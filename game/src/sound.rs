@@ -10,12 +10,17 @@ use chacha20poly1305::aead::generic_array::typenum::Unsigned;
 use chacha20poly1305::aead::generic_array::GenericArray;
 use chacha20poly1305::aead::{Aead, Result};
 use itertools::Itertools;
+use rand::seq::IteratorRandom;
+use rand::SeedableRng;
+use rand_chacha::{ChaCha20Rng, ChaCha8Rng};
 use serde::{Deserialize, Serialize};
+use sha2::digest::typenum::Pow;
 use sha2::{Digest, Sha256};
 
 use crate::game_save::{CurrentLevelIndex, DiscoveredMelodies, DiscoveredMelody};
 use crate::game_systems::SystemHandles;
 use crate::maze::mesh::MazeMarker;
+use crate::shape::loader::SolutionComponent;
 use crate::{
     is_room_junction::is_junction, player::PlayerMazeState, room::Room,
     shape::loader::GraphComponent,
@@ -107,11 +112,13 @@ pub struct MelodyPuzzleTracker {
 
 pub fn play_note(
     mut commands: Commands,
-    mut last_room_local: Local<Option<Room>>,
+    mut previous_room_local: Local<Option<Room>>,
     mut melody_tracker_query: Query<&mut MelodyPuzzleTracker>,
     graph_component: Query<&GraphComponent>,
+    solution_query: Query<&SolutionComponent>,
     player_query: Query<&PlayerMazeState>,
     note_mapping: Query<&NoteMapping>,
+    asset_server: Res<AssetServer>,
 ) {
     let Ok(GraphComponent(graph)) = graph_component.get_single() else {
         return;
@@ -121,11 +128,14 @@ pub fn play_note(
         return;
     };
 
-    let last_room = last_room_local.unwrap_or(*room);
+    let play_sound = match *previous_room_local {
+        Some(previous_room) => previous_room != *room && is_junction(room, graph),
+        None => true,
+    };
 
-    *last_room_local = Some(*room);
+    *previous_room_local = Some(*room);
 
-    if *room == last_room || !is_junction(&room, &graph) {
+    if !play_sound {
         return;
     }
 
@@ -133,17 +143,73 @@ pub fn play_note(
         return;
     };
 
-    let (note_handle, note) = note_mapping.get(&room.id).unwrap().clone();
+    let final_room = solution_query
+        .get_single()
+        .ok()
+        .and_then(|SolutionComponent(solution)| solution.last())
+        .unwrap();
 
-    if let Ok(mut melody_tracker) = melody_tracker_query.get_single_mut() {
-        if melody_tracker.room_ids.len() == melody_tracker.room_ids.capacity() {
-            melody_tracker.room_ids.pop_front();
+    if room != final_room {
+        let (note_handle, note) = note_mapping.get(&room.id).unwrap().clone();
+
+        if let Ok(mut melody_tracker) = melody_tracker_query.get_single_mut() {
+            if melody_tracker.room_ids.len() == melody_tracker.room_ids.capacity() {
+                melody_tracker.room_ids.pop_front();
+            }
+
+            melody_tracker.room_ids.push_back(room.id);
         }
-
-        melody_tracker.room_ids.push_back(room.id);
+        commands.spawn(AudioSourceBundle {
+            source: AudioPlayer(note_handle),
+            ..Default::default()
+        });
+    } else {
+        play_winning_melody(
+            commands,
+            note_mapping.values().map(|(_, note)| note).collect(),
+            asset_server,
+        );
     }
+}
+
+fn play_winning_melody(
+    mut commands: Commands,
+    level_notes: Vec<&Note>,
+    asset_server: Res<AssetServer>,
+) {
+    let mut rng = ChaCha20Rng::from_entropy();
+
+    let notes = level_notes
+        .into_iter()
+        .unique_by(|note| note.key)
+        .choose_multiple(&mut rng, 6);
+
+    let num_notes = notes.len();
+    let mut midi_notes = notes
+        .into_iter()
+        .enumerate()
+        .map(|(index, note)| {
+            let duration = note.duration.as_secs_f32();
+            let speedup = if index == num_notes - 1 {
+                1.0
+            } else {
+                3.0 * 1.3_f32.powf(index as f32)
+            };
+            let fast_note_duration = Duration::from_secs_f32(duration / speedup);
+
+            MidiNote {
+                key: note.key,
+                velocity: note.velocity,
+                duration: fast_note_duration,
+                ..Default::default()
+            }
+        })
+        .collect_vec();
+
+    let midi_audio = MidiAudio::Sequence(midi_notes);
+    let audio_handle = asset_server.add::<MidiAudio>(midi_audio);
     commands.spawn(AudioSourceBundle {
-        source: AudioPlayer(note_handle),
+        source: AudioPlayer(audio_handle),
         ..Default::default()
     });
 }
@@ -206,20 +272,7 @@ pub fn play_melody(
     let discovered_melody = discovered_melodies.get(index).unwrap();
 
     let Notes(notes) = &discovered_melody.melody.notes;
-    let mut midi_notes = notes
-        .iter()
-        .map(|note| {
-            let duration_millis = note.duration.as_secs_f32();
-            let duration = Duration::from_secs_f32(duration_millis / 3.0);
-
-            MidiNote {
-                key: note.key,
-                velocity: note.velocity,
-                duration,
-                ..Default::default()
-            }
-        })
-        .collect_vec();
+    let mut midi_notes = notes.iter().map(|note| note.clone().into()).collect_vec();
 
     let pause_note = MidiNote {
         velocity: 0,

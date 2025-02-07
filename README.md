@@ -1,25 +1,20 @@
 # TODO:
+
+Animate the UI using a shader.
+
 Fix backlinks making the level too easy.
 Make some nodes inaccessable
 move melody speed to melody generation
+add remaining hidden melodies.
 
 Main Menu
 Test out android build?
 
 Social Media?
-
-## UI popup on level complete? / Melody found
-Fade in
-Particles on the UI?
-
-
-smoother symbols in UI.
-
-Add sound for level completed.
-Implement timing for melodies.
-add remaining hidden melodies.
 better sounding marimba
 reverb?
+
+Zoom in / out.
 
 ## Menu
 Play
