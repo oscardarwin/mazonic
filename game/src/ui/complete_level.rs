@@ -49,12 +49,14 @@ pub struct RootNode(pub Entity);
 
 #[derive(Component, Debug, Clone)]
 pub struct ExpandEffect {
+    pub delay: f32,
     pub timer: Timer,
 }
 
 impl ExpandEffect {
-    pub fn new() -> Self {
+    pub fn new(delay: f32) -> Self {
         Self {
+            delay,
             timer: Timer::from_seconds(5.0, TimerMode::Once),
         }
     }
@@ -168,8 +170,7 @@ pub fn spawn(
                 ..default()
             },
             Node {
-                width: Val::Percent(30.0),
-                min_width: Val::Px(256.0),
+                width: Val::Px(512.),
                 aspect_ratio: Some(1.0),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
@@ -199,12 +200,35 @@ pub fn spawn(
 
     let text_entity = commands.entity(text_node).insert(RootNode(root_node));
 
+    spawn_background_effect(
+        &mut commands,
+        game_settings.palette.line_color.clone(),
+        0.3,
+        image.clone(),
+        symbol_background_rect_slice.clone(),
+    );
+    spawn_background_effect(
+        &mut commands,
+        game_settings.palette.line_color.clone(),
+        0.2,
+        image,
+        symbol_background_rect_slice,
+    );
+}
+
+fn spawn_background_effect(
+    mut commands: &mut Commands,
+    color: Color,
+    delay: f32,
+    image: Handle<Image>,
+    rect_slice: Rect,
+) {
     let symbol_background_expand_effect = commands
         .spawn((
             ImageNode {
                 image,
-                color: game_settings.palette.line_color,
-                rect: Some(symbol_background_rect_slice),
+                color,
+                rect: Some(rect_slice),
                 ..default()
             },
             Node {
@@ -214,7 +238,7 @@ pub fn spawn(
                 align_items: AlignItems::Center,
                 ..default()
             },
-            ExpandEffect::new(),
+            ExpandEffect::new(delay),
         ))
         .id();
 
@@ -307,12 +331,12 @@ pub fn update_expand_effect(
 ) {
     for (entity, mut node, mut image_node, mut expand_effect) in expand_effect_query.iter_mut() {
         expand_effect.timer.tick(time.delta());
-        let progress = expand_effect.timer.elapsed_secs() + 0.3;
+        let progress = expand_effect.timer.elapsed_secs() + expand_effect.delay;
 
         let alpha = progress * (-5.0 * progress).exp();
         image_node.color.set_alpha(alpha);
 
-        let scaling_factor = (3.0 * progress).exp();
+        let scaling_factor = (2.4 * progress).exp();
         node.width = Val::Px(512. * scaling_factor);
         node.height = Val::Px(512. * scaling_factor);
 
