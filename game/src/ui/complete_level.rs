@@ -10,6 +10,7 @@ use crate::{
     game_settings::GameSettings,
     level_selector::coordinate_to_symbol_mesh,
     levels::{GameLevel, LevelData, Shape},
+    shape::loader::SolutionComponent,
     statistics::PlayerPath,
 };
 
@@ -70,10 +71,13 @@ pub fn spawn(
     asset_server: Res<AssetServer>,
     game_settings: Res<GameSettings>,
     level_query: Query<&GameLevel>,
+    solution_query: Query<&SolutionComponent>,
     player_path_query: Query<&PlayerPath>,
     mut ui_materials: ResMut<Assets<FlashUiMaterial>>,
 ) {
     let level = level_query.single();
+    let SolutionComponent(rooms) = solution_query.single();
+    let PlayerPath(path) = player_path_query.single();
 
     let symbol_pixel_width = 512.;
     let symbol_rect_position = match level.shape {
@@ -102,7 +106,8 @@ pub fn spawn(
     );
 
     let font = asset_server.load(FONT_PATH);
-    let font_size = 28.0;
+    let font_size = 56.0;
+    let font_text = format!("Score\n{}/{}", path.len(), rooms.len());
 
     let mut root_node_commands = commands.spawn((
         Node {
@@ -120,7 +125,7 @@ pub fn spawn(
     let bright_line_color = game_settings.palette.line_color.to_linear().to_vec3() * 100.0;
     let text_node = commands
         .spawn((
-            Text::new("Score"),
+            Text::new(font_text),
             TextFont {
                 font: font.clone(),
                 font_size: font_size.clone(),
@@ -129,6 +134,7 @@ pub fn spawn(
             TextColor(Color::LinearRgba(LinearRgba::from_vec3(bright_line_color))),
             FadeIn::new(),
             Fadeable { max_alpha: 1.0 },
+            TextLayout::new_with_justify(JustifyText::Center),
         ))
         .id();
 
@@ -182,7 +188,7 @@ pub fn spawn(
                 ..default()
             },
             FadeIn::new(),
-            Fadeable { max_alpha: 0.4 },
+            Fadeable { max_alpha: 0.3 },
         ))
         .add_child(symbol_node)
         .id();
