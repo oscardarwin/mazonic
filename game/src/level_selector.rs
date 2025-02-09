@@ -15,7 +15,7 @@ use crate::{
         shaders::{MenuSelectionHoverShader, PulsingShader},
     },
     camera::{CameraTarget, MainCamera},
-    constants::SQRT_3,
+    constants::{SQRT_3, SYMBOL_TEXTURE_DIMENSIONS},
     effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
     game_save::{
         CurrentLevelIndex, DiscoveredMelodies, PerfectScoreLevelIndices, WorkingLevelIndex,
@@ -27,8 +27,6 @@ use crate::{
     shape::{icosahedron, shape_utils::compute_face_normal},
     sound::Melody,
 };
-
-const SYMBOL_TEXTURE_DIMENSIONS: Vec2 = Vec2::new(5.0, 4.0);
 
 const FACE_ORDER: [usize; 20] = [
     0, 2, 1, 4, 3, 11, 12, 5, 6, 7, 8, 19, 17, 16, 15, 14, 13, 10, 9, 18,

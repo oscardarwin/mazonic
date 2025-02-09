@@ -18,6 +18,7 @@ impl Plugin for ShadersPlugin {
             MaterialPlugin::<ExtendedMaterial<StandardMaterial, PulsingShader>>::default(),
             MaterialPlugin::<ExtendedMaterial<StandardMaterial, PulsingDashedArrowShader>>::default(
             ),
+            UiMaterialPlugin::<FlashUiMaterial>::default(),
         ));
     }
 }
@@ -73,5 +74,24 @@ pub struct PulsingDashedArrowShader {}
 impl MaterialExtension for PulsingDashedArrowShader {
     fn fragment_shader() -> ShaderRef {
         "shaders/pulsing_dashed_line.wgsl".into()
+    }
+}
+
+#[derive(AsBindGroup, Asset, TypePath, Debug, Clone)]
+pub struct FlashUiMaterial {
+    #[uniform(0)]
+    pub color: Vec4,
+    #[texture(1)]
+    #[sampler(2)]
+    pub color_texture: Handle<Image>,
+    #[uniform(3)]
+    pub start_uv: Vec2,
+    #[uniform(4)]
+    pub end_uv: Vec2,
+}
+
+impl UiMaterial for FlashUiMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/ui_flash.wgsl".into()
     }
 }

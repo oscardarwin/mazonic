@@ -5,7 +5,8 @@ use bevy::{
 };
 
 use crate::{
-    assets::shaders::PulsingShader,
+    assets::shaders::{FlashUiMaterial, PulsingShader},
+    constants::SYMBOL_TEXTURE_DIMENSIONS,
     game_settings::GameSettings,
     level_selector::coordinate_to_symbol_mesh,
     levels::{GameLevel, LevelData, Shape},
@@ -70,6 +71,7 @@ pub fn spawn(
     game_settings: Res<GameSettings>,
     level_query: Query<&GameLevel>,
     player_path_query: Query<&PlayerPath>,
+    mut ui_materials: ResMut<Assets<FlashUiMaterial>>,
 ) {
     let level = level_query.single();
 
@@ -88,6 +90,9 @@ pub fn spawn(
         (symbol_rect_position + 1.0) * symbol_pixel_width,
         2.0 * symbol_pixel_width,
     );
+
+    let start_uv = Vec2::new(symbol_rect_position, 1.0) / SYMBOL_TEXTURE_DIMENSIONS;
+    let end_uv = Vec2::new(symbol_rect_position + 1.0, 2.0) / SYMBOL_TEXTURE_DIMENSIONS;
 
     let symbol_background_rect_slice = Rect::new(
         symbol_rect_position * symbol_pixel_width,
@@ -142,12 +147,12 @@ pub fn spawn(
     let image = asset_server.load("sprites/symbols_sprite_sheet.png");
     let symbol_node = commands
         .spawn((
-            ImageNode {
-                image: image.clone(),
-                color: game_settings.palette.line_color,
-                rect: Some(symbol_rect_slice),
-                ..default()
-            },
+            MaterialNode(ui_materials.add(FlashUiMaterial {
+                color: game_settings.palette.line_color.to_linear().to_vec4(),
+                color_texture: image.clone(),
+                start_uv,
+                end_uv,
+            })),
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
@@ -261,17 +266,36 @@ fn spawn_background_effect(
 pub fn fade_out_system(
     mut commands: Commands,
     time: Res<Time>,
-    mut image_node_query: Query<(&mut ImageNode, &mut FadeOut, &Fadeable)>,
+    mut background_image_node_query: Query<(&mut ImageNode, &mut FadeOut, &Fadeable)>,
     mut text_color_query: Query<
         (&mut TextColor, &mut FadeOut, &Fadeable, &RootNode),
         Without<ImageNode>,
     >,
+    mut symbol_node_query: Query<
+        (&MaterialNode<FlashUiMaterial>, &mut FadeOut, &Fadeable),
+        (Without<ImageNode>, Without<TextColor>),
+    >,
+    mut flash_ui_materials: ResMut<Assets<FlashUiMaterial>>,
 ) {
-    for (mut image_node, mut fade, fadeable) in image_node_query.iter_mut() {
+    for (mut image_node, mut fade, fadeable) in background_image_node_query.iter_mut() {
         fade.timer.tick(time.delta());
         let progress = fade.timer.fraction();
         let alpha = fadeable.max_alpha * (1.0 - progress);
         image_node.color.set_alpha(alpha);
+    }
+
+    for (MaterialNode(symbol_node_material_handle), mut fade, fadeable) in
+        symbol_node_query.iter_mut()
+    {
+        fade.timer.tick(time.delta());
+        let progress = fade.timer.fraction();
+        let alpha = fadeable.max_alpha * (1.0 - progress);
+
+        let mut symbol_node_material = flash_ui_materials
+            .get_mut(symbol_node_material_handle)
+            .unwrap();
+
+        symbol_node_material.color = symbol_node_material.color.with_w(alpha);
     }
 
     for (mut text_color_node, mut fade, fadeable, RootNode(root_node)) in
