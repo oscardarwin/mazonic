@@ -47,7 +47,7 @@ impl Default for GameSave {
     fn default() -> Self {
         GameSave {
             current_index: 3,
-            completed_index: 3,
+            completed_index: 19,
             perfect_score_level_indices: HashSet::new(),
             discovered_melodies: HashMap::new(),
         }

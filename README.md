@@ -1,13 +1,8 @@
 # TODO:
-
-Animate the UI using a shader.
-
-Fix backlinks making the level too easy.
-Make some nodes inaccessable
+## Fix backlinks making the level too easy.
 move melody speed to melody generation
 add remaining hidden melodies.
 
-Main Menu
 Test out android build?
 
 Social Media?

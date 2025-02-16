@@ -2931,20 +2931,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "maze_generator"
-version = "0.1.0"
-dependencies = [
- "indexmap",
- "itertools",
- "layout-rs",
- "petgraph",
- "rand",
- "rand_chacha",
- "strum",
- "strum_macros",
-]
-
-[[package]]
 name = "mazonic"
 version = "0.1.0"
 dependencies = [
@@ -2976,7 +2962,6 @@ dependencies = [
  "bevy_rustysynth",
  "chacha20poly1305",
  "itertools",
- "maze_generator",
  "mazonic",
  "petgraph",
  "rand",
