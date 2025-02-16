@@ -55,7 +55,9 @@ pub fn run() {
             NoisyShaderPlugin,
             ShadersPlugin::default(),
             RustySynthPlugin {
-                soundfont: Cursor::new(include_bytes!("../../app/assets/marimba_chiapaneca.sf2")),
+                soundfont: Cursor::new(include_bytes!(
+                    "../../desktop/assets/marimba_chiapaneca.sf2"
+                )),
             },
             HanabiPlugin,
         ))
