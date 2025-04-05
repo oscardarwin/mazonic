@@ -1,0 +1,43 @@
+[package]
+name = "mazonic_android"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.15.0", features = ["bevy_dev_tools"] }
+mazonic = { path = "../game" }
+libc = "*"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[package.metadata.docs.rs]
+targets = [
+    "aarch64-linux-android",
+]
+
+[build]
+target = "aarch64-linux-android"
+
+[target.aarch64-linux-android]
+rustflags = [
+  "-Clink-arg=-fuse-ld=lld",
+]
+
+
+[package.metadata.android]
+package = "com.hallayus.mazonic"
+platform = 34
+
+[package.metadata.android.sdk]
+target_sdk_version = 34
+
+[package.metadata.android.signing.release]
+path = "debug.keystore"
+keystore_password = "android"
+
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1
+strip = true
