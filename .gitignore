@@ -6,3 +6,6 @@ mazonic_android/build
 
 mazonic_android/gradle/wrapper
 mazonic_android/app/build
+mazonic_android/assets
+mazonic_android/jniLibs
+
