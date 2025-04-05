@@ -2955,6 +2955,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mazonic_android"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "libc",
+ "mazonic",
+]
+
+[[package]]
 name = "mazonic_level_generator"
 version = "0.1.0"
 dependencies = [

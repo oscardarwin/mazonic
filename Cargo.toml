@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "desktop",
+    "mazonic_android",
     "game", 
     "mazonic_level_generator",
 ]
