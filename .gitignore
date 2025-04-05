@@ -1,2 +1,8 @@
-/mazonic_level_generator
-/target
+mazonic_level_generator
+target
+mazonic_android/.*
+mazonic_android/app/.*
+mazonic_android/build
+
+mazonic_android/gradle/wrapper
+mazonic_android/app/build
