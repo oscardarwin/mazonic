@@ -72,6 +72,8 @@
               export ANDROID_NDK_ROOT="${android-sdk}/share/android-sdk/ndk/26.1.10909125"
               
               export ANDROID_HOME="$PWD/.android_sdk"
+
+              echo 'sdk location: ${android-sdk}'
               exec fish
             '';
           };
