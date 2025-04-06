@@ -8,4 +8,5 @@ mazonic_android/gradle/wrapper
 mazonic_android/app/build
 mazonic_android/assets
 mazonic_android/jniLibs
+mazonic_android/app/src/main/jniLibs
 
