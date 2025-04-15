@@ -267,6 +267,7 @@ fn get_face_material_from_color(color: Color) -> StandardMaterial {
         base_color: color,
         reflectance: 0.0,
         perceptual_roughness: 1.0,
+        alpha_mode: AlphaMode::Blend,
         ..Default::default()
     }
 }

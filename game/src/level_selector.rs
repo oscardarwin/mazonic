@@ -138,7 +138,11 @@ pub fn load(
         } else if level_index == *completed_level_index {
             let mix_factor = (level_index as f32) / (LEVELS.len() as f32);
             let color = ready_easy_color.mix(ready_hard_color, mix_factor);
-            materials.add(StandardMaterial::from_color(color))
+            materials.add(StandardMaterial {
+                base_color: color,
+                alpha_mode: AlphaMode::Blend,
+                ..Default::default()
+            })
         } else if perfect_score_level_indices.contains(&level_index) {
             material_handles.perfect_score.clone()
         } else {
