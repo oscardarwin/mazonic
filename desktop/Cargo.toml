@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 mazonic = { path = "../game" }
+bevy = { version = "0.15.0", features = ["bevy_dev_tools"] }

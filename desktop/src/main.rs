@@ -1,5 +1,9 @@
+use bevy::prelude::*;
+
 use mazonic;
 
 fn main() {
-    mazonic::run()
+    let mut app = App::new();
+    mazonic::add_common_plugins(&mut app);
+    app.run();
 }

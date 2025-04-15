@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 use bevy_pkv::PkvStore;
@@ -43,11 +45,14 @@ pub struct GameSave {
     pub discovered_melodies: HashMap<LevelIndex, DiscoveredMelody>,
 }
 
+#[derive(Resource, Clone)]
+pub struct SaveLocation(pub PathBuf);
+
 impl Default for GameSave {
     fn default() -> Self {
         GameSave {
-            current_index: 3,
-            completed_index: 19,
+            current_index: 0,
+            completed_index: 0,
             perfect_score_level_indices: HashSet::new(),
             discovered_melodies: HashMap::new(),
         }
@@ -56,7 +61,12 @@ impl Default for GameSave {
 
 const SAVE_DATA_KEY: &str = "save_data";
 
-pub fn setup_save_data(mut commands: Commands, pkv_store: Res<PkvStore>) {
+pub fn setup_save_data(mut commands: Commands, save_location: Option<Res<SaveLocation>>) {
+    let pkv_store = match save_location {
+        None => PkvStore::new("hallayus", "mazonic"),
+        Some(save_location) => PkvStore::new_in_dir(save_location.0.clone()),
+    };
+
     let save_data = match pkv_store.get::<GameSave>(SAVE_DATA_KEY) {
         Ok(game_save) => game_save,
         Err(_) => GameSave::default(),
@@ -68,6 +78,8 @@ pub fn setup_save_data(mut commands: Commands, pkv_store: Res<PkvStore>) {
         PerfectScoreLevelIndices(save_data.perfect_score_level_indices),
         DiscoveredMelodies(save_data.discovered_melodies),
     ));
+
+    commands.insert_resource(pkv_store);
 }
 
 pub fn update_save_data(

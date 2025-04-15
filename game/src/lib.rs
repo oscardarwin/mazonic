@@ -23,7 +23,7 @@ mod camera;
 pub mod constants;
 mod controller;
 mod effects;
-mod game_save;
+pub mod game_save;
 mod game_settings;
 mod game_state;
 mod game_systems;
@@ -41,26 +41,23 @@ mod statistics;
 mod ui;
 mod victory;
 
-pub fn run() {
-    App::new()
-        .add_plugins((
-            DefaultPlugins.set(ImagePlugin::default_nearest()),
-            #[cfg(not(target_arch = "wasm32"))]
-            WireframePlugin,
-            JsonAssetPlugin::<MazeLevelData>::new(&[".json"]),
-            RapierPhysicsPlugin::<NoUserData>::default(),
-            GameSettingsPlugin::default(),
-            Controller::default(),
-            GameSystemsPlugin::default(),
-            NoisyShaderPlugin,
-            ShadersPlugin::default(),
-            RustySynthPlugin {
-                soundfont: Cursor::new(include_bytes!(
-                    "../../desktop/assets/marimba_chiapaneca.sf2"
-                )),
-            },
-            HanabiPlugin,
-        ))
-        .insert_resource(PkvStore::new("hallayus", "mazonic"))
-        .run();
+pub fn add_common_plugins(app: &mut App) {
+    app.add_plugins((
+        DefaultPlugins,
+        #[cfg(not(target_arch = "wasm32"))]
+        WireframePlugin,
+        JsonAssetPlugin::<MazeLevelData>::new(&[".json"]),
+        RapierPhysicsPlugin::<NoUserData>::default(),
+        GameSettingsPlugin::default(),
+        Controller::default(),
+        GameSystemsPlugin::default(),
+        NoisyShaderPlugin,
+        ShadersPlugin::default(),
+        RustySynthPlugin {
+            soundfont: Cursor::new(include_bytes!(
+                "../../desktop/assets/marimba_chiapaneca.sf2"
+            )),
+        },
+        HanabiPlugin,
+    ));
 }

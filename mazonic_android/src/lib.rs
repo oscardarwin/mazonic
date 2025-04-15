@@ -3,5 +3,21 @@ use mazonic;
 
 #[bevy_main]
 fn main() {
-    mazonic::run()
+    let mut app = App::new();
+
+    let android_app = bevy::window::ANDROID_APP
+        .get()
+        .expect("Bevy must be set up with the #[bevy_main] macro on Android");
+
+    let internal_storage_path = android_app.internal_data_path().unwrap();
+
+    let save_location = mazonic::game_save::SaveLocation(internal_storage_path.clone());
+
+    app.insert_resource(save_location);
+
+    println!("Internal storage path: {:?}", internal_storage_path);
+
+    mazonic::add_common_plugins(&mut app);
+
+    app.run();
 }
