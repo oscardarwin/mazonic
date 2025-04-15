@@ -64,3 +64,20 @@ cargo build --release --target wasm32-unknown-unknown
 wasm-bindgen --out-dir ./out/ --target web ./target/wasm32-unknown-unknown/release/mazonic.wasm
 npx serve web
 
+# Build for Android:
+
+
+rustup default stable
+
+rustup target add x86_64-linux-android
+rustup target add aarch64-linux-android
+
+cd mazonic_android
+
+cargo ndk -t arm64-v8a -o app/src/main/jniLibs build --package mazonic_android
+
+gradle wrapper
+
+
+Then:
+Launch and run app in Android Studio.
