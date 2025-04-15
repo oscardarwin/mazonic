@@ -62,8 +62,6 @@
 
               aapt # still needed?
               jdk # remove
-
-              android-studio
             ];
             shellHook = ''
               export LD_LIBRARY_PATH="${lib.makeLibraryPath buildInputs}"
