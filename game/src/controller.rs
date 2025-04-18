@@ -1,5 +1,6 @@
 use crate::{
     camera::MainCamera,
+    controller_screen_position::ControllerScreenPosition,
     game_settings::GameSettings,
     game_state::PlayState,
     levels::GameLevel,
@@ -49,33 +50,22 @@ pub fn idle(
     rapier_context_query: Query<&RapierContext>,
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     mut mouse_button_event_reader: EventReader<MouseButtonInput>,
+    controller_screen_position_query: Query<&ControllerScreenPosition>,
 ) {
-    if mouse_button_event_reader
-        .read()
-        .filter(|input| input.button == MouseButton::Left)
-        .filter(|input| input.state == ButtonState::Pressed)
-        .next()
-        .is_none()
-    {
-        return;
-    }
-
-    let Ok(window) = primary_window.get_single() else {
+    let Ok(controller_screen_position) = controller_screen_position_query.get_single() else {
         return;
     };
 
-    let Some(cursor_position) = window.cursor_position() else {
-        // if the cursor is not inside the window, we can't do anything
+    let ControllerScreenPosition::Position(cursor_position) = controller_screen_position else {
         return;
     };
 
     let (camera_global_transform, camera) = camera_query.single();
 
     let Some(ray) = camera
-        .viewport_to_world(camera_global_transform, cursor_position)
+        .viewport_to_world(camera_global_transform, *cursor_position)
         .ok()
     else {
-        // if it was impossible to compute for whatever reason; we can't do anything
         return;
     };
 
@@ -98,21 +88,22 @@ pub fn idle(
 
 pub fn view(
     mut next_controller_state: ResMut<NextState<ControllerState>>,
-    mut mouse_button_event_reader: EventReader<MouseButtonInput>,
+    controller_screen_position_query: Query<&ControllerScreenPosition>,
 ) {
-    if mouse_button_event_reader
-        .read()
-        .filter(|input| input.button == MouseButton::Left)
-        .filter(|input| input.state == ButtonState::Released)
-        .next()
-        .is_some()
-    {
-        next_controller_state.set(ControllerState::IdlePostView);
+    let Ok(controller_screen_position) = controller_screen_position_query.get_single() else {
         return;
-    }
+    };
+
+    match controller_screen_position {
+        ControllerScreenPosition::None => {
+            next_controller_state.set(ControllerState::IdlePostView);
+        }
+        _ => {}
+    };
 }
 
 pub fn solve(
+    controller_screen_position_query: Query<&ControllerScreenPosition>,
     camera_query: Query<(&GlobalTransform, &Camera)>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut player_query: Query<(&mut PlayerMazeState, &Player)>,
@@ -131,38 +122,28 @@ pub fn solve(
         return;
     };
 
-    if mouse_button_event_reader
-        .read()
-        .filter(|input| input.button == MouseButton::Left)
-        .filter(|input| input.state == ButtonState::Released)
-        .next()
-        .is_some()
-    {
-        next_controller_state.set(ControllerState::IdlePostSolve);
-        return;
-    }
-
-    let Ok(window) = primary_window.get_single() else {
+    let Ok(controller_screen_position) = controller_screen_position_query.get_single() else {
         return;
     };
 
-    let Some(cursor_position) = window.cursor_position() else {
+    let ControllerScreenPosition::Position(cursor_position) = controller_screen_position else {
+        next_controller_state.set(ControllerState::IdlePostSolve);
         return;
     };
 
     if previous_cursor_position
-        .filter(|position| position.distance(cursor_position) < 2.0)
+        .filter(|position| position.distance(*cursor_position) < 2.0)
         .is_some()
     {
         return;
     } else {
-        *previous_cursor_position = Some(cursor_position);
+        *previous_cursor_position = Some(*cursor_position);
     }
 
     let (camera_global_transform, camera) = camera_query.single();
 
     let Some(ray) = camera
-        .viewport_to_world(camera_global_transform, cursor_position)
+        .viewport_to_world(camera_global_transform, *cursor_position)
         .ok()
     else {
         // if it was impossible to compute for whatever reason; we can't do anything

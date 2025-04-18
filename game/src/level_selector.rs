@@ -16,6 +16,7 @@ use crate::{
     },
     camera::{CameraTarget, MainCamera},
     constants::{SQRT_3, SYMBOL_TEXTURE_DIMENSIONS},
+    controller_screen_position::ControllerScreenPosition,
     effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
     game_save::{
         CurrentLevelIndex, DiscoveredMelodies, PerfectScoreLevelIndices, WorkingLevelIndex,
@@ -352,30 +353,28 @@ fn color_palette(game_settings: &GameSettings) -> Vec<StandardMaterial> {
 }
 
 pub fn set_selector_state(
+    controller_screen_position_query: Query<
+        &ControllerScreenPosition,
+        Changed<ControllerScreenPosition>,
+    >,
     mut mouse_button_event_reader: EventReader<MouseButtonInput>,
     mut next_selector_state: ResMut<NextState<SelectorState>>,
 ) {
-    let Some(mouse_button_event) = mouse_button_event_reader
-        .read()
-        .filter(|input| input.button == MouseButton::Left)
-        .map(|input| input.state)
-        .next()
-    else {
+    let Ok(controller_screen_position) = controller_screen_position_query.get_single() else {
         return;
     };
 
-    match mouse_button_event {
-        ButtonState::Pressed => {
+    match controller_screen_position {
+        ControllerScreenPosition::Position(_) => {
             next_selector_state.set(SelectorState::Clicked);
         }
-        ButtonState::Released => {
+        ControllerScreenPosition::None => {
             next_selector_state.set(SelectorState::Idle);
         }
     }
 }
 
 pub fn update_interactables(
-    buttons: Res<ButtonInput<MouseButton>>,
     rapier_context_query: Query<&RapierContext>,
     camera_query: Query<(&GlobalTransform, &Camera), With<MainCamera>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
@@ -384,19 +383,22 @@ pub fn update_interactables(
     mut selector_state: Res<State<SelectorState>>,
     mut current_level_index_query: Query<&mut CurrentLevelIndex>,
     completed_level_index_query: Query<&WorkingLevelIndex>,
+    controller_screen_position_query: Query<&ControllerScreenPosition>,
 ) {
+    let Ok(controller_screen_position) = controller_screen_position_query.get_single() else {
+        return;
+    };
+
     let Ok(window) = primary_window.get_single() else {
         return;
     };
 
-    let Some(cursor_position) = window.cursor_position() else {
-        return;
-    };
+    let window_center_position = window.size() / 2.0;
 
     let (camera_global_transform, camera) = camera_query.single();
 
     let Some(ray) = camera
-        .viewport_to_world(camera_global_transform, cursor_position)
+        .viewport_to_world(camera_global_transform, window_center_position)
         .ok()
     else {
         return;
@@ -413,7 +415,10 @@ pub fn update_interactables(
         )
         .map(|(entity, _)| entity);
 
-    let pressed = buttons.pressed(MouseButton::Left);
+    let pressed = match *controller_screen_position {
+        ControllerScreenPosition::Position(_) => true,
+        ControllerScreenPosition::None => false,
+    };
 
     for (entity, mut overlay_state, SelectableLevel(level_index)) in overlay_states_query.iter_mut()
     {

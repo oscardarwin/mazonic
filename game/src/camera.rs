@@ -1,5 +1,6 @@
 use crate::{
     constants::PHI,
+    controller_screen_position::ControllerScreenPosition,
     game_settings::GameSettings,
     game_state::GameState,
     level_selector::SelectableLevel,
@@ -122,23 +123,25 @@ pub fn camera_move_to_target(
 }
 
 pub fn camera_dolly(
+    controller_screen_position_query: Query<
+        &ControllerScreenPosition,
+        Changed<ControllerScreenPosition>,
+    >,
     mut camera_query: Query<&mut Transform, With<MainCamera>>,
-    primary_window: Query<&Window, With<PrimaryWindow>>,
     mut last_pos: Local<Option<Vec2>>,
     game_settings: Res<GameSettings>,
 ) {
-    let Ok(window) = primary_window.get_single() else {
-        return;
-    };
-
-    let Some(cursor_position) = window.cursor_position() else {
+    let Ok(ControllerScreenPosition::Position(cursor_position)) =
+        controller_screen_position_query.get_single()
+    else {
         return;
     };
 
     let previous_cursor_position = last_pos.clone();
-    *last_pos = Some(cursor_position);
+    *last_pos = Some(*cursor_position);
 
-    let delta_device_pixels = cursor_position - previous_cursor_position.unwrap_or(cursor_position);
+    let delta_device_pixels =
+        cursor_position - previous_cursor_position.unwrap_or(*cursor_position);
 
     if delta_device_pixels.norm() > 20.0 {
         return;
@@ -154,7 +157,7 @@ pub fn camera_dolly(
     if axis.norm() > 0.01 {
         let angle = delta.norm() / 150.0;
 
-        let rotation = Quat::from_axis_angle(axis, angle);
+        let rotation = Quat::from_axis_angle(axis, -angle);
 
         rotate_transform(camera_transform, rotation);
     }
