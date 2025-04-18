@@ -1,5 +1,5 @@
-use bevy::prelude::*;
-use mazonic;
+use bevy::{input::touch::TouchPhase, prelude::*, utils::HashSet};
+use mazonic::{self, controller_screen_position::ControllerScreenPosition};
 
 #[bevy_main]
 fn main() {
@@ -19,5 +19,23 @@ fn main() {
 
     mazonic::add_common_plugins(&mut app);
 
+    app.add_systems(Update, update_controller_position);
+
     app.run();
+}
+
+fn update_controller_position(
+    touches: Res<Touches>,
+    mut controller_screen_position_query: Query<&mut ControllerScreenPosition>,
+) {
+    let Ok(mut controller_screen_position) = controller_screen_position_query.get_single_mut()
+    else {
+        return;
+    };
+
+    println!("{:?}", controller_screen_position);
+    *controller_screen_position = match touches.iter().next() {
+        Some(touch) => ControllerScreenPosition::Position(touch.position()),
+        None => ControllerScreenPosition::None,
+    };
 }

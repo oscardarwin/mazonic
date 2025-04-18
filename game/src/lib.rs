@@ -22,6 +22,7 @@ mod assets;
 mod camera;
 pub mod constants;
 mod controller;
+pub mod controller_screen_position;
 mod effects;
 pub mod game_save;
 mod game_settings;
