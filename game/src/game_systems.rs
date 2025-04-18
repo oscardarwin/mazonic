@@ -12,6 +12,7 @@ use crate::{
         update_camera_distance, CameraResizeState,
     },
     controller::{idle, solve, view, ControllerState},
+    controller_screen_position,
     effects::{
         self,
         node_arrival::{spawn_node_arrival_particles, update_node_arrival_particles},
@@ -35,8 +36,7 @@ use crate::{
     },
     sound::{self, check_melody_solved, play_note},
     statistics::update_player_path,
-    ui,
-    victory::{self},
+    ui, victory,
 };
 
 #[derive(Default)]
@@ -106,6 +106,7 @@ impl Plugin for GameSystemsPlugin {
             effects::player_particles::setup,
             effects::musical_notes::setup,
             effects::musical_note_burst::setup,
+            controller_screen_position::setup,
         );
 
         let update_systems = get_update_systems();
