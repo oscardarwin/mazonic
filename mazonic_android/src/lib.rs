@@ -33,7 +33,6 @@ fn update_controller_position(
         return;
     };
 
-    println!("{:?}", controller_screen_position);
     *controller_screen_position = match touches.iter().next() {
         Some(touch) => ControllerScreenPosition::Position(touch.position()),
         None => ControllerScreenPosition::None,
