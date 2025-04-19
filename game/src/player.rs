@@ -82,7 +82,7 @@ pub fn update_halo_follow_player(
     player_query: Query<&Transform, (With<Player>, Without<PlayerHalo>)>,
     mut player_halo_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, PlayerHaloShader>>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_handles: Res<MaterialHandles>,
+    material_handles: Res<MaterialHandles>,
 ) {
     let Ok(halo) = player_halo_query.get_single_mut() else {
         return;
@@ -92,7 +92,7 @@ pub fn update_halo_follow_player(
         return;
     };
 
-    let mut player_material = materials.get_mut(&asset_handles.player_handle).unwrap();
+    let mut player_material = materials.get_mut(&material_handles.player_handle).unwrap();
     let target_luminance_factor = if halo.visible { 3.0 } else { 1.5 };
     let luminance_rate = if halo.visible { 0.02 } else { 0.2 };
 
@@ -114,7 +114,7 @@ pub fn update_halo_follow_player(
     }
 
     let mut player_halo_material = player_halo_materials
-        .get_mut(&asset_handles.player_halo_handle)
+        .get_mut(&material_handles.player_halo_handle)
         .unwrap();
 
     let target_alpha = if halo.visible { 0.8 } else { -0.1 };
@@ -149,7 +149,9 @@ pub fn spawn_player(
     let Ok(SolutionComponent(solution)) = solution_query.get_single() else {
         return;
     };
-    let PlayerParticlesHandle(effect_handle) = player_particle_handle_query.single();
+    let Ok(PlayerParticlesHandle(effect_handle)) = player_particle_handle_query.get_single() else {
+        return;
+    };
 
     let initial_node = solution.first().unwrap().clone();
 
