@@ -162,13 +162,13 @@ pub fn spawn_mesh(
     mut meshes: ResMut<Assets<Mesh>>,
     mesh_handles: Res<MeshHandles>,
     level_query: Query<&GameLevel>,
-    asset_handles: Res<MaterialHandles>,
+    material_handles: Res<MaterialHandles>,
 ) {
     let Ok(level) = level_query.get_single() else {
         return;
     };
 
-    let face_materials_handles = &asset_handles.face_handles;
+    let face_materials_handles = &material_handles.face_handles;
 
     let materials: Vec<Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>> =
         match &level.shape {
