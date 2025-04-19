@@ -97,7 +97,7 @@ pub fn load(
     let sprite_sheet_material_handle = MeshMaterial3d(materials.add(StandardMaterial {
         base_color_texture: Some(level_symbol_sprite_sheet.clone()),
         base_color: game_settings.palette.line_color,
-        alpha_mode: AlphaMode::Blend,
+        alpha_mode: AlphaMode::AlphaToCoverage,
         emissive: LinearRgba::from_vec3(line_color_vec * 30.0),
         ..Default::default()
     }));
@@ -109,7 +109,7 @@ pub fn load(
                 base_color: game_settings.palette.player_color,
                 base_color_texture: Some(level_symbol_sprite_sheet.clone()),
                 emissive: LinearRgba::from_vec3(player_color_vec * 2.0),
-                alpha_mode: AlphaMode::Blend,
+                alpha_mode: AlphaMode::AlphaToCoverage,
                 ..Default::default()
             },
             extension: PulsingShader {},
@@ -141,7 +141,7 @@ pub fn load(
             let color = ready_easy_color.mix(ready_hard_color, mix_factor);
             materials.add(StandardMaterial {
                 base_color: color,
-                alpha_mode: AlphaMode::Blend,
+                alpha_mode: AlphaMode::AlphaToCoverage,
                 ..Default::default()
             })
         } else if perfect_score_level_indices.contains(&level_index) {

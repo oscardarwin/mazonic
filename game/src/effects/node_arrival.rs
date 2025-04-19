@@ -57,6 +57,11 @@ pub fn spawn_node_arrival_particles(
     };
 
     let material_handle = materials.add(effect_color);
+    let material_handle = materials.add(StandardMaterial {
+        base_color: effect_color,
+        alpha_mode: AlphaMode::AlphaToCoverage,
+        ..Default::default()
+    });
 
     let position = room.position();
     let normal = room.face().normal();
