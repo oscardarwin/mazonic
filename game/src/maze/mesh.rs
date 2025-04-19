@@ -94,38 +94,6 @@ pub fn spawn(
 
         if is_discovered_melody_room {
             entity_commands.insert(MusicalNoteMarker);
-
-            //let num_effect_handles = effect_handles.len();
-
-            //let crotchet_effect_handle_index = room.id as usize % num_effect_handles;
-            //let quaver_effect_handle_index =
-            //    (room.id as usize + num_effect_handles / 2) as usize % num_effect_handles;
-
-            //entity_commands.with_children(|parent| {
-            //    parent
-            //        .spawn(ParticleEffectBundle {
-            //            effect: ParticleEffect::new(
-            //                effect_handles[crotchet_effect_handle_index].clone(),
-            //            ),
-            //            transform: Transform::IDENTITY,
-            //            ..Default::default()
-            //        })
-            //        .insert(EffectMaterial {
-            //            images: vec![crotchet_handle.clone()],
-            //        });
-
-            //    parent
-            //        .spawn(ParticleEffectBundle {
-            //            effect: ParticleEffect::new(
-            //                effect_handles[quaver_effect_handle_index].clone(),
-            //            ),
-            //            transform: Transform::IDENTITY,
-            //            ..Default::default()
-            //        })
-            //        .insert(EffectMaterial {
-            //            images: vec![quaver_handle.clone()],
-            //        });
-            //});
         }
 
         let mesh_handle = if room == *goal_node {
