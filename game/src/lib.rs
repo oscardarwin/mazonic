@@ -36,6 +36,7 @@ pub mod maze;
 mod menu;
 mod player;
 pub mod room;
+mod selector;
 pub mod shape;
 pub mod sound;
 mod statistics;

@@ -1,4 +1,4 @@
-use crate::game_settings::GameSettings;
+use crate::{game_settings::GameSettings, levels::LEVELS};
 use bevy::{
     pbr::{ExtendedMaterial, MaterialExtension},
     prelude::*,
@@ -104,6 +104,9 @@ pub struct SelectorHandles {
     pub melody_found: Handle<StandardMaterial>,
     pub selection_pressed: Handle<ExtendedMaterial<StandardMaterial, MenuSelectionHoverShader>>,
     pub selection_hover: Handle<ExtendedMaterial<StandardMaterial, MenuSelectionHoverShader>>,
+    pub level_symbols: Handle<StandardMaterial>,
+    pub melody_found_selector_face: Handle<ExtendedMaterial<StandardMaterial, PulsingShader>>,
+    pub incomplete_face_colors: [Handle<StandardMaterial>; LEVELS.len()],
 }
 
 #[derive(Resource)]
@@ -174,11 +177,11 @@ pub fn setup_materials(
     let line_color = &game_settings.palette.line_color;
     let line_color_vec = line_color.to_linear().to_vec3();
 
-    let line_handle = materials.add(StandardMaterial {
+    let line_material = StandardMaterial {
         base_color: *line_color,
         alpha_mode: AlphaMode::AlphaToCoverage,
         ..Default::default()
-    });
+    };
 
     let bright_line = StandardMaterial {
         base_color: *line_color,
@@ -188,12 +191,7 @@ pub fn setup_materials(
     };
 
     let bright_pulsing_line_handle = pulsing_materials.add(ExtendedMaterial {
-        base: StandardMaterial {
-            base_color: *line_color,
-            alpha_mode: AlphaMode::AlphaToCoverage,
-            emissive: LinearRgba::from_vec3(line_color_vec * 20.0),
-            ..Default::default()
-        },
+        base: bright_line.clone(),
         extension: PulsingShader {},
     });
 
@@ -203,11 +201,7 @@ pub fn setup_materials(
     });
 
     let dashed_arrow_handle = dashed_arrow_materials.add(ExtendedMaterial {
-        base: StandardMaterial {
-            base_color: *line_color,
-            alpha_mode: AlphaMode::AlphaToCoverage,
-            ..Default::default()
-        },
+        base: line_material.clone(),
         extension: DashedArrowShader {},
     });
 
@@ -248,19 +242,54 @@ pub fn setup_materials(
         extension: MenuSelectionHoverShader {},
     });
     let face_colors = &game_settings.palette.face_colors.colors;
+
+    let level_symbol_sprite_sheet = asset_server.load("sprites/symbols_sprite_sheet.png");
+    let level_symbols = materials.add(StandardMaterial {
+        base_color_texture: Some(level_symbol_sprite_sheet.clone()),
+        base_color: game_settings.palette.line_color,
+        alpha_mode: AlphaMode::AlphaToCoverage,
+        emissive: LinearRgba::from_vec3(line_color_vec * 30.0),
+        ..Default::default()
+    });
+
+    let melody_found_selector_face = pulsing_materials.add(ExtendedMaterial {
+        base: StandardMaterial {
+            base_color: game_settings.palette.player_color,
+            base_color_texture: Some(level_symbol_sprite_sheet.clone()),
+            emissive: LinearRgba::from_vec3(player_color.to_vec3() * 2.0),
+            alpha_mode: AlphaMode::AlphaToCoverage,
+            ..Default::default()
+        },
+        extension: PulsingShader {},
+    });
+
+    let ready_easy_color = &game_settings.palette.face_colors.colors[0];
+    let ready_hard_color = &game_settings.palette.face_colors.colors[3];
+
+    let incomplete_face_colors = core::array::from_fn(|level_index| {
+        let material =
+            get_ready_selector_face_colors(level_index, ready_easy_color, ready_hard_color);
+        materials.add(material)
+    });
+
     let selector_handles = SelectorHandles {
         unavailable: materials.add(get_face_material_from_color(face_colors[4])),
         completed: materials.add(get_face_material_from_color(face_colors[2])),
         perfect_score: materials.add(get_face_material_from_color(face_colors[1])),
-        melody_found: materials.add(game_settings.palette.player_color),
+        melody_found: materials.add(get_face_material_from_color(
+            game_settings.palette.player_color,
+        )),
         selection_pressed,
         selection_hover,
+        level_symbols,
+        melody_found_selector_face,
+        incomplete_face_colors,
     };
 
     commands.insert_resource(MaterialHandles {
         player_halo_handle,
         player_handle,
-        line_handle,
+        line_handle: materials.add(line_material),
         bright_pulsing_line_handle,
         dashed_arrow_handle,
         bright_dashed_arrow_handle,
@@ -276,6 +305,20 @@ fn get_face_material_from_color(color: Color) -> StandardMaterial {
         base_color: color,
         reflectance: 0.0,
         perceptual_roughness: 1.0,
+        alpha_mode: AlphaMode::AlphaToCoverage,
+        ..Default::default()
+    }
+}
+
+fn get_ready_selector_face_colors(
+    level_index: usize,
+    ready_easy_color: &Color,
+    ready_hard_color: &Color,
+) -> StandardMaterial {
+    let mix_factor = (level_index as f32) / (LEVELS.len() as f32);
+    let color = ready_easy_color.mix(ready_hard_color, mix_factor);
+    StandardMaterial {
+        base_color: color,
         alpha_mode: AlphaMode::AlphaToCoverage,
         ..Default::default()
     }

@@ -65,19 +65,16 @@ pub struct SelectionOverlay;
 
 pub fn load(
     mut commands: Commands,
-    mut asset_server: ResMut<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut pulsing_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, PulsingShader>>>,
     game_save_query: Query<(
         &WorkingLevelIndex,
         &PerfectScoreLevelIndices,
         &DiscoveredMelodies,
     )>,
-    game_settings: Res<GameSettings>,
     game_materials: Res<MaterialHandles>,
     mut mouse_button_event_reader: EventReader<MouseButtonInput>,
 ) {
+    // TODO: Need to figure out why I put this here?
     mouse_button_event_reader.clear();
 
     let (
@@ -87,33 +84,8 @@ pub fn load(
     ) = game_save_query.single();
 
     let material_handles = &game_materials.selector;
-    let ready_easy_color = &game_settings.palette.face_colors.colors[0];
-    let ready_hard_color = &game_settings.palette.face_colors.colors[3];
     let faces = icosahedron::faces();
     let face_meshes = TriangleFaceMeshGenerator::get_face_meshes::<20>(faces);
-
-    let line_color_vec = game_settings.palette.line_color.to_linear().to_vec3();
-    let level_symbol_sprite_sheet = asset_server.load("sprites/symbols_sprite_sheet.png");
-    let sprite_sheet_material_handle = MeshMaterial3d(materials.add(StandardMaterial {
-        base_color_texture: Some(level_symbol_sprite_sheet.clone()),
-        base_color: game_settings.palette.line_color,
-        alpha_mode: AlphaMode::AlphaToCoverage,
-        emissive: LinearRgba::from_vec3(line_color_vec * 30.0),
-        ..Default::default()
-    }));
-
-    let player_color_vec = game_settings.palette.player_color.to_linear().to_vec3();
-    let sprite_sheet_melody_found_material_handle =
-        MeshMaterial3d(pulsing_materials.add(ExtendedMaterial {
-            base: StandardMaterial {
-                base_color: game_settings.palette.player_color,
-                base_color_texture: Some(level_symbol_sprite_sheet.clone()),
-                emissive: LinearRgba::from_vec3(player_color_vec * 2.0),
-                alpha_mode: AlphaMode::AlphaToCoverage,
-                ..Default::default()
-            },
-            extension: PulsingShader {},
-        }));
 
     let tetrahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(4, 1));
     let cube_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(3, 1));
@@ -137,13 +109,7 @@ pub fn load(
         let face_material_handle = if level_index > *completed_level_index {
             material_handles.unavailable.clone()
         } else if level_index == *completed_level_index {
-            let mix_factor = (level_index as f32) / (LEVELS.len() as f32);
-            let color = ready_easy_color.mix(ready_hard_color, mix_factor);
-            materials.add(StandardMaterial {
-                base_color: color,
-                alpha_mode: AlphaMode::AlphaToCoverage,
-                ..Default::default()
-            })
+            material_handles.incomplete_face_colors[level_index].clone()
         } else if perfect_score_level_indices.contains(&level_index) {
             material_handles.perfect_score.clone()
         } else {
@@ -189,10 +155,12 @@ pub fn load(
                 parent.spawn(transform).with_children(|parent| {
                     let mut symbol_entity_commands = parent.spawn(Mesh3d(symbol_mesh_handle));
                     if is_melody_discovered {
-                        symbol_entity_commands
-                            .insert(sprite_sheet_melody_found_material_handle.clone());
+                        symbol_entity_commands.insert(MeshMaterial3d(
+                            material_handles.melody_found_selector_face.clone(),
+                        ));
                     } else {
-                        symbol_entity_commands.insert(sprite_sheet_material_handle.clone());
+                        symbol_entity_commands
+                            .insert(MeshMaterial3d(material_handles.level_symbols.clone()));
                     };
 
                     let number_mesh_handle =
@@ -201,10 +169,12 @@ pub fn load(
                         parent.spawn(Mesh3d(number_mesh_handle.clone()));
 
                     if is_melody_discovered {
-                        number_entity_commands
-                            .insert(sprite_sheet_melody_found_material_handle.clone());
+                        number_entity_commands.insert(MeshMaterial3d(
+                            material_handles.melody_found_selector_face.clone(),
+                        ));
                     } else {
-                        number_entity_commands.insert(sprite_sheet_material_handle.clone());
+                        number_entity_commands
+                            .insert(MeshMaterial3d(material_handles.level_symbols.clone()));
                     };
                 });
 
@@ -323,33 +293,6 @@ pub fn coordinate_to_symbol_mesh(x_coord: u8, y_coord: u8) -> Mesh {
 
     let symbol_mesh = Mesh::from(Rectangle::new(1.0, 1.0));
     symbol_mesh.with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
-}
-
-fn color_palette(game_settings: &GameSettings) -> Vec<StandardMaterial> {
-    let face_colors = game_settings.palette.face_colors.colors;
-
-    let color_key_frames = [
-        face_colors[1],
-        face_colors[2],
-        game_settings.palette.player_color,
-        face_colors[0],
-        face_colors[3],
-    ];
-
-    color_key_frames
-        .iter()
-        .zip(color_key_frames[1..].iter())
-        .flat_map(|(from_hsla, to_hsla)| {
-            [
-                from_hsla.mix(to_hsla, 0.0),
-                from_hsla.mix(to_hsla, 0.2),
-                from_hsla.mix(to_hsla, 0.4),
-                from_hsla.mix(to_hsla, 0.6),
-                from_hsla.mix(to_hsla, 0.8),
-            ]
-        })
-        .map(|hsla| StandardMaterial::from_color(hsla))
-        .collect()
 }
 
 pub fn set_selector_state(

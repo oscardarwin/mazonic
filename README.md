@@ -3,7 +3,12 @@
 move melody speed to melody generation
 add remaining hidden melodies.
 
-Test out android build?
+## Test out android Build
+Change hover behaviour to just hover over what is in the middle of the screen.
+Swap All Mouse Events to a custom event that is triggered by the mouse.
+
+
+
 
 Social Media?
 better sounding marimba
