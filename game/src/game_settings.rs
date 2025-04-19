@@ -17,19 +17,19 @@ pub struct GameColorPalette {
 impl Default for GameColorPalette {
     fn default() -> GameColorPalette {
         GameColorPalette {
-            player_color: Color::srgb_u8(255, 209, 102),
-            line_color: Color::linear_rgba(0.95, 0.91, 0.835, 1.0),
+            player_color: Color::srgba_u8(255, 209, 102, 254),
+            line_color: Color::linear_rgba(0.95, 0.91, 0.835, 0.99),
             face_colors: FaceColorPalette {
                 colors: [
-                    Color::srgb_u8(247, 140, 107), // orange
-                    Color::srgb_u8(17, 138, 178),  // blue
-                    Color::srgb_u8(6, 214, 160),   // green
-                    Color::srgb_u8(239, 71, 111),  // pink
-                    Color::srgb_u8(7, 59, 76),     // dark blue
-                    Color::srgb_u8(255, 255, 255), // white
+                    Color::srgba_u8(247, 140, 107, 254), // orange
+                    Color::srgba_u8(17, 138, 178, 254),  // blue
+                    Color::srgba_u8(6, 214, 160, 254),   // green
+                    Color::srgba_u8(239, 71, 111, 254),  // pink
+                    Color::srgba_u8(7, 59, 76, 254),     // dark blue
+                    Color::srgba_u8(255, 255, 255, 254), // white
                 ],
             },
-            background_color: Color::srgb_u8(57, 62, 70),
+            background_color: Color::srgba_u8(57, 62, 70, 0),
         }
     }
 }

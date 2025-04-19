@@ -42,6 +42,11 @@ pub fn camera_setup(mut commands: Commands, game_settings: Res<GameSettings>) {
             clear_color: ClearColorConfig::Custom(game_settings.palette.background_color),
             ..Default::default()
         })
+        .insert(Projection::Perspective(PerspectiveProjection {
+            near: 1.0,
+            far: 2.5,
+            ..default()
+        }))
         .insert(Camera3d::default())
         .insert(transform.clone())
         .insert(CameraTarget {

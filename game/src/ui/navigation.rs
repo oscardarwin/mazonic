@@ -24,9 +24,14 @@ pub struct NextLevelButton;
 pub struct LevelSelectorButton;
 
 const FONT_PATH: &str = "fonts/Slimamifbold.ttf";
-const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
-const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
-const PRESSED_BUTTON: Color = Color::srgb(0.65, 0.65, 0.65);
+
+const TRANSPARENCY: f32 = 0.99;
+const NORMAL_BUTTON: Color = Color::srgba(0.15, 0.15, 0.15, TRANSPARENCY);
+const HOVERED_BUTTON: Color = Color::srgba(0.25, 0.25, 0.25, TRANSPARENCY);
+const PRESSED_BUTTON: Color = Color::srgba(0.65, 0.65, 0.65, TRANSPARENCY);
+const BUTTON_BACKGROUND_COLOR: Color = Color::srgba(0.1, 0.1, 0.1, TRANSPARENCY);
+const PRESSED_BUTTON_BORDER_COLOR: Color = Color::srgba(0.9, 0.9, 0.9, TRANSPARENCY);
+const TEXT_COLOR: Color = Color::srgba(0.9, 0.9, 0.9, TRANSPARENCY);
 
 pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load(FONT_PATH);
@@ -40,7 +45,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
                 font_size: font_size.clone(),
                 ..default()
             },
-            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+            TextColor(TEXT_COLOR),
         )
     };
 
@@ -57,7 +62,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
             padding: UiRect::all(Val::Px(5.)),
             ..default()
         },
-        BorderColor(Color::BLACK),
+        BorderColor(BUTTON_BACKGROUND_COLOR),
         BorderRadius::MAX,
         BackgroundColor(NORMAL_BUTTON),
     );
@@ -77,9 +82,11 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
         selector_symbol_pixel_width,
         2.0 * selector_symbol_pixel_width,
     );
-    let level_selector_node = (ImageNode::new(
-        asset_server.load("sprites/symbols_sprite_sheet.png"),
-    )
+    let level_selector_node = (ImageNode {
+        image: asset_server.load("sprites/symbols_sprite_sheet.png"),
+        color: PRESSED_BUTTON_BORDER_COLOR,
+        ..Default::default()
+    }
     .with_rect(level_selector_rect),);
 
     commands
@@ -142,15 +149,15 @@ pub fn update_level_complete_ui(
         match *interaction {
             Interaction::Pressed => {
                 *color = PRESSED_BUTTON.into();
-                border_color.0 = Color::WHITE;
+                border_color.0 = PRESSED_BUTTON_BORDER_COLOR.into();
             }
             Interaction::Hovered => {
                 *color = HOVERED_BUTTON.into();
-                border_color.0 = Color::WHITE;
+                border_color.0 = PRESSED_BUTTON_BORDER_COLOR.into();
             }
             Interaction::None => {
                 *color = NORMAL_BUTTON.into();
-                border_color.0 = Color::BLACK;
+                border_color.0 = PRESSED_BUTTON_BORDER_COLOR.into();
             }
         }
     }
