@@ -131,7 +131,9 @@ pub fn spawn(
                 font_size: font_size.clone(),
                 ..default()
             },
-            TextColor(Color::LinearRgba(LinearRgba::from_vec3(bright_line_color))),
+            TextColor(Color::LinearRgba(
+                LinearRgba::from_vec3(bright_line_color).with_alpha(0.99),
+            )),
             FadeIn::new(),
             Fadeable { max_alpha: 1.0 },
             TextLayout::new_with_justify(JustifyText::Center),

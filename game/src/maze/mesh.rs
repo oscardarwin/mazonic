@@ -90,7 +90,8 @@ pub fn spawn(
             )
             .with_translation(room.position() + room.face().normal() * ROOM_HEIGHT);
 
-        let mut entity_commands = commands.spawn((transform, LevelData, room));
+        let mut entity_commands =
+            commands.spawn((transform, LevelData, room, Visibility::default()));
 
         if is_discovered_melody_room {
             entity_commands.insert(MusicalNoteMarker);
@@ -162,7 +163,7 @@ pub fn spawn(
             || discovered_melody_room_pairs.contains(&(target_node.id, source_node.id));
 
         let mut entity_commands = commands
-            .spawn((transform.clone(), LevelData))
+            .spawn((transform.clone(), LevelData, Visibility::default()))
             .with_children(|parent| {
                 let mut entity_commands = parent.spawn((
                     Mesh3d(mesh_handle),
