@@ -29,8 +29,8 @@ pub struct MeshHandles {
 }
 
 pub fn setup_mesh_handles(mut meshes: ResMut<Assets<Mesh>>, mut commands: Commands) {
-    let player = meshes.add(Sphere::new(0.25));
-    let player_halo = meshes.add(Sphere::new(0.27));
+    let player = meshes.add(Sphere::new(1.0));
+    let player_halo = meshes.add(Sphere::new(1.08));
     let goal_room = meshes.add(Circle::new(1.0 / 5.5));
     let junction_room = meshes.add(Circle::new(1.0 / 6.0));
     let node_arrival_effect = meshes.add(Circle::new(0.1));
