@@ -5,12 +5,13 @@ use bevy::{asset::RenderAssetUsages, render::mesh::PrimitiveTopology};
 use itertools::repeat_n;
 
 pub trait FaceMeshGenerator<const NUM_VERTICES_PER_FACE: usize> {
-    fn get_face_meshes<const NUM_FACES: usize>(
+    fn load_mesh_asset<const NUM_FACES: usize>(
+        mut mesh_assets: &mut Assets<Mesh>,
         vertices: [[Vec3; NUM_VERTICES_PER_FACE]; NUM_FACES],
-    ) -> Vec<Mesh> {
+    ) -> [Handle<Mesh>; NUM_FACES] {
         vertices
             .map(|face_vertices| Self::get_face_mesh(face_vertices))
-            .to_vec()
+            .map(|mesh| mesh_assets.add(mesh))
     }
 
     fn get_face_mesh(face_vertices: [Vec3; NUM_VERTICES_PER_FACE]) -> Mesh;

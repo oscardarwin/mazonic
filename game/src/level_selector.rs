@@ -12,6 +12,7 @@ use crate::{
     assets::{
         material_handles::MaterialHandles,
         mesh_generators::{FaceMeshGenerator, TriangleFaceMeshGenerator},
+        mesh_handles::MeshHandles,
         shaders::{MenuSelectionHoverShader, PulsingShader},
     },
     camera::{CameraTarget, MainCamera},
@@ -71,7 +72,8 @@ pub fn load(
         &PerfectScoreLevelIndices,
         &DiscoveredMelodies,
     )>,
-    game_materials: Res<MaterialHandles>,
+    material_handles: Res<MaterialHandles>,
+    mesh_handles: Res<MeshHandles>,
     mut mouse_button_event_reader: EventReader<MouseButtonInput>,
 ) {
     // TODO: Need to figure out why I put this here?
@@ -83,9 +85,8 @@ pub fn load(
         DiscoveredMelodies(discovered_melodies),
     ) = game_save_query.single();
 
-    let material_handles = &game_materials.selector;
+    let selector_material_handles = &material_handles.selector;
     let faces = icosahedron::faces();
-    let face_meshes = TriangleFaceMeshGenerator::get_face_meshes::<20>(faces);
 
     let tetrahedron_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(4, 1));
     let cube_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(3, 1));
@@ -107,18 +108,17 @@ pub fn load(
 
     for (level_index, level) in LEVELS.iter().enumerate() {
         let face_material_handle = if level_index > *completed_level_index {
-            material_handles.unavailable.clone()
+            selector_material_handles.unavailable.clone()
         } else if level_index == *completed_level_index {
-            material_handles.incomplete_face_colors[level_index].clone()
+            selector_material_handles.incomplete_face_colors[level_index].clone()
         } else if perfect_score_level_indices.contains(&level_index) {
-            material_handles.perfect_score.clone()
+            selector_material_handles.perfect_score.clone()
         } else {
-            material_handles.completed.clone()
+            selector_material_handles.completed.clone()
         };
 
         let face_index = FACE_ORDER[level_index];
-        let face_mesh = face_meshes[face_index].clone();
-        let face_mesh_handle = meshes.add(face_mesh);
+        let face_mesh_handle = mesh_handles.shape_mesh_handles.icosahedron[face_index].clone();
 
         let transform = face_local_transforms[level_index];
         let symbol_mesh_handle = match level.shape {
@@ -140,7 +140,7 @@ pub fn load(
 
         let selection_overlay_object = (
             Mesh3d(face_mesh_handle.clone()),
-            MeshMaterial3d(game_materials.selector.selection_hover.clone()),
+            MeshMaterial3d(selector_material_handles.selection_hover.clone()),
         );
 
         let is_melody_discovered = discovered_melodies.contains_key(&level_index);
@@ -151,16 +151,18 @@ pub fn load(
             .insert(SelectorOverlayState::None)
             .insert(SelectableLevel(level_index))
             .insert(CameraTargetTransform(transform.clone()))
+            .insert(Visibility::default())
             .with_children(|parent| {
                 parent.spawn(transform).with_children(|parent| {
                     let mut symbol_entity_commands = parent.spawn(Mesh3d(symbol_mesh_handle));
                     if is_melody_discovered {
                         symbol_entity_commands.insert(MeshMaterial3d(
-                            material_handles.melody_found_selector_face.clone(),
+                            selector_material_handles.melody_found_selector_face.clone(),
                         ));
                     } else {
-                        symbol_entity_commands
-                            .insert(MeshMaterial3d(material_handles.level_symbols.clone()));
+                        symbol_entity_commands.insert(MeshMaterial3d(
+                            selector_material_handles.level_symbols.clone(),
+                        ));
                     };
 
                     let number_mesh_handle =
@@ -170,11 +172,12 @@ pub fn load(
 
                     if is_melody_discovered {
                         number_entity_commands.insert(MeshMaterial3d(
-                            material_handles.melody_found_selector_face.clone(),
+                            selector_material_handles.melody_found_selector_face.clone(),
                         ));
                     } else {
-                        number_entity_commands
-                            .insert(MeshMaterial3d(material_handles.level_symbols.clone()));
+                        number_entity_commands.insert(MeshMaterial3d(
+                            selector_material_handles.level_symbols.clone(),
+                        ));
                     };
                 });
 
@@ -211,7 +214,7 @@ pub fn load(
         commands
             .spawn(Mesh3d(edge_mesh_handle.clone()))
             .insert(MeshMaterial3d(
-                game_materials.bright_dashed_arrow_handle.clone(),
+                material_handles.bright_dashed_arrow_handle.clone(),
             ))
             .insert(edge_transform)
             .insert(SelectorEntity);
