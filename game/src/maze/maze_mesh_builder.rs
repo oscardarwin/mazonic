@@ -22,38 +22,38 @@ pub struct MazeMeshBuilder {
 }
 
 impl MazeMeshBuilder {
-    pub fn new(distance_between_nodes: f32, face_angle: f32) -> Self {
-        let dash_width = distance_between_nodes / 6.0;
+    pub fn new(face_angle: f32) -> Self {
+        let dash_width = 0.16;
         let arrow_head_width = dash_width * 1.7;
-        let arrow_head_length = distance_between_nodes / 5.0;
+        let arrow_head_length = 0.2;
 
         MazeMeshBuilder {
             dash_width,
             arrow_head_length,
             arrow_head_width,
             face_angle,
-            distance_between_nodes,
+            distance_between_nodes: 1.0,
         }
     }
 
     pub fn tetrahedron() -> Self {
-        Self::new(1.0, (1.0_f32 / 3.0).acos())
+        Self::new((1.0_f32 / 3.0).acos())
     }
 
     pub fn cube() -> Self {
-        Self::new(1.0, FRAC_PI_2)
+        Self::new(FRAC_PI_2)
     }
 
     pub fn octahedron() -> Self {
-        Self::new(1.0, (-1.0_f32 / 3.0).acos())
+        Self::new((-1.0_f32 / 3.0).acos())
     }
 
     pub fn dodecahedron() -> Self {
-        Self::new(1.0, (-5.0_f32.sqrt() / 5.0).acos())
+        Self::new((-5.0_f32.sqrt() / 5.0).acos())
     }
 
-    pub fn icosahedron(distance_between_nodes: f32) -> Self {
-        Self::new(1.0, (-5.0_f32.sqrt() / 3.0).acos())
+    pub fn icosahedron() -> Self {
+        Self::new((-5.0_f32.sqrt() / 3.0).acos())
     }
 
     pub fn level_selector() -> Self {
