@@ -39,6 +39,7 @@ pub fn camera_setup(mut commands: Commands, game_settings: Res<GameSettings>) {
 
     commands
         .spawn(Camera {
+            hdr: true,
             clear_color: ClearColorConfig::Custom(game_settings.palette.background_color),
             ..Default::default()
         })
