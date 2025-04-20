@@ -130,7 +130,7 @@ pub fn update_halo_follow_player(
 }
 
 pub fn get_player_radius(node_distance: f32) -> f32 {
-    node_distance * 0.25
+    0.031 + 0.19 * node_distance
 }
 
 pub fn spawn_player(
@@ -157,8 +157,8 @@ pub fn spawn_player(
 
     let node_distance = level.node_distance();
     let radius = get_player_radius(node_distance);
-    let height_above_node = settings.player_elevation + radius;
-    let player_transform = compute_initial_player_transform(initial_node, height_above_node);
+    let player_transform =
+        compute_initial_player_transform(initial_node, radius, settings.player_elevation);
 
     commands
         .spawn((
@@ -170,33 +170,39 @@ pub fn spawn_player(
             LevelData,
         ))
         .with_children(|parent| {
-            parent.spawn((
-                Transform::IDENTITY.with_scale(Vec3::splat(node_distance)),
-                Mesh3d(mesh_handles.player.clone()),
-                MeshMaterial3d(material_handles.player_handle.clone()),
-            ));
-
-            parent.spawn((
-                Mesh3d(mesh_handles.player_halo.clone()),
-                MeshMaterial3d(material_handles.player_halo_handle.clone()),
-                Transform::IDENTITY.with_scale(Vec3::splat(node_distance)),
-                PlayerHalo { visible: true },
-            ));
-
             parent
-                .spawn(ParticleEffectBundle {
-                    effect: ParticleEffect::new(effect_handle.clone()),
-                    transform: Transform::IDENTITY,
-                    ..Default::default()
-                })
-                .insert(PlayerParticleEffect);
+                .spawn(Transform::from_scale(Vec3::ONE * radius))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Mesh3d(mesh_handles.player.clone()),
+                        MeshMaterial3d(material_handles.player_handle.clone()),
+                    ));
+
+                    parent.spawn((
+                        Mesh3d(mesh_handles.player_halo.clone()),
+                        MeshMaterial3d(material_handles.player_halo_handle.clone()),
+                        PlayerHalo { visible: true },
+                    ));
+
+                    parent
+                        .spawn(ParticleEffectBundle {
+                            effect: ParticleEffect::new(effect_handle.clone()),
+                            ..Default::default()
+                        })
+                        .insert(PlayerParticleEffect);
+                });
         });
 }
 
-fn compute_initial_player_transform(start_node: Room, player_elevation: f32) -> Transform {
+fn compute_initial_player_transform(
+    start_node: Room,
+    player_radius: f32,
+    player_elevation: f32,
+) -> Transform {
+    let height_above_node = player_elevation + player_radius;
     let face_normal = start_node.face().normal();
 
     Transform::IDENTITY
         .looking_at(face_normal.any_orthogonal_vector(), face_normal)
-        .with_translation(start_node.position() + player_elevation * face_normal)
+        .with_translation(start_node.position() + height_above_node * face_normal)
 }
