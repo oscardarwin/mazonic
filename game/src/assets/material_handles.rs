@@ -124,6 +124,8 @@ pub struct MaterialHandles {
     pub goal_handle: Handle<ExtendedMaterial<StandardMaterial, PulsingShader>>,
 }
 
+pub const ALPHA_MODE: AlphaMode = AlphaMode::AlphaToCoverage;
+
 pub fn setup_materials(
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -145,7 +147,7 @@ pub fn setup_materials(
     let goal_handle = pulsing_materials.add(ExtendedMaterial {
         base: StandardMaterial {
             base_color: game_settings.palette.player_color,
-            alpha_mode: AlphaMode::AlphaToCoverage,
+            alpha_mode: ALPHA_MODE,
             ..Default::default()
         },
         extension: PulsingShader {},
@@ -156,7 +158,7 @@ pub fn setup_materials(
         base: StandardMaterial {
             base_color: Color::LinearRgba(*player_color),
             emissive: LinearRgba::from_vec3(player_color.to_vec3() * 2.0),
-            alpha_mode: AlphaMode::AlphaToCoverage,
+            alpha_mode: ALPHA_MODE,
             diffuse_transmission: 1.0,
             thickness: 0.17,
             metallic: 0.2,
@@ -169,7 +171,7 @@ pub fn setup_materials(
     let player_handle = materials.add(StandardMaterial {
         base_color: Color::LinearRgba(*player_color),
         emissive: LinearRgba::from_vec3(player_color.to_vec3() * 1.5),
-        alpha_mode: AlphaMode::AlphaToCoverage,
+        alpha_mode: ALPHA_MODE,
         reflectance: 0.1,
         ..Default::default()
     });
@@ -179,13 +181,13 @@ pub fn setup_materials(
 
     let line_material = StandardMaterial {
         base_color: *line_color,
-        alpha_mode: AlphaMode::AlphaToCoverage,
+        alpha_mode: ALPHA_MODE,
         ..Default::default()
     };
 
     let bright_line = StandardMaterial {
         base_color: *line_color,
-        alpha_mode: AlphaMode::AlphaToCoverage,
+        alpha_mode: ALPHA_MODE,
         emissive: LinearRgba::from_vec3(line_color_vec * 20.0),
         ..Default::default()
     };
@@ -215,7 +217,7 @@ pub fn setup_materials(
             base: StandardMaterial {
                 base_color: color,
                 reflectance: 0.0,
-                alpha_mode: AlphaMode::AlphaToCoverage,
+                alpha_mode: ALPHA_MODE,
                 perceptual_roughness: 1.0,
                 ..Default::default()
             },
@@ -227,7 +229,7 @@ pub fn setup_materials(
         base: StandardMaterial {
             base_color: line_color.with_alpha(0.75),
             emissive: LinearRgba::from_vec3(line_color_vec * 20.0),
-            alpha_mode: AlphaMode::AlphaToCoverage,
+            alpha_mode: ALPHA_MODE,
             ..Default::default()
         },
         extension: MenuSelectionHoverShader {},
@@ -236,7 +238,7 @@ pub fn setup_materials(
         base: StandardMaterial {
             base_color: line_color.with_alpha(0.9),
             emissive: LinearRgba::from_vec3(line_color_vec * 50.0),
-            alpha_mode: AlphaMode::AlphaToCoverage,
+            alpha_mode: ALPHA_MODE,
             ..Default::default()
         },
         extension: MenuSelectionHoverShader {},
@@ -247,7 +249,7 @@ pub fn setup_materials(
     let level_symbols = materials.add(StandardMaterial {
         base_color_texture: Some(level_symbol_sprite_sheet.clone()),
         base_color: game_settings.palette.line_color,
-        alpha_mode: AlphaMode::AlphaToCoverage,
+        alpha_mode: ALPHA_MODE,
         emissive: LinearRgba::from_vec3(line_color_vec * 30.0),
         ..Default::default()
     });
@@ -257,7 +259,7 @@ pub fn setup_materials(
             base_color: game_settings.palette.player_color,
             base_color_texture: Some(level_symbol_sprite_sheet.clone()),
             emissive: LinearRgba::from_vec3(player_color.to_vec3() * 2.0),
-            alpha_mode: AlphaMode::AlphaToCoverage,
+            alpha_mode: ALPHA_MODE,
             ..Default::default()
         },
         extension: PulsingShader {},
@@ -305,7 +307,7 @@ fn get_face_material_from_color(color: Color) -> StandardMaterial {
         base_color: color,
         reflectance: 0.0,
         perceptual_roughness: 1.0,
-        alpha_mode: AlphaMode::AlphaToCoverage,
+        alpha_mode: ALPHA_MODE,
         ..Default::default()
     }
 }
@@ -319,7 +321,7 @@ fn get_ready_selector_face_colors(
     let color = ready_easy_color.mix(ready_hard_color, mix_factor);
     StandardMaterial {
         base_color: color,
-        alpha_mode: AlphaMode::AlphaToCoverage,
+        alpha_mode: ALPHA_MODE,
         ..Default::default()
     }
 }

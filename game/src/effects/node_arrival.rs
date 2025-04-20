@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
-    assets::{material_handles::MaterialHandles, mesh_handles::MeshHandles},
+    assets::{
+        material_handles::{MaterialHandles, ALPHA_MODE},
+        mesh_handles::MeshHandles,
+    },
     game_settings::GameSettings,
     is_room_junction::is_junction,
     levels::LevelData,
@@ -56,10 +59,9 @@ pub fn spawn_node_arrival_particles(
         settings.palette.line_color.clone().with_alpha(0.99)
     };
 
-    let material_handle = materials.add(effect_color);
     let material_handle = materials.add(StandardMaterial {
         base_color: effect_color,
-        alpha_mode: AlphaMode::AlphaToCoverage,
+        alpha_mode: ALPHA_MODE,
         ..Default::default()
     });
 
