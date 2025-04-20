@@ -6,11 +6,7 @@ use bevy::{
 
 use crate::{
     assets::{material_handles::setup_materials, mesh_handles::setup_mesh_handles},
-    camera::{
-        camera_dolly, camera_follow_player, camera_move_to_target, camera_setup,
-        trigger_camera_resize_on_level_change, trigger_camera_resize_on_window_change,
-        update_camera_distance, CameraResizeState,
-    },
+    camera,
     controller::{idle, solve, view, ControllerState},
     controller_screen_position,
     effects::{
@@ -47,7 +43,6 @@ impl Plugin for GameSystemsPlugin {
         app.init_state::<GameState>()
             .add_sub_state::<PlayState>()
             .add_sub_state::<SelectorState>()
-            .add_sub_state::<CameraResizeState>()
             .add_sub_state::<victory::VictoryState>();
 
         app.init_resource::<SystemHandles>();
@@ -56,7 +51,7 @@ impl Plugin for GameSystemsPlugin {
             shape::loader::spawn_mesh,
             maze::mesh::spawn,
             spawn_player,
-            trigger_camera_resize_on_level_change.after(spawn_player),
+            camera::update_distance.after(spawn_player),
             ui::navigation::update_previous_level_button_visibility,
             ui::navigation::update_next_level_button_visibility,
         )
@@ -98,7 +93,7 @@ impl Plugin for GameSystemsPlugin {
             .into_configs();
 
         let startup_systems = (
-            camera_setup,
+            camera::setup,
             setup_light,
             setup_materials,
             setup_save_data,
@@ -127,7 +122,7 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(OnEnter(ControllerState::Solving), enter_solving_systems)
             .add_systems(
                 OnEnter(ControllerState::IdlePostSolve),
-                camera_follow_player,
+                camera::follow_player,
             )
             .add_systems(
                 OnEnter(victory::VictoryState::Viewing),
@@ -146,8 +141,17 @@ fn get_update_systems() -> SystemConfigs {
         level_selector::set_selector_state.run_if(in_state(GameState::Selector)),
         level_selector::update_interactables.run_if(in_state(GameState::Selector)),
         level_selector::update_selection_overlay.run_if(in_state(GameState::Selector)),
-        camera_move_to_target.run_if(in_state(SelectorState::Idle)),
-        camera_dolly.run_if(in_state(SelectorState::Clicked)),
+        camera::camera_rotate_to_target.run_if(in_state(SelectorState::Idle)),
+        camera::camera_zoom_to_target.run_if(in_state(SelectorState::Idle)),
+        camera::camera_dolly.run_if(in_state(SelectorState::Clicked)),
+        camera::camera_dolly.run_if(
+            in_state(ControllerState::Viewing).or(in_state(victory::VictoryState::Viewing)),
+        ),
+        camera::trigger_camera_resize_on_window_change,
+        camera::camera_rotate_to_target.run_if(in_state(ControllerState::IdlePostSolve)),
+        camera::camera_zoom_to_target.run_if(
+            in_state(ControllerState::IdlePostSolve).or(in_state(ControllerState::IdlePostView)),
+        ),
     )
         .into_configs();
 
@@ -176,21 +180,13 @@ fn get_update_systems() -> SystemConfigs {
         play_note.run_if(in_state(PlayState::Playing)),
         check_melody_solved.run_if(in_state(PlayState::Playing)),
         shape::loader::spawn_level_data.run_if(in_state(PlayState::Loading)),
-        camera_move_to_target.run_if(in_state(ControllerState::IdlePostSolve)),
         solve.run_if(in_state(ControllerState::Solving)),
         spawn_node_arrival_particles,
         idle.run_if(
             in_state(ControllerState::IdlePostSolve).or(in_state(ControllerState::IdlePostView)),
         ),
         view.run_if(in_state(ControllerState::Viewing)),
-        camera_dolly.run_if(
-            in_state(ControllerState::Viewing).or(in_state(victory::VictoryState::Viewing)),
-        ),
         victory::update_state,
-        (
-            update_camera_distance.run_if(in_state(CameraResizeState::Resizing)),
-            trigger_camera_resize_on_window_change.run_if(in_state(CameraResizeState::Fixed)),
-        ),
         light_follow_camera,
         update_node_arrival_particles,
         effects::musical_notes::spawn_notes,
@@ -205,6 +201,7 @@ pub struct SystemHandles {
     pub note_burst: SystemId,
     pub update_on_melody_discovered: SystemId,
     pub play_melody: SystemId,
+    pub resize_camera_distance: SystemId,
 }
 
 impl FromWorld for SystemHandles {
@@ -213,12 +210,14 @@ impl FromWorld for SystemHandles {
         let note_burst = world.register_system(effects::musical_note_burst::spawn);
         let update_on_melody_discovered = world.register_system(update_on_melody_discovered);
         let play_melody = world.register_system(sound::play_melody);
+        let resize_camera_distance = world.register_system(camera::update_distance);
 
         SystemHandles {
             spawn_maze,
             note_burst,
             update_on_melody_discovered,
             play_melody,
+            resize_camera_distance,
         }
     }
 }

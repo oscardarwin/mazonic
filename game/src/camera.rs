@@ -3,19 +3,23 @@ use crate::{
     controller_screen_position::ControllerScreenPosition,
     game_settings::GameSettings,
     game_state::GameState,
+    game_systems::SystemHandles,
     level_selector::SelectableLevel,
     levels::{GameLevel, LevelData, Shape},
     player::{Player, PlayerMazeState},
 };
 use bevy::{
     color::palettes::css::{BLUE, RED},
+    ecs::system::SystemId,
     math::{NormedVectorSpace, VectorSpace},
     prelude::*,
     window::{PrimaryWindow, WindowResized},
 };
 use bevy_rapier3d::na::ComplexField;
 
-const CAMERA_MOVE_THRESHOLD: f32 = 0.001;
+const CAMERA_MOVE_THRESHOLD: f32 = 0.005;
+pub const CAMERA_MAX_NORM: f32 = 10.0;
+pub const CAMERA_MIN_NORM: f32 = 2.0;
 
 #[derive(Component)]
 pub struct MainCamera;
@@ -28,7 +32,13 @@ pub struct CameraTarget {
     pub looking_at: Vec3,
 }
 
-pub fn camera_setup(mut commands: Commands, game_settings: Res<GameSettings>) {
+impl CameraTarget {
+    pub fn set_zoom(&mut self, zoom: f32) {
+        self.translation_norm = zoom.clamp(CAMERA_MIN_NORM, CAMERA_MAX_NORM);
+    }
+}
+
+pub fn setup(mut commands: Commands, game_settings: Res<GameSettings>) {
     let translation_dir = Vec3::Z;
     let translation_norm = game_settings.camera_distance;
     let looking_at = Vec3::ZERO;
@@ -60,7 +70,7 @@ pub fn camera_setup(mut commands: Commands, game_settings: Res<GameSettings>) {
         .insert(MainCamera);
 }
 
-pub fn camera_follow_player(
+pub fn follow_player(
     mut camera_target_query: Query<&mut CameraTarget, With<MainCamera>>,
     player_query: Query<&PlayerMazeState, (With<Player>, Without<MainCamera>)>,
 ) {
@@ -88,7 +98,7 @@ pub fn camera_follow_player(
     camera_target.translation_dir = target_unit_translation;
 }
 
-pub fn camera_move_to_target(
+pub fn camera_rotate_to_target(
     target_query: Query<&CameraTarget>,
     mut camera_query: Query<&mut Transform, With<MainCamera>>,
     game_settings: Res<GameSettings>,
@@ -104,28 +114,59 @@ pub fn camera_move_to_target(
     };
 
     let mut camera_transform = camera_query.single_mut();
+    if camera_transform
+        .translation
+        .distance(translation_dir * translation_norm)
+        < CAMERA_MOVE_THRESHOLD
+    {
+        return;
+    }
 
     let camera_follow_speed = game_settings.camera_follow_speed;
+
     let normalized_new_translation = camera_transform
         .translation
         .lerp(*translation_dir, camera_follow_speed)
         .normalize();
+
+    let new_translation = normalized_new_translation * camera_transform.translation.norm();
+
+    let new_up = camera_transform.up().lerp(*up, camera_follow_speed);
+
+    camera_transform.translation = new_translation;
+    camera_transform.look_at(Vec3::ZERO, new_up);
+}
+
+pub fn camera_zoom_to_target(
+    target_query: Query<&CameraTarget>,
+    mut camera_query: Query<&mut Transform, With<MainCamera>>,
+    game_settings: Res<GameSettings>,
+) {
+    let Ok(CameraTarget {
+        translation_dir,
+        translation_norm,
+        up,
+        looking_at,
+    }) = target_query.get_single()
+    else {
+        return;
+    };
+
+    let mut camera_transform = camera_query.single_mut();
+    let current_camera_norm = camera_transform.translation.norm();
+    if (current_camera_norm - translation_norm).abs() < CAMERA_MOVE_THRESHOLD {
+        return;
+    }
+
+    let camera_follow_speed = game_settings.camera_follow_speed;
 
     let new_translation_norm = FloatExt::lerp(
         camera_transform.translation.norm(),
         *translation_norm,
         camera_follow_speed,
     );
-    let new_translation = normalized_new_translation * new_translation_norm;
 
-    if new_translation.distance(translation_dir * translation_norm) < CAMERA_MOVE_THRESHOLD {
-        return;
-    }
-
-    let new_up = camera_transform.up().lerp(*up, camera_follow_speed);
-
-    camera_transform.translation = new_translation;
-    camera_transform.look_at(Vec3::ZERO, new_up);
+    camera_transform.translation *= new_translation_norm / current_camera_norm;
 }
 
 pub fn camera_dolly(
@@ -179,37 +220,38 @@ fn rotate_transform(mut transform: Mut<Transform>, rotation: Quat) {
     transform.translation = transform.translation.normalize() * distance;
 }
 
-#[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
-#[source(GameState = GameState::Playing)]
-pub enum CameraResizeState {
-    Resizing,
-    #[default]
-    Fixed,
-}
-
 pub fn trigger_camera_resize_on_window_change(
     mut resize_reader: EventReader<WindowResized>,
-    mut next_camera_resize_state: ResMut<NextState<CameraResizeState>>,
+    mut commands: Commands,
+    systems: Res<SystemHandles>,
+    mut previous_window_size: Local<Option<(f32, f32)>>,
 ) {
     for e in resize_reader.read() {
         println!("Resizing camera on window size change");
-        next_camera_resize_state.set(CameraResizeState::Resizing);
+        let trigger_resize = match *previous_window_size {
+            Some((previous_width, previous_height)) => {
+                let abs_width_delta = (e.width - previous_width).abs();
+                let abs_height_delta = (e.height - previous_height).abs();
+                let max_delta = f32::max(abs_width_delta, abs_height_delta);
+                max_delta > 1.0
+            }
+            None => true,
+        };
+
+        if trigger_resize {
+            commands.run_system(systems.resize_camera_distance);
+        }
+
+        *previous_window_size = Some((e.width, e.height));
     }
 }
 
-pub fn trigger_camera_resize_on_level_change(
-    mut next_camera_resize_state: ResMut<NextState<CameraResizeState>>,
-) {
-    next_camera_resize_state.set(CameraResizeState::Resizing);
-}
-
-pub fn update_camera_distance(
+pub fn update_distance(
     mut camera_query: Query<
         (&Camera, &mut CameraTarget, &Transform, &GlobalTransform),
         With<MainCamera>,
     >,
     level_query: Query<&GameLevel>,
-    mut next_camera_resize_state: ResMut<NextState<CameraResizeState>>,
 ) {
     let Ok((camera, mut camera_target, transform, global_transform)) =
         camera_query.get_single_mut()
@@ -246,8 +288,9 @@ pub fn update_camera_distance(
 
     let max_abs_ndc = target_x_ndc.abs().max(target_y_ndc.abs()).max_element();
 
-    next_camera_resize_state.set(CameraResizeState::Fixed);
-    camera_target.translation_norm = camera_target.translation_norm * max_abs_ndc;
+    let new_zoom = camera_target.translation_norm * max_abs_ndc;
+
+    camera_target.set_zoom(new_zoom);
     println!(
         "Adjusting camera norm to: {:?}, max absolute normalized device coordinate: {:?}",
         camera_target.translation_norm, max_abs_ndc

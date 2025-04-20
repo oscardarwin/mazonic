@@ -19,7 +19,7 @@ use noisy_bevy::NoisyShaderPlugin;
 use shape::loader::MazeLevelData;
 
 mod assets;
-mod camera;
+pub mod camera;
 pub mod constants;
 mod controller;
 pub mod controller_screen_position;
