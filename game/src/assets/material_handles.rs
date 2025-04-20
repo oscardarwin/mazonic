@@ -250,7 +250,7 @@ pub fn setup_materials(
         base_color_texture: Some(level_symbol_sprite_sheet.clone()),
         base_color: game_settings.palette.line_color,
         alpha_mode: ALPHA_MODE,
-        emissive: LinearRgba::from_vec3(line_color_vec * 30.0),
+        emissive: LinearRgba::from_vec3(line_color_vec * 10.0),
         ..Default::default()
     });
 
