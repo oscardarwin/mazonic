@@ -92,8 +92,6 @@ pub fn load_level_asset(
 
     let maze_save_data_handle = asset_server.load::<MazeLevelData>(file_path);
 
-    let distance_between_nodes = level.node_distance();
-
     commands.spawn((
         level.clone(),
         MazeSaveDataHandle(maze_save_data_handle),
