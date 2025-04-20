@@ -149,7 +149,7 @@ pub fn camera_dolly(
     let delta_device_pixels =
         cursor_position - previous_cursor_position.unwrap_or(*cursor_position);
 
-    if delta_device_pixels.norm() > 20.0 {
+    if delta_device_pixels.norm() > 60.0 {
         return;
     }
 
@@ -160,8 +160,8 @@ pub fn camera_dolly(
         .cross(camera_transform.forward().as_vec3())
         .normalize();
 
-    if axis.norm() > 0.01 {
-        let angle = delta.norm() / 150.0;
+    if axis.norm() > 0.005 {
+        let angle = delta.norm() / 90.0;
 
         let rotation = Quat::from_axis_angle(axis, -angle);
 
