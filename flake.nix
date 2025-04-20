@@ -39,7 +39,6 @@
               gdb
               openssl
               libGL
-              rust-analyzer
 
               wayland
               udev
@@ -54,6 +53,7 @@
               xorg.libXi
               xorg.libXrandr
 
+              rust
               rustup
               kotlin
               gradle
@@ -66,12 +66,8 @@
             shellHook = ''
               export LD_LIBRARY_PATH="${lib.makeLibraryPath buildInputs}"
               export PATH="$HOME/.cargo/bin:$PATH"
-
               export ANDROID_NDK_ROOT="${android-sdk}/share/android-sdk/ndk/26.1.10909125"
-              
               export ANDROID_HOME="$PWD/.android_sdk"
-
-              echo 'sdk location: ${android-sdk}'
               exec fish
             '';
           };
