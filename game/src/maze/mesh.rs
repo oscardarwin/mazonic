@@ -125,12 +125,13 @@ pub fn spawn(
     let discovered_melody_room_pairs =
         make_room_pairs_from_discovered_melodies(*current_level_index, &discovered_melodies.0);
 
+    // TODO: move to mesh builder
     let maze_mesh_builder = match &level.shape {
         Shape::Tetrahedron => MazeMeshBuilder::tetrahedron(),
         Shape::Cube => MazeMeshBuilder::cube(),
         Shape::Octahedron => MazeMeshBuilder::octahedron(),
         Shape::Dodecahedron => MazeMeshBuilder::dodecahedron(),
-        Shape::Icosahedron => MazeMeshBuilder::icosahedron(1.0),
+        Shape::Icosahedron => MazeMeshBuilder::icosahedron(),
     };
 
     let same_face_edge = meshes.add(maze_mesh_builder.same_face_edge());
