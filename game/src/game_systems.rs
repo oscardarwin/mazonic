@@ -77,7 +77,6 @@ impl Plugin for GameSystemsPlugin {
             ui::navigation::update_next_level_button_visibility
                 .after(update_working_level_on_victory),
             update_perfect_score_on_victory,
-            ui::complete_level::spawn,
         );
 
         let enter_selector_init_systems = (
@@ -129,10 +128,6 @@ impl Plugin for GameSystemsPlugin {
                 camera::reset_dolly_screen_positions,
             )
             .add_systems(
-                OnEnter(victory::VictoryState::Viewing),
-                ui::complete_level::trigger_fade_out,
-            )
-            .add_systems(
                 OnExit(SelectorState::Clicked),
                 level_selector::set_camera_target_to_closest_face,
             )
@@ -146,18 +141,23 @@ fn get_update_systems() -> SystemConfigs {
         level_selector::update_interactables.run_if(in_state(GameState::Selector)),
         level_selector::update_selection_overlay.run_if(in_state(GameState::Selector)),
         camera::camera_rotate_to_target.run_if(in_state(SelectorState::Idle)),
-        camera::camera_zoom_to_target.run_if(in_state(SelectorState::Idle)),
-        camera::camera_dolly.run_if(in_state(SelectorState::Clicked)),
+        camera::camera_zoom_to_target
+            .run_if(in_state(SelectorState::Idle).or(in_state(victory::VictoryState::Idle))),
         camera::camera_dolly.run_if(
-            in_state(ControllerState::Viewing).or(in_state(victory::VictoryState::Viewing)),
+            in_state(ControllerState::Viewing)
+                .or(in_state(victory::VictoryState::Viewing).or(in_state(SelectorState::Clicked))),
         ),
         camera::trigger_camera_resize_on_window_change,
         camera::camera_rotate_to_target.run_if(in_state(ControllerState::IdlePostSolve)),
         camera::camera_zoom_to_target.run_if(
             in_state(ControllerState::IdlePostSolve).or(in_state(ControllerState::IdlePostView)),
         ),
-        camera::update_dolly
-            .run_if(in_state(ControllerState::Viewing).or(in_state(ControllerState::IdlePostView))),
+        camera::update_dolly.run_if(
+            in_state(ControllerState::Viewing)
+                .or(in_state(ControllerState::IdlePostView))
+                .or(in_state(PlayState::Victory))
+                .or(in_state(GameState::Selector)),
+        ),
     )
         .into_configs();
 
@@ -176,9 +176,6 @@ fn get_update_systems() -> SystemConfigs {
             ui::navigation::previous_level,
             ui::navigation::level_selector,
             effects::musical_note_burst::clear_up_effects,
-            ui::complete_level::fade_in_system,
-            ui::complete_level::fade_out_system,
-            ui::complete_level::update_expand_effect,
         )
             .run_if(in_state(GameState::Playing)),
         victory_transition.run_if(in_state(PlayState::Playing)),
@@ -192,7 +189,7 @@ fn get_update_systems() -> SystemConfigs {
             in_state(ControllerState::IdlePostSolve).or(in_state(ControllerState::IdlePostView)),
         ),
         view.run_if(in_state(ControllerState::Viewing)),
-        victory::update_state,
+        victory::update_state.run_if(in_state(PlayState::Victory)),
         light_follow_camera,
         update_node_arrival_particles,
         effects::musical_notes::spawn_notes,

@@ -35,7 +35,6 @@ pub struct MazeMarker;
 
 pub fn spawn(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
     level_query: Query<&GameLevel>,
     maze_query: Query<(&GraphComponent, &SolutionComponent)>,
     mesh_handles: Res<MeshHandles>,

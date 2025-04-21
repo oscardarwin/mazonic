@@ -3,7 +3,11 @@ use bevy::{
     prelude::*,
 };
 
-use crate::game_state::PlayState;
+use crate::{
+    controller_screen_position::ControllerScreenPosition,
+    game_state::PlayState,
+    shape::loader::{GraphComponent, SolutionComponent},
+};
 
 #[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
 #[source(PlayState = PlayState::Victory)]
@@ -13,22 +17,17 @@ pub enum VictoryState {
     Viewing,
 }
 
+// TODO: Make this independent of mouse events.
 pub fn update_state(
+    controller_screen_position_query: Query<&ControllerScreenPosition>,
     mut next_controller_state: ResMut<NextState<VictoryState>>,
-    mut mouse_button_event_reader: EventReader<MouseButtonInput>,
 ) {
-    match mouse_button_event_reader
-        .read()
-        .filter(|input| input.button == MouseButton::Left)
-        .map(|input| input.state)
-        .next()
-    {
-        Some(ButtonState::Pressed) => {
+    match controller_screen_position_query.get_single() {
+        Ok(ControllerScreenPosition::Position(_)) => {
             next_controller_state.set(VictoryState::Viewing);
         }
-        Some(ButtonState::Released) => {
+        _ => {
             next_controller_state.set(VictoryState::Idle);
         }
-        None => {}
     }
 }
