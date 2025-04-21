@@ -2,26 +2,35 @@
 ## Fix backlinks making the level too easy.
 
 ## TO RELEASE:
-Some notes are being skipped when moving fast?
 
-Remove victory screen and set path to yellow - with a splash of particles.
-
-Remove concept of perfect score.
-
-take away selector and replay buttons on first play of level.
-
-Animation on selector screen change
-
+### Sort Out Selector
+Animation on selector screen after game state change
 Sort out selection with touch screen.
+Remove perfect score color / decide on colour scheme.
 
-Social Media?
+### Melodies
+
 better sounding marimba
 reverb?
-
 move melody speed to melody generation
 add remaining hidden melodies.
+Some notes are being skipped when moving fast?
+Remove pulsing from melody line
+
+### Other
 
 Better color picking for non Icosahedron
+take away selector and replay buttons on first play of level.
+
+### Daily Challenges
+
+Great Daily Github Action that writes 3 different level types to the
+Create Daily Logo
+Make Selector Screen Show 3 different Daily challenges.
+
+
+
+Social Media
 
 ## Make Desktop Great Again
 Swap All Mouse Events to a custom event that is triggered by the mouse.
