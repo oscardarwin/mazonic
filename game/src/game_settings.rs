@@ -40,6 +40,7 @@ pub struct GameSettings {
     pub camera_distance: f32,
     pub light_offset: f32,
     pub camera_follow_speed: f32,
+    pub camera_zoom_speed: f32,
     pub max_player_speed: f32,
     pub palette: GameColorPalette,
 }
@@ -52,7 +53,8 @@ impl Default for GameSettings {
             player_elevation: 0.05,
             camera_distance: 3.0,
             light_offset: 3.0,
-            camera_follow_speed: 0.08,
+            camera_follow_speed: 0.1,
+            camera_zoom_speed: 0.2,
             max_player_speed: 1.5,
             palette: GameColorPalette::default(),
         }

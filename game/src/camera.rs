@@ -19,7 +19,7 @@ use bevy_rapier3d::na::ComplexField;
 
 const CAMERA_MOVE_THRESHOLD: f32 = 0.005;
 pub const CAMERA_MAX_NORM: f32 = 10.0;
-pub const CAMERA_MIN_NORM: f32 = 2.0;
+pub const CAMERA_MIN_NORM: f32 = 2.4;
 
 #[derive(Component)]
 pub struct MainCamera;
@@ -158,12 +158,10 @@ pub fn camera_zoom_to_target(
         return;
     }
 
-    let camera_follow_speed = game_settings.camera_follow_speed;
-
     let new_translation_norm = FloatExt::lerp(
         camera_transform.translation.norm(),
         *translation_norm,
-        camera_follow_speed,
+        game_settings.camera_zoom_speed,
     );
 
     camera_transform.translation *= new_translation_norm / current_camera_norm;
