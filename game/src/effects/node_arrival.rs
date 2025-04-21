@@ -65,6 +65,8 @@ pub fn spawn_node_arrival_particles(
         settings.palette.line_color.clone().with_alpha(0.99)
     };
 
+    let max_width_coefficient = if is_goal_node { 20.0 } else { 7.0 };
+
     let material_handle = materials.add(StandardMaterial {
         base_color: effect_color,
         alpha_mode: ALPHA_MODE,
@@ -75,7 +77,7 @@ pub fn spawn_node_arrival_particles(
     let normal = room.face().normal();
     let forward_direction = normal.any_orthogonal_vector();
 
-    let max_width = level.node_distance() * 7.0;
+    let max_width = level.node_distance() * max_width_coefficient;
 
     commands
         .spawn(PbrBundle {
