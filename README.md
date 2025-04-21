@@ -1,32 +1,30 @@
 # TODO:
 ## Fix backlinks making the level too easy.
-move melody speed to melody generation
-add remaining hidden melodies.
 
-## Test out android Build
-Change hover behaviour to just hover over what is in the middle of the screen.
-Swap All Mouse Events to a custom event that is triggered by the mouse.
+## TO RELEASE:
+Some notes are being skipped when moving fast?
 
+Remove victory screen and set path to yellow - with a splash of particles.
 
+Remove concept of perfect score.
 
+take away selector and replay buttons on first play of level.
+
+Animation on selector screen change
+
+Sort out selection with touch screen.
 
 Social Media?
 better sounding marimba
 reverb?
 
-Zoom in / out.
+move melody speed to melody generation
+add remaining hidden melodies.
 
-## Menu
-Play
-Daily
-Time Challenge
-Settings - Dodecahedron?
-Statistics - Icosahedron
-Credits
+Better color picking for non Icosahedron
 
-## Selector
-Perfect Score - Blue - Particles
-Hidden Melody - Gold Symbol - Particles (with quaver symbols)
+## Make Desktop Great Again
+Swap All Mouse Events to a custom event that is triggered by the mouse.
 
 ## Possible Polyhedra vertex numbers:
 
