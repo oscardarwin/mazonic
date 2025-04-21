@@ -125,19 +125,13 @@ pub fn spawn(
     let discovered_melody_room_pairs =
         make_room_pairs_from_discovered_melodies(*current_level_index, &discovered_melodies.0);
 
-    // TODO: move to mesh builder
-    let maze_mesh_builder = match &level.shape {
-        Shape::Tetrahedron => MazeMeshBuilder::tetrahedron(),
-        Shape::Cube => MazeMeshBuilder::cube(),
-        Shape::Octahedron => MazeMeshBuilder::octahedron(),
-        Shape::Dodecahedron => MazeMeshBuilder::dodecahedron(),
-        Shape::Icosahedron => MazeMeshBuilder::icosahedron(),
+    let maze_mesh_handles = match &level.shape {
+        Shape::Tetrahedron => &mesh_handles.shape_maze_edge_mesh_handles.tetrahedron,
+        Shape::Cube => &mesh_handles.shape_maze_edge_mesh_handles.cube,
+        Shape::Octahedron => &mesh_handles.shape_maze_edge_mesh_handles.octahedron,
+        Shape::Dodecahedron => &mesh_handles.shape_maze_edge_mesh_handles.dodecahedron,
+        Shape::Icosahedron => &mesh_handles.shape_maze_edge_mesh_handles.icosahedron,
     };
-
-    let same_face_edge = meshes.add(maze_mesh_builder.same_face_edge());
-    let one_way_same_face_edge = meshes.add(maze_mesh_builder.one_way_same_face_edge());
-    let cross_face_edge = meshes.add(maze_mesh_builder.cross_face_edge());
-    let one_way_cross_face_edge = meshes.add(maze_mesh_builder.one_way_cross_face_edge());
 
     for (source_node, target_node, _) in graph.all_edges() {
         let bidirectional = graph.contains_edge(target_node, source_node);
@@ -151,10 +145,10 @@ pub fn spawn(
         };
 
         let mesh_handle = match (&border_type, bidirectional) {
-            (BorderType::SameFace, true) => same_face_edge.clone(),
-            (BorderType::SameFace, false) => one_way_same_face_edge.clone(),
-            (BorderType::Connected, true) => cross_face_edge.clone(),
-            (BorderType::Connected, false) => one_way_cross_face_edge.clone(),
+            (BorderType::SameFace, true) => maze_mesh_handles.same_face_edge.clone(),
+            (BorderType::SameFace, false) => maze_mesh_handles.one_way_same_face_edge.clone(),
+            (BorderType::Connected, true) => maze_mesh_handles.cross_face_edge.clone(),
+            (BorderType::Connected, false) => maze_mesh_handles.one_way_cross_face_edge.clone(),
         };
 
         let transform = get_connection_transform(source_node, target_node, &border_type);
