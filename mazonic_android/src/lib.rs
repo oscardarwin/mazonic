@@ -68,10 +68,5 @@ fn compute_target_zoom_level(touch_1: &Touch, touch_2: &Touch) -> f32 {
     let current_width = touch_1.position().distance(touch_2.position());
     let starting_width = touch_1.start_position().distance(touch_2.start_position());
 
-    println!(
-        "current_width: {}, starting_width: {}",
-        current_width, starting_width
-    );
-
     starting_width / f32::max(current_width, 1.0)
 }
