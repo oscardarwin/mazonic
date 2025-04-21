@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::camera::MainCamera;
 
-const LERP_FACTOR: f32 = 0.2;
+const LERP_FACTOR: f32 = 0.4;
 const CAMERA_OFFSET_FACTOR: f32 = 1.2;
 
 #[derive(Component)]
