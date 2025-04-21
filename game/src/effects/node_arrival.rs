@@ -7,7 +7,7 @@ use crate::{
     },
     game_settings::GameSettings,
     is_room_junction::is_junction,
-    levels::LevelData,
+    levels::{GameLevel, LevelData},
     player::PlayerMazeState,
     room::Room,
     shape::loader::{GraphComponent, SolutionComponent},
@@ -17,12 +17,14 @@ use crate::{
 pub struct NodeArrivalEffectInstance {
     lifetime: f32,
     birth_time: f32,
+    max_width: f32,
 }
 
 pub fn spawn_node_arrival_particles(
     mut commands: Commands,
     mesh_handles: Res<MeshHandles>,
     player_maze_state: Query<&PlayerMazeState>,
+    level_query: Query<&GameLevel>,
     graph_component: Query<&GraphComponent>,
     solution_component_query: Query<(&SolutionComponent)>,
     mut last_room_local: Local<Option<Room>>,
@@ -40,6 +42,10 @@ pub fn spawn_node_arrival_particles(
     };
 
     let Ok(SolutionComponent(rooms)) = solution_component_query.get_single() else {
+        return;
+    };
+
+    let Ok(level) = level_query.get_single() else {
         return;
     };
 
@@ -69,20 +75,23 @@ pub fn spawn_node_arrival_particles(
     let normal = room.face().normal();
     let forward_direction = normal.any_orthogonal_vector();
 
+    let max_width = level.node_distance() * 7.0;
+
     commands
         .spawn(PbrBundle {
             mesh: Mesh3d(mesh_handles.node_arrival_effect.clone()),
             material: MeshMaterial3d(material_handle.clone()),
             transform: Transform::IDENTITY
                 .looking_to(-normal, forward_direction)
-                .with_translation(position + normal * 0.02),
-
+                .with_translation(position + normal * 0.02)
+                .with_scale(Vec3::ONE * 0.01),
             ..default()
         })
         .insert(LevelData)
         .insert(NodeArrivalEffectInstance {
             lifetime: 1.,
             birth_time: time.elapsed_secs(),
+            max_width,
         });
 }
 
@@ -103,6 +112,7 @@ pub fn update_node_arrival_particles(
         NodeArrivalEffectInstance {
             lifetime,
             birth_time,
+            max_width,
         },
         MeshMaterial3d::<StandardMaterial>(material_handle),
     ) in node_arrival_particles.iter_mut()
@@ -115,7 +125,7 @@ pub fn update_node_arrival_particles(
         }
 
         let decay_factor = (-age * 3.0).exp();
-        transform.scale = Vec3::ONE * (1.0 - decay_factor) * 3.5;
+        transform.scale = Vec3::ONE * (1.0 - decay_factor) * max_width;
 
         let Some(material) = materials.get_mut(material_handle) else {
             return;
