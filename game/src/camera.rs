@@ -41,6 +41,17 @@ impl CameraTarget {
     }
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct DollyAngularMotion {
+    axis: Vec3,
+    angular_velocity: f32,
+}
+
+const NUM_STORED_POSITIONS: usize = 5;
+
+#[derive(Component, Debug, Clone, Default)]
+pub struct DollyScreenPositions(ringbuffer::ConstGenericRingBuffer<Vec2, NUM_STORED_POSITIONS>);
+
 pub fn setup(mut commands: Commands, game_settings: Res<GameSettings>) {
     let translation_dir = Vec3::Z;
     let translation_norm = game_settings.camera_distance;
@@ -56,10 +67,11 @@ pub fn setup(mut commands: Commands, game_settings: Res<GameSettings>) {
             clear_color: ClearColorConfig::Custom(game_settings.palette.background_color),
             ..Default::default()
         })
-        .insert(DollyRotationTarget {
+        .insert(DollyAngularMotion {
             axis: Vec3::X,
             angular_velocity: 0.0,
         })
+        .insert(DollyScreenPositions::default())
         .insert(Projection::Perspective(PerspectiveProjection {
             near: 1.0,
             far: 2.5,
@@ -174,14 +186,8 @@ pub fn camera_zoom_to_target(
     camera_transform.translation *= new_translation_norm / current_camera_norm;
 }
 
-#[derive(Component, Debug, Clone)]
-pub struct DollyRotationTarget {
-    axis: Vec3,
-    angular_velocity: f32,
-}
-
 pub fn update_dolly(
-    mut camera_query: Query<(&mut Transform, &mut DollyRotationTarget), With<MainCamera>>,
+    mut camera_query: Query<(&mut Transform, &mut DollyAngularMotion), With<MainCamera>>,
 ) {
     let (mut transform, mut dolly_rotation_target) = camera_query.single_mut();
 
@@ -202,35 +208,42 @@ pub fn update_dolly(
     transform.translation = transform.translation.normalize() * distance;
 }
 
-const NUM_STORED_POSITIONS: usize = 5;
+pub fn reset_dolly_screen_positions(
+    mut dolly_screen_positions_query: Query<&mut DollyScreenPositions>,
+) {
+    let Ok(mut dolly_screen_positions) = dolly_screen_positions_query.get_single_mut() else {
+        return;
+    };
+
+    dolly_screen_positions.0.clear();
+}
 
 pub fn camera_dolly(
     controller_screen_position_query: Query<
         &ControllerScreenPosition,
         Changed<ControllerScreenPosition>,
     >,
-    mut camera_query: Query<(&Transform, &mut DollyRotationTarget), With<MainCamera>>,
-    mut last_positions: Local<ringbuffer::ConstGenericRingBuffer<Vec2, NUM_STORED_POSITIONS>>,
+    mut camera_query: Query<
+        (
+            &Transform,
+            &mut DollyAngularMotion,
+            &mut DollyScreenPositions,
+        ),
+        With<MainCamera>,
+    >,
     game_settings: Res<GameSettings>,
 ) {
     let Ok(ControllerScreenPosition::Position(cursor_position)) =
         controller_screen_position_query.get_single()
     else {
-        last_positions.clear();
         return;
     };
 
-    if let Some(last_position) = last_positions.back() {
-        if last_position.distance(*cursor_position) > 40.0 {
-            last_positions.clear();
-        }
-    }
+    let (camera_transform, mut dolly_rotation_target, mut dolly_screen_positions) =
+        camera_query.single_mut();
+    dolly_screen_positions.0.push(*cursor_position);
 
-    last_positions.push(*cursor_position);
-
-    let average_delta_device_pixels = get_average_delta(&*last_positions);
-
-    let (camera_transform, mut dolly_rotation_target) = camera_query.single_mut();
+    let average_delta_device_pixels = get_average_delta(&dolly_screen_positions.0);
 
     dolly_rotation_target.angular_velocity = if average_delta_device_pixels.norm() < 1.0 {
         0.0

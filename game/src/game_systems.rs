@@ -125,6 +125,10 @@ impl Plugin for GameSystemsPlugin {
                 camera::follow_player,
             )
             .add_systems(
+                OnExit(ControllerState::Viewing),
+                camera::reset_dolly_screen_positions,
+            )
+            .add_systems(
                 OnEnter(victory::VictoryState::Viewing),
                 ui::complete_level::trigger_fade_out,
             )
