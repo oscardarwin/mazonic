@@ -46,18 +46,11 @@ pub fn move_player(
         PlayerMazeState::Edge(_, _, edge_position) => edge_position.clone(),
     };
 
-    let player_to_target = target_position - player_transform.translation;
-    let lerped_delta = 0.1 * player_to_target;
-
-    if lerped_delta.norm() > 0.0001 {
-        let clamped_delta_norm = f32::min(
-            lerped_delta.norm(),
-            settings.max_player_speed * time.delta_secs(),
-        );
-        let delta = lerped_delta.normalize() * clamped_delta_norm;
-
-        player_transform.translation = player_transform.translation + delta;
+    if player_transform.translation.distance(target_position) < 0.001 {
+        return;
     }
+
+    player_transform.translation = player_transform.translation.lerp(target_position, 0.3);
 }
 
 #[derive(Component)]
