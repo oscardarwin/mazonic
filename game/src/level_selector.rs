@@ -159,6 +159,10 @@ pub fn load(
                         symbol_entity_commands.insert(MeshMaterial3d(
                             selector_material_handles.melody_found_selector_face.clone(),
                         ));
+                    } else if level_index > *completed_level_index {
+                        symbol_entity_commands.insert(MeshMaterial3d(
+                            selector_material_handles.unavailable_level_symbols.clone(),
+                        ));
                     } else {
                         symbol_entity_commands.insert(MeshMaterial3d(
                             selector_material_handles.level_symbols.clone(),
@@ -173,6 +177,10 @@ pub fn load(
                     if is_melody_discovered {
                         number_entity_commands.insert(MeshMaterial3d(
                             selector_material_handles.melody_found_selector_face.clone(),
+                        ));
+                    } else if level_index > *completed_level_index {
+                        number_entity_commands.insert(MeshMaterial3d(
+                            selector_material_handles.unavailable_level_symbols.clone(),
                         ));
                     } else {
                         number_entity_commands.insert(MeshMaterial3d(
@@ -200,7 +208,9 @@ pub fn load(
     let mesh_builder = MazeMeshBuilder::level_selector();
     let edge_mesh_handle = meshes.add(mesh_builder.one_way_cross_face_edge());
 
-    for (from_level_index, to_level_index) in (0..).zip(1..LEVELS.len()) {
+    for (from_level_index, to_level_index) in
+        (0..).zip(1..LEVELS.len()).take(*completed_level_index)
+    {
         let from_transform = face_local_transforms[from_level_index];
         let to_transform = face_local_transforms[to_level_index];
 

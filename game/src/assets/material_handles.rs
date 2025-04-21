@@ -105,6 +105,7 @@ pub struct SelectorHandles {
     pub selection_pressed: Handle<ExtendedMaterial<StandardMaterial, MenuSelectionHoverShader>>,
     pub selection_hover: Handle<ExtendedMaterial<StandardMaterial, MenuSelectionHoverShader>>,
     pub level_symbols: Handle<StandardMaterial>,
+    pub unavailable_level_symbols: Handle<StandardMaterial>,
     pub melody_found_selector_face: Handle<ExtendedMaterial<StandardMaterial, PulsingShader>>,
     pub incomplete_face_colors: [Handle<StandardMaterial>; LEVELS.len()],
 }
@@ -253,6 +254,14 @@ pub fn setup_materials(
         emissive: LinearRgba::from_vec3(line_color_vec * 10.0),
         ..Default::default()
     });
+    let unavailable_level_symbols = materials.add(StandardMaterial {
+        base_color_texture: Some(level_symbol_sprite_sheet.clone()),
+        base_color: face_colors[4],
+        reflectance: 0.1,
+        metallic: 0.1,
+        alpha_mode: ALPHA_MODE,
+        ..Default::default()
+    });
 
     let melody_found_selector_face = pulsing_materials.add(ExtendedMaterial {
         base: StandardMaterial {
@@ -284,6 +293,7 @@ pub fn setup_materials(
         selection_pressed,
         selection_hover,
         level_symbols,
+        unavailable_level_symbols,
         melody_found_selector_face,
         incomplete_face_colors,
     };
