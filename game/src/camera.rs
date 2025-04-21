@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::{
     constants::PHI,
     controller_screen_position::ControllerScreenPosition,
@@ -16,6 +18,7 @@ use bevy::{
     window::{PrimaryWindow, WindowResized},
 };
 use bevy_rapier3d::na::ComplexField;
+use ringbuffer::RingBuffer;
 
 const CAMERA_MOVE_THRESHOLD: f32 = 0.005;
 pub const CAMERA_MAX_NORM: f32 = 10.0;
@@ -52,6 +55,10 @@ pub fn setup(mut commands: Commands, game_settings: Res<GameSettings>) {
             hdr: true,
             clear_color: ClearColorConfig::Custom(game_settings.palette.background_color),
             ..Default::default()
+        })
+        .insert(DollyRotationTarget {
+            axis: Vec3::X,
+            angular_velocity: 0.0,
         })
         .insert(Projection::Perspective(PerspectiveProjection {
             near: 1.0,
@@ -167,48 +174,25 @@ pub fn camera_zoom_to_target(
     camera_transform.translation *= new_translation_norm / current_camera_norm;
 }
 
-pub fn camera_dolly(
-    controller_screen_position_query: Query<
-        &ControllerScreenPosition,
-        Changed<ControllerScreenPosition>,
-    >,
-    mut camera_query: Query<&mut Transform, With<MainCamera>>,
-    mut last_pos: Local<Option<Vec2>>,
-    game_settings: Res<GameSettings>,
-) {
-    let Ok(ControllerScreenPosition::Position(cursor_position)) =
-        controller_screen_position_query.get_single()
-    else {
-        return;
-    };
-
-    let previous_cursor_position = last_pos.clone();
-    *last_pos = Some(*cursor_position);
-
-    let delta_device_pixels =
-        cursor_position - previous_cursor_position.unwrap_or(*cursor_position);
-
-    if delta_device_pixels.norm() > 60.0 {
-        return;
-    }
-
-    let mut camera_transform = camera_query.single_mut();
-    let delta = camera_transform.right() * delta_device_pixels.x
-        - camera_transform.up() * delta_device_pixels.y;
-    let axis = delta
-        .cross(camera_transform.forward().as_vec3())
-        .normalize();
-
-    if axis.norm() > 0.005 {
-        let angle = delta.norm() / 90.0;
-
-        let rotation = Quat::from_axis_angle(axis, -angle);
-
-        rotate_transform(camera_transform, rotation);
-    }
+#[derive(Component, Debug, Clone)]
+pub struct DollyRotationTarget {
+    axis: Vec3,
+    angular_velocity: f32,
 }
 
-fn rotate_transform(mut transform: Mut<Transform>, rotation: Quat) {
+pub fn update_dolly(
+    mut camera_query: Query<(&mut Transform, &mut DollyRotationTarget), With<MainCamera>>,
+) {
+    let (mut transform, mut dolly_rotation_target) = camera_query.single_mut();
+
+    // TODO: incorporate time
+    let rotation = Quat::from_axis_angle(
+        dolly_rotation_target.axis,
+        -dolly_rotation_target.angular_velocity,
+    );
+
+    dolly_rotation_target.angular_velocity *= 0.95;
+
     let distance = transform.translation.norm();
 
     transform.rotate_around(Vec3::new(0.0, 0.0, 0.0), -rotation);
@@ -216,6 +200,66 @@ fn rotate_transform(mut transform: Mut<Transform>, rotation: Quat) {
     let up_vector = transform.up();
     transform.look_at(Vec3::new(0., 0., 0.), up_vector);
     transform.translation = transform.translation.normalize() * distance;
+}
+
+const NUM_STORED_POSITIONS: usize = 5;
+
+pub fn camera_dolly(
+    controller_screen_position_query: Query<
+        &ControllerScreenPosition,
+        Changed<ControllerScreenPosition>,
+    >,
+    mut camera_query: Query<(&Transform, &mut DollyRotationTarget), With<MainCamera>>,
+    mut last_positions: Local<ringbuffer::ConstGenericRingBuffer<Vec2, NUM_STORED_POSITIONS>>,
+    game_settings: Res<GameSettings>,
+) {
+    let Ok(ControllerScreenPosition::Position(cursor_position)) =
+        controller_screen_position_query.get_single()
+    else {
+        last_positions.clear();
+        return;
+    };
+
+    if let Some(last_position) = last_positions.back() {
+        if last_position.distance(*cursor_position) > 40.0 {
+            last_positions.clear();
+        }
+    }
+
+    last_positions.push(*cursor_position);
+
+    let average_delta_device_pixels = get_average_delta(&*last_positions);
+
+    let (camera_transform, mut dolly_rotation_target) = camera_query.single_mut();
+
+    dolly_rotation_target.angular_velocity = if average_delta_device_pixels.norm() < 1.0 {
+        0.0
+    } else {
+        average_delta_device_pixels.norm() / 90.0
+    };
+
+    if dolly_rotation_target.angular_velocity < 0.001 {
+        return;
+    }
+
+    let delta = camera_transform.right() * average_delta_device_pixels.x
+        - camera_transform.up() * average_delta_device_pixels.y;
+    let axis = delta
+        .cross(camera_transform.forward().as_vec3())
+        .normalize();
+
+    dolly_rotation_target.axis = axis;
+}
+
+fn get_average_delta(
+    last_positions: &ringbuffer::ConstGenericRingBuffer<Vec2, NUM_STORED_POSITIONS>,
+) -> Vec2 {
+    let size = (last_positions.len() - 1).max(1) as f32;
+    last_positions
+        .iter()
+        .zip(last_positions.iter().skip(1))
+        .fold(Vec2::ZERO, |acc, (p1, p2)| acc + (p2 - p1))
+        / size
 }
 
 pub fn trigger_camera_resize_on_window_change(

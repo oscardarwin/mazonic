@@ -152,6 +152,8 @@ fn get_update_systems() -> SystemConfigs {
         camera::camera_zoom_to_target.run_if(
             in_state(ControllerState::IdlePostSolve).or(in_state(ControllerState::IdlePostView)),
         ),
+        camera::update_dolly
+            .run_if(in_state(ControllerState::Viewing).or(in_state(ControllerState::IdlePostView))),
     )
         .into_configs();
 
