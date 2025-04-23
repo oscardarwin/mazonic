@@ -88,7 +88,7 @@ pub fn load_level_asset(
 
     let level = &LEVELS[*current_level_index];
 
-    let file_path = level.filename();
+    let file_path = format!("levels/{}", level.filename());
 
     let maze_save_data_handle = asset_server.load::<MazeLevelData>(file_path);
 

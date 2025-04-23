@@ -103,7 +103,7 @@ impl GameLevel {
         };
 
         format!(
-            "levels/{}_s{:?}_n{:?}.json",
+            "{}_s{:?}_n{:?}.json",
             shape, self.seed, self.nodes_per_edge
         )
     }
