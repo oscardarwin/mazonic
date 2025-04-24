@@ -15,7 +15,7 @@ use crate::{
     },
     game_save::{setup_save_data, update_save_data},
     game_state::{
-        update_perfect_score_on_victory, update_working_level_on_victory, victory_transition,
+        update_working_level_on_victory, victory_transition,
         GameState, PlayState,
     },
     level_selector::{self, SelectorState},
@@ -76,7 +76,6 @@ impl Plugin for GameSystemsPlugin {
             update_working_level_on_victory,
             ui::navigation::update_next_level_button_visibility
                 .after(update_working_level_on_victory),
-            update_perfect_score_on_victory,
         );
 
         let enter_selector_init_systems = (

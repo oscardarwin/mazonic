@@ -100,7 +100,6 @@ impl FaceMaterialHandles {
 pub struct SelectorHandles {
     pub unavailable: Handle<StandardMaterial>,
     pub completed: Handle<StandardMaterial>,
-    pub perfect_score: Handle<StandardMaterial>,
     pub melody_found: Handle<StandardMaterial>,
     pub selection_pressed: Handle<ExtendedMaterial<StandardMaterial, MenuSelectionHoverShader>>,
     pub selection_hover: Handle<ExtendedMaterial<StandardMaterial, MenuSelectionHoverShader>>,
@@ -286,7 +285,6 @@ pub fn setup_materials(
     let selector_handles = SelectorHandles {
         unavailable: materials.add(get_face_material_from_color(face_colors[4])),
         completed: materials.add(get_face_material_from_color(face_colors[2])),
-        perfect_score: materials.add(get_face_material_from_color(face_colors[1])),
         melody_found: materials.add(get_face_material_from_color(
             game_settings.palette.player_color,
         )),

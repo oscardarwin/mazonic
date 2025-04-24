@@ -20,7 +20,7 @@ use crate::{
     controller_screen_position::ControllerScreenPosition,
     effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
     game_save::{
-        CurrentLevel, DiscoveredMelodies, PerfectScoreLevelIndices, WorkingLevelIndex,
+        CurrentLevel, DiscoveredMelodies, WorkingLevelIndex,
     },
     game_settings::GameSettings,
     game_state::GameState,
@@ -69,7 +69,6 @@ pub fn load(
     mut meshes: ResMut<Assets<Mesh>>,
     game_save_query: Query<(
         &WorkingLevelIndex,
-        &PerfectScoreLevelIndices,
         &DiscoveredMelodies,
     )>,
     material_handles: Res<MaterialHandles>,
@@ -81,7 +80,6 @@ pub fn load(
 
     let (
         WorkingLevelIndex(completed_level_index),
-        PerfectScoreLevelIndices(perfect_score_level_indices),
         DiscoveredMelodies(discovered_melodies),
     ) = game_save_query.single();
 
@@ -111,8 +109,6 @@ pub fn load(
             selector_material_handles.unavailable.clone()
         } else if level_index == *completed_level_index {
             selector_material_handles.incomplete_face_colors[level_index].clone()
-        } else if perfect_score_level_indices.contains(&level_index) {
-            selector_material_handles.perfect_score.clone()
         } else {
             selector_material_handles.completed.clone()
         };

@@ -1,5 +1,5 @@
 use crate::{
-    game_save::{CurrentLevel, PerfectScoreLevelIndices, WorkingLevelIndex},
+    game_save::{CurrentLevel, WorkingLevelIndex},
     player::PlayerMazeState,
     shape::loader::SolutionComponent,
     statistics::PlayerPath,
@@ -62,30 +62,3 @@ pub fn update_working_level_on_victory(
     }
 }
 
-pub fn update_perfect_score_on_victory(
-    current_level_index_query: Query<&CurrentLevel>,
-    mut perfect_score_level_indices_query: Query<&mut PerfectScoreLevelIndices>,
-    player_path_query: Query<&PlayerPath>,
-    solution: Query<&SolutionComponent>,
-) {
-    let Ok(CurrentLevel(current_level_index)) = current_level_index_query.get_single() else {
-        return;
-    };
-
-    let Ok(mut perfect_score_level_indices) = perfect_score_level_indices_query.get_single_mut()
-    else {
-        return;
-    };
-
-    let Ok(PlayerPath(path)) = player_path_query.get_single() else {
-        return;
-    };
-
-    let Ok(SolutionComponent(solution)) = solution.get_single() else {
-        return;
-    };
-
-    if solution.len() == path.len() {
-        perfect_score_level_indices.0.insert(*current_level_index);
-    }
-}

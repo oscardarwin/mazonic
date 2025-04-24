@@ -41,7 +41,6 @@ pub struct DiscoveredMelody {
 pub struct GameSave {
     pub current_index: LevelIndex,
     pub completed_index: LevelIndex,
-    pub perfect_score_level_indices: HashSet<LevelIndex>,
     pub discovered_melodies: HashMap<LevelIndex, DiscoveredMelody>,
 }
 
@@ -53,7 +52,6 @@ impl Default for GameSave {
         GameSave {
             current_index: 0,
             completed_index: 0,
-            perfect_score_level_indices: HashSet::new(),
             discovered_melodies: HashMap::new(),
         }
     }
@@ -75,7 +73,6 @@ pub fn setup_save_data(mut commands: Commands, save_location: Option<Res<SaveLoc
     commands.spawn((
         CurrentLevel(save_data.current_index),
         WorkingLevelIndex(save_data.completed_index),
-        PerfectScoreLevelIndices(save_data.perfect_score_level_indices),
         DiscoveredMelodies(save_data.discovered_melodies),
     ));
 
@@ -85,18 +82,15 @@ pub fn setup_save_data(mut commands: Commands, save_location: Option<Res<SaveLoc
 pub fn update_save_data(
     current_level_index_query: Query<Ref<CurrentLevel>>,
     working_level_index_query: Query<Ref<WorkingLevelIndex>>,
-    perfect_score_level_indices_query: Query<Ref<PerfectScoreLevelIndices>>,
     discovered_melodies_query: Query<Ref<DiscoveredMelodies>>,
     mut pkv_store: ResMut<PkvStore>,
 ) {
     let current_level_index = current_level_index_query.single();
     let working_level_index = working_level_index_query.single();
-    let perfect_score_level_indices = perfect_score_level_indices_query.single();
     let discovered_melodies = discovered_melodies_query.single();
 
     if current_level_index.is_changed()
         || working_level_index.is_changed()
-        || perfect_score_level_indices.is_changed()
         || discovered_melodies.is_changed()
     {
         println!("Saving Game");
@@ -104,7 +98,6 @@ pub fn update_save_data(
         let game_save = GameSave {
             current_index: current_level_index.0,
             completed_index: working_level_index.0,
-            perfect_score_level_indices: perfect_score_level_indices.0.clone(),
             discovered_melodies: discovered_melodies.0.clone(),
         };
 
