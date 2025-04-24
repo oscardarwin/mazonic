@@ -15,7 +15,7 @@ use crate::{
         shaders::{DashedArrowShader, PulsingShader},
     },
     effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
-    game_save::{CurrentLevelIndex, DiscoveredMelodies, DiscoveredMelody},
+    game_save::{CurrentLevel, DiscoveredMelodies, DiscoveredMelody},
     game_systems::SystemHandles,
     is_room_junction::is_junction,
     levels::{GameLevel, LevelData, Shape},
@@ -40,7 +40,7 @@ pub fn spawn(
     mesh_handles: Res<MeshHandles>,
     material_handles: Res<MaterialHandles>,
     discovered_melodies_query: Query<&DiscoveredMelodies>,
-    current_level_index_query: Query<&CurrentLevelIndex>,
+    current_level_index_query: Query<&CurrentLevel>,
     musical_note_effect_handle: Query<&MusicalNoteEffectHandle>,
     musical_note_image_handle_query: Query<&MusicalNoteImageHandles>,
 ) {
@@ -56,7 +56,7 @@ pub fn spawn(
         return;
     };
 
-    let Ok(CurrentLevelIndex(current_level_index)) = current_level_index_query.get_single() else {
+    let Ok(CurrentLevel(current_level_index)) = current_level_index_query.get_single() else {
         return;
     };
 

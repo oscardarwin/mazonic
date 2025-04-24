@@ -20,7 +20,7 @@ use crate::{
     controller_screen_position::ControllerScreenPosition,
     effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
     game_save::{
-        CurrentLevelIndex, DiscoveredMelodies, PerfectScoreLevelIndices, WorkingLevelIndex,
+        CurrentLevel, DiscoveredMelodies, PerfectScoreLevelIndices, WorkingLevelIndex,
     },
     game_settings::GameSettings,
     game_state::GameState,
@@ -337,7 +337,7 @@ pub fn update_interactables(
     mut overlay_states_query: Query<(Entity, &mut SelectorOverlayState, &SelectableLevel)>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut selector_state: Res<State<SelectorState>>,
-    mut current_level_index_query: Query<&mut CurrentLevelIndex>,
+    mut current_level_index_query: Query<&mut CurrentLevel>,
     completed_level_index_query: Query<&WorkingLevelIndex>,
     controller_screen_position_query: Query<&ControllerScreenPosition>,
 ) {
@@ -400,7 +400,7 @@ pub fn update_interactables(
         if *overlay_state == SelectorOverlayState::Pressed
             && new_overlay_state == SelectorOverlayState::Hovered
         {
-            *current_level_index_query.single_mut() = CurrentLevelIndex(*level_index);
+            *current_level_index_query.single_mut() = CurrentLevel(*level_index);
             next_game_state.set(GameState::Playing);
         }
 
@@ -452,12 +452,12 @@ pub fn update_selection_overlay(
 pub fn set_initial_camera_target(
     selectable: Query<(&CameraTargetTransform, &SelectableLevel)>,
     mut camera_target_query: Query<&mut CameraTarget>,
-    current_level_index_query: Query<&CurrentLevelIndex>,
+    current_level_index_query: Query<&CurrentLevel>,
     game_settings: Res<GameSettings>,
 ) {
     let mut camera_target = camera_target_query.single_mut();
 
-    let CurrentLevelIndex(current_level_index) = current_level_index_query.single();
+    let CurrentLevel(current_level_index) = current_level_index_query.single();
 
     println!(
         "Setting selector look at level index: {:?}",

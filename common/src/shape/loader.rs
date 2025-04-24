@@ -32,7 +32,7 @@ use crate::{
         shaders::GlobalShader,
     },
     constants::{SQRT_3, TAN_27},
-    game_save::CurrentLevelIndex,
+    game_save::CurrentLevel,
     game_settings::{FaceColorPalette, GameSettings},
     game_state::PlayState,
     is_room_junction::is_junction,
@@ -80,11 +80,11 @@ pub fn despawn_level_data(mut commands: Commands, level_entities: Query<Entity, 
 
 pub fn load_level_asset(
     mut commands: Commands,
-    current_level_index_query: Query<&CurrentLevelIndex>,
+    current_level_index_query: Query<&CurrentLevel>,
     mut game_state: ResMut<NextState<PlayState>>,
     asset_server: Res<AssetServer>,
 ) {
-    let CurrentLevelIndex(current_level_index) = current_level_index_query.single();
+    let CurrentLevel(current_level_index) = current_level_index_query.single();
 
     let level = &LEVELS[*current_level_index];
 

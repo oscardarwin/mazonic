@@ -10,7 +10,7 @@ use crate::sound::Melody;
 type LevelIndex = usize;
 
 #[derive(Component, Debug, Clone)]
-pub struct CurrentLevelIndex(pub LevelIndex);
+pub struct CurrentLevel(pub LevelIndex);
 
 #[derive(Component, Debug, Clone)]
 pub struct WorkingLevelIndex(pub LevelIndex);
@@ -73,7 +73,7 @@ pub fn setup_save_data(mut commands: Commands, save_location: Option<Res<SaveLoc
     };
 
     commands.spawn((
-        CurrentLevelIndex(save_data.current_index),
+        CurrentLevel(save_data.current_index),
         WorkingLevelIndex(save_data.completed_index),
         PerfectScoreLevelIndices(save_data.perfect_score_level_indices),
         DiscoveredMelodies(save_data.discovered_melodies),
@@ -83,7 +83,7 @@ pub fn setup_save_data(mut commands: Commands, save_location: Option<Res<SaveLoc
 }
 
 pub fn update_save_data(
-    current_level_index_query: Query<Ref<CurrentLevelIndex>>,
+    current_level_index_query: Query<Ref<CurrentLevel>>,
     working_level_index_query: Query<Ref<WorkingLevelIndex>>,
     perfect_score_level_indices_query: Query<Ref<PerfectScoreLevelIndices>>,
     discovered_melodies_query: Query<Ref<DiscoveredMelodies>>,

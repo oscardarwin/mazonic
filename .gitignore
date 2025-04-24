@@ -1,12 +1,12 @@
 mazonic_level_generator
 target
-mazonic_android/.*
-mazonic_android/app/.*
-mazonic_android/build
+android/.*
+android/app/.*
+android/build
 
-mazonic_android/gradle/wrapper
-mazonic_android/app/build
-mazonic_android/assets
-mazonic_android/jniLibs
-mazonic_android/app/src/main/jniLibs
+android/gradle/wrapper
+android/app/build
+android/assets
+android/jniLibs
+android/app/src/main/jniLibs
 

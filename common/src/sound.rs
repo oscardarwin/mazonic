@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use sha2::digest::typenum::Pow;
 use sha2::{Digest, Sha256};
 
-use crate::game_save::{CurrentLevelIndex, DiscoveredMelodies, DiscoveredMelody};
+use crate::game_save::{CurrentLevel, DiscoveredMelodies, DiscoveredMelody};
 use crate::game_systems::SystemHandles;
 use crate::maze::mesh::MazeMarker;
 use crate::shape::loader::SolutionComponent;
@@ -218,7 +218,7 @@ pub fn check_melody_solved(
     melody_tracker_query: Query<&MelodyPuzzleTracker, Changed<MelodyPuzzleTracker>>,
     room_id_note_mapping_query: Query<&NoteMapping>,
     mut discovered_melodies_query: Query<&mut DiscoveredMelodies>,
-    current_level_index_query: Query<&CurrentLevelIndex>,
+    current_level_index_query: Query<&CurrentLevel>,
     system_handles: Res<SystemHandles>,
     mut commands: Commands,
     maze_entities_query: Query<Entity, With<MazeMarker>>,
@@ -251,7 +251,7 @@ pub fn check_melody_solved(
         room_ids: melody_tracker.room_ids.clone().into(),
     };
 
-    let CurrentLevelIndex(index) = current_level_index_query.single();
+    let CurrentLevel(index) = current_level_index_query.single();
     let DiscoveredMelodies(discovered_melodies) =
         discovered_melodies_query.single_mut().into_inner();
     discovered_melodies.insert(*index, discovered_melody);
@@ -262,12 +262,12 @@ pub fn check_melody_solved(
 }
 
 pub fn play_melody(
-    current_level_index_query: Query<&CurrentLevelIndex>,
+    current_level_index_query: Query<&CurrentLevel>,
     discovered_melodies_query: Query<&DiscoveredMelodies>,
     asset_server: ResMut<AssetServer>,
     mut commands: Commands,
 ) {
-    let CurrentLevelIndex(index) = current_level_index_query.single();
+    let CurrentLevel(index) = current_level_index_query.single();
     let DiscoveredMelodies(discovered_melodies) = discovered_melodies_query.single();
     let discovered_melody = discovered_melodies.get(index).unwrap();
 

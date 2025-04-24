@@ -1,11 +1,11 @@
 [package]
-name = "mazonic_android"
+name = "android"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 bevy = { version = "0.15.0", features = ["bevy_dev_tools"] }
-mazonic = { path = "../game" }
+mazonic = { path = "../common" }
 libc = "*"
 
 [lib]

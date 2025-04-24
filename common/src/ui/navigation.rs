@@ -4,7 +4,7 @@ use bevy::{
 };
 
 use crate::{
-    game_save::{CurrentLevelIndex, GameSave, WorkingLevelIndex},
+    game_save::{CurrentLevel, GameSave, WorkingLevelIndex},
     game_state::{GameState, PlayState},
     levels::LEVELS,
     shape::loader::{GraphComponent, SolutionComponent},
@@ -165,9 +165,9 @@ pub fn update_level_complete_ui(
 
 pub fn update_previous_level_button_visibility(
     mut previous_level_button_query: Query<&mut Visibility, With<PreviousLevelButton>>,
-    current_level_index_query: Query<&CurrentLevelIndex>,
+    current_level_index_query: Query<&CurrentLevel>,
 ) {
-    let Ok(CurrentLevelIndex(current_level_index)) = current_level_index_query.get_single() else {
+    let Ok(CurrentLevel(current_level_index)) = current_level_index_query.get_single() else {
         return;
     };
 
@@ -185,10 +185,10 @@ pub fn update_previous_level_button_visibility(
 
 pub fn update_next_level_button_visibility(
     mut next_level_button_query: Query<&mut Visibility, With<NextLevelButton>>,
-    current_level_index_query: Query<&CurrentLevelIndex>,
+    current_level_index_query: Query<&CurrentLevel>,
     working_level_index_query: Query<&WorkingLevelIndex>,
 ) {
-    let Ok(CurrentLevelIndex(current_level_index)) = current_level_index_query.get_single() else {
+    let Ok(CurrentLevel(current_level_index)) = current_level_index_query.get_single() else {
         return;
     };
 
@@ -220,7 +220,7 @@ pub fn previous_level(
             With<PreviousLevelButton>,
         ),
     >,
-    mut current_level_index_query: Query<&mut CurrentLevelIndex>,
+    mut current_level_index_query: Query<&mut CurrentLevel>,
     mut play_state: ResMut<NextState<PlayState>>,
 ) {
     let Ok(mut current_level_index) = current_level_index_query.get_single_mut() else {
@@ -260,7 +260,7 @@ pub fn next_level(
         &Interaction,
         (Changed<Interaction>, With<Button>, With<NextLevelButton>),
     >,
-    mut current_level_index_query: Query<&mut CurrentLevelIndex>,
+    mut current_level_index_query: Query<&mut CurrentLevel>,
     mut play_state: ResMut<NextState<PlayState>>,
 ) {
     let Ok(mut current_level_index) = current_level_index_query.get_single_mut() else {

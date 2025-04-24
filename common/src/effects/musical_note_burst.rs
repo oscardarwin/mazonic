@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
 
 use crate::{
-    game_save::{CurrentLevelIndex, DiscoveredMelodies},
+    game_save::{CurrentLevel, DiscoveredMelodies},
     game_settings::GameSettings,
     levels::LevelData,
     room::Room,
@@ -107,7 +107,7 @@ pub fn clear_up_effects(
 pub fn spawn(
     rooms_query: Query<(&Room, &Transform)>,
     discovered_melodies: Query<&DiscoveredMelodies>,
-    level_index: Query<&CurrentLevelIndex>,
+    level_index: Query<&CurrentLevel>,
     game_settings: Res<GameSettings>,
     keys: Res<ButtonInput<KeyCode>>,
     musical_note_image_handle_query: Query<&MusicalNoteImageHandles>,
@@ -115,7 +115,7 @@ pub fn spawn(
     mut commands: Commands,
     time: Res<Time>,
 ) {
-    let Ok(CurrentLevelIndex(current_level_index)) = level_index.get_single() else {
+    let Ok(CurrentLevel(current_level_index)) = level_index.get_single() else {
         return;
     };
 

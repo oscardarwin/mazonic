@@ -8,6 +8,9 @@ Animation on selector screen after game state change
 Sort out selection with touch screen.
 Remove perfect score color / decide on colour scheme.
 
+
+
+
 ### Melodies
 
 better sounding marimba
