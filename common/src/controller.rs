@@ -287,14 +287,6 @@ fn compute_player_plane_edge_intersection(
                 &to_node,
             );
             
-            if let Some(i) = from_plane_intersection {
-                println!("from norm: {:?}", i.norm())
-            }
-
-            if let Some(i) = to_plane_intersection {
-                println!("to norm: {:?}", i.norm())
-            }
-
             std::cmp::max_by_key(
                 from_plane_intersection,
                 to_plane_intersection,
