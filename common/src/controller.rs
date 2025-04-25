@@ -150,8 +150,8 @@ pub fn solve(
         return;
     };
 
-    let (mut player_maze_state, Player { radius: size }) = player_query.single_mut();
-    let player_elevation = game_settings.player_elevation + size;
+    let (mut player_maze_state, Player { radius }) = player_query.single_mut();
+    let player_elevation = game_settings.player_elevation + radius;
     let node_snap_threshold = shape.node_distance() * 0.1;
 
     if let Some(new_player_maze_state) = match player_maze_state.as_ref() {
@@ -183,8 +183,8 @@ fn project_ray_to_controller_face(
         .map(|ray_distance| ray.origin + ray.direction.normalize() * ray_distance)
 }
 
-fn project_point_to_plane(point: &Vec3, plane_position: Vec3, plane_normal: &Vec3) -> Vec3 {
-    *point - plane_normal.dot(*point - plane_position) * *plane_normal
+fn project_point_to_plane(point: Vec3, plane_position: Vec3, plane_normal: Vec3) -> Vec3 {
+    point - plane_normal.dot(point - plane_position) * plane_normal
 }
 
 fn move_player_on_node(
@@ -214,7 +214,7 @@ fn move_player_on_node(
             let to_node_position = to_node.position();
 
             let to_node_player_plane_position =
-                project_point_to_plane(&to_node_position, node_player_position, &node_face_normal);
+                project_point_to_plane(to_node_position, node_player_position, node_face_normal);
 
             let edge_vec = to_node_player_plane_position - node_player_plane_position;
 
@@ -286,6 +286,14 @@ fn compute_player_plane_edge_intersection(
                 player_elevation,
                 &to_node,
             );
+            
+            if let Some(i) = from_plane_intersection {
+                println!("from norm: {:?}", i.norm())
+            }
+
+            if let Some(i) = to_plane_intersection {
+                println!("to norm: {:?}", i.norm())
+            }
 
             std::cmp::max_by_key(
                 from_plane_intersection,
@@ -298,34 +306,30 @@ fn compute_player_plane_edge_intersection(
 
 fn compute_intersection_point_of_edge(
     ray: Ray3d,
-    room: &Room,
+    from_room: &Room,
     elevation: f32,
-    other_edge_room: &Room,
+    to_room: &Room,
 ) -> Option<Vec3> {
-    let plane_normal = room.face().normal();
+    let from_normal = from_room.face().normal();
 
-    if plane_normal.dot(Vec3::from(ray.direction)) > 0.0 {
+    if from_normal.dot(Vec3::from(ray.direction)) > 0.0 {
         return None;
     }
 
-    let room_controller_position = room.position() + elevation * plane_normal;
-    let other_node_on_player_plane = project_point_to_plane(
-        &other_edge_room.position(),
+    let room_controller_position = from_room.position() + elevation * from_normal;
+    let to_room_controller_position = to_room.position() + elevation * to_room.face().normal();
+
+    let other_node_on_from_controller_plane = project_point_to_plane(
+        to_room_controller_position,
         room_controller_position,
-        &plane_normal,
+        from_normal,
     );
 
-    let node_to_other_vec = other_node_on_player_plane - room_controller_position;
-    let project_ray_on_face = project_ray_to_controller_face(ray, room, elevation);
-
-    project_ray_on_face
-        .map(|intersection_point| intersection_point - room_controller_position)
-        .map(|relative_intersection_point| {
-            relative_intersection_point.dot(node_to_other_vec)
-                / node_to_other_vec.dot(node_to_other_vec)
-        })
-        .map(|distance_along_node_other_vec| distance_along_node_other_vec.clamp(0.0, 1.0))
-        .map(|clamped_distance_along_node_to_other_vec| {
-            clamped_distance_along_node_to_other_vec * node_to_other_vec + room_controller_position
-        })
+    let from_controller_to = other_node_on_from_controller_plane - room_controller_position;
+    let projected_ray_on_face = project_ray_to_controller_face(ray, from_room, elevation)?;
+    
+    let relative_intersection_point = projected_ray_on_face - room_controller_position;
+    let distance_along_node_other_vec = relative_intersection_point.dot(from_controller_to) / from_controller_to.dot(from_controller_to);
+    
+    Some(distance_along_node_other_vec.clamp(0.0, 1.0) * from_controller_to + room_controller_position)
 }
