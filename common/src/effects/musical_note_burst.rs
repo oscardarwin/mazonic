@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
 
 use crate::{
-    game_save::{CurrentLevel, DiscoveredMelodies},
+    game_save::{CurrentPuzzle, DiscoveredMelodies},
     game_settings::GameSettings,
     levels::LevelData,
     room::Room,
@@ -107,7 +107,7 @@ pub fn clear_up_effects(
 pub fn spawn(
     rooms_query: Query<(&Room, &Transform)>,
     discovered_melodies: Query<&DiscoveredMelodies>,
-    level_index: Query<&CurrentLevel>,
+    current_puzzle: Query<&CurrentPuzzle>,
     game_settings: Res<GameSettings>,
     keys: Res<ButtonInput<KeyCode>>,
     musical_note_image_handle_query: Query<&MusicalNoteImageHandles>,
@@ -115,7 +115,7 @@ pub fn spawn(
     mut commands: Commands,
     time: Res<Time>,
 ) {
-    let Ok(CurrentLevel(current_level_index)) = level_index.get_single() else {
+    let Ok(CurrentPuzzle(puzzle_identifier)) = current_puzzle.get_single() else {
         return;
     };
 
@@ -136,7 +136,7 @@ pub fn spawn(
         return;
     };
 
-    let melody_room_ids = discovered_melodies.get_room_ids_for_level(*current_level_index);
+    let melody_room_ids = discovered_melodies.get_room_ids_for_level(puzzle_identifier);
 
     println!("spawning note burst");
     for (room, transform) in rooms_query

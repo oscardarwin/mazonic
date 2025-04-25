@@ -15,7 +15,7 @@ use crate::{
         shaders::{DashedArrowShader, PulsingShader},
     },
     effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
-    game_save::{CurrentLevel, DiscoveredMelodies, DiscoveredMelody},
+    game_save::{CurrentPuzzle, DiscoveredMelodies, DiscoveredMelody, PuzzleIdentifier},
     game_systems::SystemHandles,
     is_room_junction::is_junction,
     levels::{GameLevel, LevelData, Shape},
@@ -40,7 +40,7 @@ pub fn spawn(
     mesh_handles: Res<MeshHandles>,
     material_handles: Res<MaterialHandles>,
     discovered_melodies_query: Query<&DiscoveredMelodies>,
-    current_level_index_query: Query<&CurrentLevel>,
+    current_puzzle_query: Query<&CurrentPuzzle>,
     musical_note_effect_handle: Query<&MusicalNoteEffectHandle>,
     musical_note_image_handle_query: Query<&MusicalNoteImageHandles>,
 ) {
@@ -56,7 +56,7 @@ pub fn spawn(
         return;
     };
 
-    let Ok(CurrentLevel(current_level_index)) = current_level_index_query.get_single() else {
+    let Ok(CurrentPuzzle(puzzle_identifier)) = current_puzzle_query.get_single() else {
         return;
     };
 
@@ -73,7 +73,7 @@ pub fn spawn(
         return;
     };
 
-    let discovered_melody_rooms = discovered_melodies.get_room_ids_for_level(*current_level_index);
+    let discovered_melody_rooms = discovered_melodies.get_room_ids_for_level(puzzle_identifier);
 
     let distance_between_nodes = level.node_distance();
 
@@ -122,7 +122,7 @@ pub fn spawn(
     }
 
     let discovered_melody_room_pairs =
-        make_room_pairs_from_discovered_melodies(*current_level_index, &discovered_melodies.0);
+        make_room_pairs_from_discovered_melodies(puzzle_identifier, &discovered_melodies.0);
 
     let maze_mesh_handles = match &level.shape {
         Shape::Tetrahedron => &mesh_handles.shape_maze_edge_mesh_handles.tetrahedron,
@@ -220,12 +220,12 @@ pub fn get_cross_face_edge_transform(
 }
 
 pub fn make_room_pairs_from_discovered_melodies(
-    current_level_index: usize,
-    discovered_melodies: &HashMap<usize, DiscoveredMelody>,
+    current_puzzle_identifier: &PuzzleIdentifier,
+    discovered_melodies: &HashMap<PuzzleIdentifier, DiscoveredMelody>,
 ) -> HashSet<(u64, u64)> {
     let mut room_pairs = HashSet::new();
 
-    let Some(DiscoveredMelody { room_ids, .. }) = discovered_melodies.get(&current_level_index)
+    let Some(DiscoveredMelody { room_ids, .. }) = discovered_melodies.get(current_puzzle_identifier)
     else {
         return room_pairs;
     };

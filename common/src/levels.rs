@@ -1,4 +1,5 @@
 use bevy::{prelude::*, utils::HashSet};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::{SQRT_3, TAN_27},
@@ -10,7 +11,7 @@ use crate::{
 #[derive(Component)]
 pub struct LevelData;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Shape {
     Cube,
     Tetrahedron,
@@ -21,15 +22,13 @@ pub enum Shape {
 
 #[derive(Component, Clone, Debug)]
 pub struct GameLevel {
-    pub seed: u64,
     pub shape: Shape,
     pub nodes_per_edge: u8,
 }
 
 impl GameLevel {
-    const fn new(seed: u64, shape: Shape, nodes_per_edge: u8) -> Self {
+    pub const fn new(shape: Shape, nodes_per_edge: u8) -> Self {
         GameLevel {
-            seed,
             shape,
             nodes_per_edge,
         }
@@ -68,66 +67,51 @@ impl GameLevel {
         }
     }
 
-    pub const fn tetrahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
+ pub const fn tetrahedron(nodes_per_edge: u8) -> GameLevel {
         let shape = Shape::Tetrahedron;
-        GameLevel::new(seed, shape, nodes_per_edge)
+        GameLevel::new(shape, nodes_per_edge)
     }
 
-    pub const fn cube(nodes_per_edge: u8, seed: u64) -> GameLevel {
+    pub const fn cube(nodes_per_edge: u8) -> GameLevel {
         let shape = Shape::Cube;
-        GameLevel::new(seed, shape, nodes_per_edge)
+        GameLevel::new(shape, nodes_per_edge)
     }
 
-    pub const fn octahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
+    pub const fn octahedron(nodes_per_edge: u8) -> GameLevel {
         let shape = Shape::Octahedron;
-        GameLevel::new(seed, shape, nodes_per_edge)
+        GameLevel::new(shape, nodes_per_edge)
     }
 
-    pub const fn dodecahedron(seed: u64) -> GameLevel {
+    pub const fn dodecahedron() -> GameLevel {
         let shape = Shape::Dodecahedron;
-        GameLevel::new(seed, shape, 1)
+        GameLevel::new(shape, 1)
     }
 
-    pub const fn icosahedron(nodes_per_edge: u8, seed: u64) -> GameLevel {
+    pub const fn icosahedron(nodes_per_edge: u8) -> GameLevel {
         let shape = Shape::Icosahedron;
-        GameLevel::new(seed, shape, nodes_per_edge)
-    }
-
-    pub fn filename(&self) -> String {
-        let shape = match &self.shape {
-            Shape::Cube => "cube",
-            Shape::Tetrahedron => "tetrahedron",
-            Shape::Octahedron => "octahedron",
-            Shape::Dodecahedron => "dodecahedron",
-            Shape::Icosahedron => "icosahedron",
-        };
-
-        format!(
-            "{}_s{:?}_n{:?}.json",
-            shape, self.seed, self.nodes_per_edge
-        )
+        GameLevel::new(shape, nodes_per_edge)
     }
 }
 
 pub const LEVELS: [GameLevel; 20] = [
-    GameLevel::tetrahedron(1, 1),
-    GameLevel::cube(2, 2),
-    GameLevel::octahedron(3, 3),
-    GameLevel::dodecahedron(1),
-    GameLevel::icosahedron(2, 2),
-    GameLevel::octahedron(4, 4),
-    GameLevel::tetrahedron(6, 0),
-    GameLevel::cube(4, 3),
-    GameLevel::tetrahedron(7, 0),
-    GameLevel::octahedron(5, 0),
-    GameLevel::icosahedron(3, 2),
-    GameLevel::tetrahedron(8, 0),
-    GameLevel::cube(5, 0),
-    GameLevel::octahedron(6, 0),
-    GameLevel::tetrahedron(9, 0),
-    GameLevel::icosahedron(4, 2),
-    GameLevel::cube(6, 1),
-    GameLevel::octahedron(7, 0),
-    GameLevel::cube(7, 0),
-    GameLevel::icosahedron(5, 0),
+    GameLevel::tetrahedron(1),
+    GameLevel::cube(2),
+    GameLevel::octahedron(3),
+    GameLevel::dodecahedron(),
+    GameLevel::icosahedron(2),
+    GameLevel::octahedron(4),
+    GameLevel::tetrahedron(6),
+    GameLevel::cube(4),
+    GameLevel::tetrahedron(7),
+    GameLevel::octahedron(5),
+    GameLevel::icosahedron(3),
+    GameLevel::tetrahedron(8),
+    GameLevel::cube(5),
+    GameLevel::octahedron(6),
+    GameLevel::tetrahedron(9),
+    GameLevel::icosahedron(4),
+    GameLevel::cube(6),
+    GameLevel::octahedron(7),
+    GameLevel::cube(7),
+    GameLevel::icosahedron(5),
 ];

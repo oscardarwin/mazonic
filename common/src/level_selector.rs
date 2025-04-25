@@ -20,7 +20,7 @@ use crate::{
     controller_screen_position::ControllerScreenPosition,
     effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
     game_save::{
-        CurrentLevel, DiscoveredMelodies, WorkingLevelIndex,
+        CurrentPuzzle, DiscoveredMelodies, PuzzleIdentifier, WorkingLevelIndex
     },
     game_settings::GameSettings,
     game_state::GameState,
@@ -46,7 +46,7 @@ pub enum SelectorState {
 pub struct SelectorEntity;
 
 #[derive(Component, Clone, Debug)]
-pub struct SelectableLevel(pub usize);
+pub struct SelectableLevel(pub PuzzleIdentifier);
 
 #[derive(Component, Clone, Debug)]
 pub struct SelectedLevel(pub Option<usize>);
@@ -139,13 +139,13 @@ pub fn load(
             MeshMaterial3d(selector_material_handles.selection_hover.clone()),
         );
 
-        let is_melody_discovered = discovered_melodies.contains_key(&level_index);
+        let is_melody_discovered = discovered_melodies.contains_key(&PuzzleIdentifier::Level(level_index));
         commands
             .spawn(triangle_collider)
             .insert(face_object)
             .insert(SelectorEntity)
             .insert(SelectorOverlayState::None)
-            .insert(SelectableLevel(level_index))
+            .insert(SelectableLevel(PuzzleIdentifier::Level(level_index)))
             .insert(CameraTargetTransform(transform.clone()))
             .insert(Visibility::default())
             .with_children(|parent| {
@@ -333,7 +333,7 @@ pub fn update_interactables(
     mut overlay_states_query: Query<(Entity, &mut SelectorOverlayState, &SelectableLevel)>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut selector_state: Res<State<SelectorState>>,
-    mut current_level_index_query: Query<&mut CurrentLevel>,
+    mut current_level_index_query: Query<&mut CurrentPuzzle>,
     completed_level_index_query: Query<&WorkingLevelIndex>,
     controller_screen_position_query: Query<&ControllerScreenPosition>,
 ) {
@@ -372,11 +372,14 @@ pub fn update_interactables(
         ControllerScreenPosition::None => false,
     };
 
-    for (entity, mut overlay_state, SelectableLevel(level_index)) in overlay_states_query.iter_mut()
+    for (entity, mut overlay_state, SelectableLevel(level_identifier)) in overlay_states_query.iter_mut()
     {
         let WorkingLevelIndex(completed_level_index) = completed_level_index_query.single();
 
-        let level_playable = level_index <= completed_level_index;
+        let level_playable = match level_identifier { 
+            PuzzleIdentifier::Level(level_index) => level_index <= completed_level_index,
+            _ => true,
+        };
 
         let new_overlay_state = match (intersection, pressed) {
             (Some(intersected_entity), _) if intersected_entity != entity => {
@@ -396,7 +399,7 @@ pub fn update_interactables(
         if *overlay_state == SelectorOverlayState::Pressed
             && new_overlay_state == SelectorOverlayState::Hovered
         {
-            *current_level_index_query.single_mut() = CurrentLevel(*level_index);
+            *current_level_index_query.single_mut() = CurrentPuzzle(level_identifier.clone());
             next_game_state.set(GameState::Playing);
         }
 
@@ -448,12 +451,12 @@ pub fn update_selection_overlay(
 pub fn set_initial_camera_target(
     selectable: Query<(&CameraTargetTransform, &SelectableLevel)>,
     mut camera_target_query: Query<&mut CameraTarget>,
-    current_level_index_query: Query<&CurrentLevel>,
+    current_level_index_query: Query<&CurrentPuzzle>,
     game_settings: Res<GameSettings>,
 ) {
     let mut camera_target = camera_target_query.single_mut();
 
-    let CurrentLevel(current_level_index) = current_level_index_query.single();
+    let CurrentPuzzle(current_level_index) = current_level_index_query.single();
 
     println!(
         "Setting selector look at level index: {:?}",

@@ -1,13 +1,5 @@
 use bevy::{
-    asset::Assets,
-    color::Color,
-    ecs::system::{Commands, ResMut},
-    math::NormedVectorSpace,
-    pbr::{ExtendedMaterial, PbrBundle, StandardMaterial},
-    prelude::*,
-    render::mesh::Mesh,
-    transform::components::Transform,
-    utils::{HashMap, HashSet},
+    asset::Assets, color::Color, ecs::system::{Commands, ResMut}, math::NormedVectorSpace, pbr::{ExtendedMaterial, PbrBundle, StandardMaterial}, prelude::*, render::mesh::Mesh, tasks::{block_on, futures_lite::future}, transform::components::Transform, utils::{HashMap, HashSet}
 };
 use bevy_rustysynth::{MidiAudio, MidiNote};
 
@@ -30,22 +22,11 @@ use crate::{
         },
         mesh_handles::MeshHandles,
         shaders::GlobalShader,
-    },
-    constants::{SQRT_3, TAN_27},
-    game_save::CurrentLevel,
-    game_settings::{FaceColorPalette, GameSettings},
-    game_state::PlayState,
-    is_room_junction::is_junction,
-    levels::{GameLevel, LevelData, Shape},
-    maze::{border_type::BorderType, mesh},
-    player::{Player, PlayerMazeState},
-    room::{Edge, Face, Room},
-    sound::{MelodyPuzzleTracker, Note, NoteMapping},
+    }, constants::{SQRT_3, TAN_27}, game_save::CurrentPuzzle, game_settings::{FaceColorPalette, GameSettings}, game_state::{GameState, PlayState}, is_room_junction::is_junction, levels::{GameLevel, LevelData, Shape}, load_level_asset::{DailyLevelLoadError, LoadedLevels, MazeSaveDataHandle}, maze::{border_type::BorderType, mesh}, player::{Player, PlayerMazeState}, room::{Edge, Face, Room}, sound::{MelodyPuzzleTracker, Note, NoteMapping}
 };
 
 use super::{cube, dodecahedron, icosahedron, octahedron, tetrahedron};
 use crate::assets::material_handles::MaterialHandles;
-use crate::levels::LEVELS;
 
 use serde::{Deserialize, Serialize};
 
@@ -55,22 +36,21 @@ pub struct GraphComponent(pub GraphMap<Room, Edge, Directed>);
 #[derive(Component)]
 pub struct SolutionComponent(pub Vec<Room>);
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct EncryptedMelody {
     pub encrypted_melody_bytes: Vec<u8>,
     pub melody_length: usize,
 }
 
-#[derive(Serialize, Deserialize, Asset, TypePath)]
+#[derive(Serialize, Deserialize, Asset, TypePath, Clone)]
 pub struct MazeLevelData {
+    pub shape: Shape,
+    pub nodes_per_edge: u8,
     pub graph: GraphMap<Room, Edge, Directed>,
     pub solution: Vec<Room>,
     pub node_id_to_note: HashMap<u64, Note>,
     pub encrypted_melody: Option<EncryptedMelody>,
 }
-
-#[derive(Component)]
-pub struct MazeSaveDataHandle(Handle<MazeLevelData>);
 
 pub fn despawn_level_data(mut commands: Commands, level_entities: Query<Entity, With<LevelData>>) {
     for entity in level_entities.iter() {
@@ -78,47 +58,42 @@ pub fn despawn_level_data(mut commands: Commands, level_entities: Query<Entity, 
     }
 }
 
-pub fn load_level_asset(
-    mut commands: Commands,
-    current_level_index_query: Query<&CurrentLevel>,
-    mut game_state: ResMut<NextState<PlayState>>,
-    asset_server: Res<AssetServer>,
-) {
-    let CurrentLevel(current_level_index) = current_level_index_query.single();
-
-    let level = &LEVELS[*current_level_index];
-
-    let file_path = format!("levels/{}", level.filename());
-
-    let maze_save_data_handle = asset_server.load::<MazeLevelData>(file_path);
-
-    commands.spawn((
-        level.clone(),
-        MazeSaveDataHandle(maze_save_data_handle),
-        LevelData,
-    ));
-}
-
 pub fn spawn_level_data(
+    current_level_index_query: Query<&CurrentPuzzle>,
     mut commands: Commands,
-    mut game_state: ResMut<NextState<PlayState>>,
+    mut play_state: ResMut<NextState<PlayState>>,
+    mut game_state: ResMut<NextState<GameState>>,
     maze_save_data_assets: Res<Assets<MazeLevelData>>,
+    mut loaded_levels: ResMut<LoadedLevels>,
     asset_server: Res<AssetServer>,
-    maze_save_data_query: Query<&MazeSaveDataHandle>,
 ) {
-    let MazeSaveDataHandle(maze_save_data_handle) = maze_save_data_query.single();
+    let CurrentPuzzle(puzzle_identifier) = current_level_index_query.single();
 
-    let Some(MazeLevelData {
+    let Some(maze_save_data_handle) = loaded_levels.0.get_mut(puzzle_identifier) else {
+        return;
+    };
+
+    let level_load_state: Option<Result<MazeLevelData, DailyLevelLoadError>> = match maze_save_data_handle {
+        MazeSaveDataHandle::LocalLevel(handle) => maze_save_data_assets.get(handle).cloned().map(|val| Ok(val)),
+        MazeSaveDataHandle::RemoteLevel(task) => block_on(future::poll_once(task)),
+    };
+
+    let Some(level_load_result) = level_load_state else {
+        return;
+    };
+
+    let Ok(MazeLevelData {
+        shape,
+        nodes_per_edge,
         graph,
         solution,
         node_id_to_note,
         encrypted_melody,
-    }) = maze_save_data_assets.get(maze_save_data_handle)
-    else {
+    }) = level_load_result else {
+        println!("Error loading remote level");
+        game_state.set(GameState::Selector);
         return;
     };
-
-    println!("Loading Maze");
 
     let note_midi_handle = node_id_to_note
         .into_iter()
@@ -126,7 +101,7 @@ pub fn spawn_level_data(
             let midi_note = note.clone().into();
             let audio = MidiAudio::Sequence(vec![midi_note]);
             let audio_handle = asset_server.add::<MidiAudio>(audio);
-            (*node_id, (audio_handle, note.clone()))
+            (node_id, (audio_handle, note.clone()))
         })
         .collect::<HashMap<u64, (Handle<MidiAudio>, Note)>>();
 
@@ -135,7 +110,7 @@ pub fn spawn_level_data(
         melody_length,
     }) = encrypted_melody
     {
-        let room_ids = VecDeque::with_capacity(*melody_length);
+        let room_ids = VecDeque::with_capacity(melody_length);
         commands.spawn((
             MelodyPuzzleTracker {
                 room_ids,
@@ -145,14 +120,19 @@ pub fn spawn_level_data(
         ));
     }
 
+    let shape = shape.clone();
     // TODO: perhaps think about how not to duplicate the data here.
     commands.spawn((
         LevelData,
+        GameLevel {
+            shape,
+            nodes_per_edge,
+        },
         GraphComponent(graph.clone()),
         SolutionComponent(solution.clone()),
         NoteMapping(note_midi_handle),
     ));
-    game_state.set(PlayState::Playing);
+    play_state.set(PlayState::Playing);
 }
 
 pub fn spawn_mesh(

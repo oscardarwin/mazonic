@@ -5,34 +5,19 @@ use bevy::{
 };
 
 use crate::{
-    assets::{material_handles::setup_materials, mesh_handles::setup_mesh_handles},
-    camera,
-    controller::{idle, solve, view, ControllerState},
-    controller_screen_position,
-    effects::{
+    assets::{material_handles::setup_materials, mesh_handles::setup_mesh_handles}, camera, controller::{idle, solve, view, ControllerState}, controller_screen_position, effects::{
         self,
         node_arrival::{spawn_node_arrival_particles, update_node_arrival_particles},
-    },
-    game_save::{setup_save_data, update_save_data},
-    game_state::{
+    }, game_save::{setup_save_data, update_save_data}, game_state::{
         update_working_level_on_victory, victory_transition,
         GameState, PlayState,
-    },
-    level_selector::{self, SelectorState},
-    light::{light_follow_camera, setup_light},
-    maze::{self, mesh::update_on_melody_discovered},
-    menu,
-    player::{
+    }, level_selector::{self, SelectorState}, light::{light_follow_camera, setup_light}, load_level_asset, maze::{self, mesh::update_on_melody_discovered}, menu, player::{
         move_player, spawn_player, turn_off_player_halo, turn_on_player_halo,
         update_halo_follow_player,
-    },
-    shape::{
+    }, shape::{
         self,
-        loader::{despawn_level_data, load_level_asset, spawn_level_data},
-    },
-    sound::{self, check_melody_solved, play_note},
-    statistics::update_player_path,
-    ui, victory,
+        loader::{despawn_level_data, spawn_level_data},
+    }, sound::{self, check_melody_solved, play_note}, statistics::update_player_path, ui, victory
 };
 
 #[derive(Default)]
@@ -86,7 +71,7 @@ impl Plugin for GameSystemsPlugin {
 
         let enter_loading_systems = (
             despawn_level_data,
-            load_level_asset.after(despawn_level_data),
+            load_level_asset::load_.after(despawn_level_data),
         )
             .into_configs();
 
@@ -100,6 +85,7 @@ impl Plugin for GameSystemsPlugin {
             effects::musical_notes::setup,
             effects::musical_note_burst::setup,
             controller_screen_position::setup,
+            load_level_asset::setup,
         );
 
         let update_systems = get_update_systems();

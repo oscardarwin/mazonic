@@ -1,5 +1,5 @@
 use crate::{
-    game_save::{CurrentLevel, WorkingLevelIndex},
+    game_save::{CurrentPuzzle, PuzzleIdentifier, WorkingLevelIndex},
     player::PlayerMazeState,
     shape::loader::SolutionComponent,
     statistics::PlayerPath,
@@ -45,10 +45,10 @@ pub fn victory_transition(
 }
 
 pub fn update_working_level_on_victory(
-    current_level_index_query: Query<&CurrentLevel>,
+    current_puzzle_query: Query<&CurrentPuzzle>,
     mut working_level_index_query: Query<&mut WorkingLevelIndex>,
 ) {
-    let Ok(CurrentLevel(current_level_index)) = current_level_index_query.get_single() else {
+    let Ok(CurrentPuzzle(puzzle_identifier)) = current_puzzle_query.get_single() else {
         return;
     };
 
@@ -56,9 +56,12 @@ pub fn update_working_level_on_victory(
         return;
     };
 
-    if *current_level_index == working_level_index.0 {
-        working_level_index.0 = current_level_index + 1;
-        println!("Updating Working Level to {:?}", working_level_index);
+    match puzzle_identifier {
+        PuzzleIdentifier::Level(level) if *level == working_level_index.0 => {
+            working_level_index.0 = level + 1;
+            println!("Updating Working Level to {:?}", working_level_index);
+        }
+        _ => {}
     }
 }
 

@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use sha2::digest::typenum::Pow;
 use sha2::{Digest, Sha256};
 
-use crate::game_save::{CurrentLevel, DiscoveredMelodies, DiscoveredMelody};
+use crate::game_save::{CurrentPuzzle, DiscoveredMelodies, DiscoveredMelody};
 use crate::game_systems::SystemHandles;
 use crate::maze::mesh::MazeMarker;
 use crate::shape::loader::SolutionComponent;
@@ -218,7 +218,7 @@ pub fn check_melody_solved(
     melody_tracker_query: Query<&MelodyPuzzleTracker, Changed<MelodyPuzzleTracker>>,
     room_id_note_mapping_query: Query<&NoteMapping>,
     mut discovered_melodies_query: Query<&mut DiscoveredMelodies>,
-    current_level_index_query: Query<&CurrentLevel>,
+    current_level_index_query: Query<&CurrentPuzzle>,
     system_handles: Res<SystemHandles>,
     mut commands: Commands,
     maze_entities_query: Query<Entity, With<MazeMarker>>,
@@ -251,10 +251,10 @@ pub fn check_melody_solved(
         room_ids: melody_tracker.room_ids.clone().into(),
     };
 
-    let CurrentLevel(index) = current_level_index_query.single();
+    let CurrentPuzzle(puzzle_identifier) = current_level_index_query.single();
     let DiscoveredMelodies(discovered_melodies) =
         discovered_melodies_query.single_mut().into_inner();
-    discovered_melodies.insert(*index, discovered_melody);
+    discovered_melodies.insert(puzzle_identifier.clone(), discovered_melody);
 
     commands.run_system(system_handles.update_on_melody_discovered);
     commands.run_system(system_handles.note_burst);
@@ -262,12 +262,12 @@ pub fn check_melody_solved(
 }
 
 pub fn play_melody(
-    current_level_index_query: Query<&CurrentLevel>,
+    current_level_index_query: Query<&CurrentPuzzle>,
     discovered_melodies_query: Query<&DiscoveredMelodies>,
     asset_server: ResMut<AssetServer>,
     mut commands: Commands,
 ) {
-    let CurrentLevel(index) = current_level_index_query.single();
+    let CurrentPuzzle(index) = current_level_index_query.single();
     let DiscoveredMelodies(discovered_melodies) = discovered_melodies_query.single();
     let discovered_melody = discovered_melodies.get(index).unwrap();
 

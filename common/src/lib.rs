@@ -42,6 +42,7 @@ pub mod sound;
 mod statistics;
 mod ui;
 mod victory;
+mod load_level_asset;
 
 pub fn add_common_plugins(app: &mut App) {
     app.add_plugins((

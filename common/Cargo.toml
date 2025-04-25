@@ -23,6 +23,8 @@ chacha20poly1305 = "0.10.1"
 bevy_pkv = "0.12.0"
 bevy_hanabi = { version = "0.14.0", default-features = false, features = ["3d"]}
 ringbuffer = { version = "0.15.0" }
+chrono = "0.4.40"
+ureq = "2.9"
 
 [profile.dev]
 opt-level = 1
