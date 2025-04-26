@@ -27,7 +27,7 @@ pub const CAMERA_MIN_NORM: f32 = 2.4;
 #[derive(Component)]
 pub struct MainCamera;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct CameraTarget {
     pub translation_dir: Vec3,
     pub translation_norm: f32,
@@ -105,15 +105,10 @@ pub fn follow_player(
             let from_face_normal = from_node.face().normal();
             let to_face_normal = to_node.face().normal();
 
-            from_face_normal.lerp(to_face_normal, 0.5).normalize()
+            from_face_normal.midpoint(to_face_normal).normalize()
         }
     };
-
-    println!(
-        "Setting new camera target direction: {:?}",
-        target_unit_translation
-    );
-
+    
     camera_target.translation_dir = target_unit_translation;
 }
 
@@ -190,12 +185,12 @@ pub fn update_dolly(
     mut camera_query: Query<(&mut Transform, &mut DollyAngularMotion), With<MainCamera>>,
 ) {
     let (mut transform, mut dolly_rotation_target) = camera_query.single_mut();
+    
+    if dolly_rotation_target.angular_velocity.abs() < 0.001 {
+        return;
+    }
 
-    // TODO: incorporate time
-    let rotation = Quat::from_axis_angle(
-        dolly_rotation_target.axis,
-        -dolly_rotation_target.angular_velocity,
-    );
+    let rotation = Quat::from_axis_angle(dolly_rotation_target.axis, -dolly_rotation_target.angular_velocity);
 
     dolly_rotation_target.angular_velocity *= 0.95;
 
@@ -239,8 +234,7 @@ pub fn camera_dolly(
         return;
     };
 
-    let (camera_transform, mut dolly_rotation_target, mut dolly_screen_positions) =
-        camera_query.single_mut();
+    let (camera_transform, mut dolly_rotation_target, mut dolly_screen_positions) = camera_query.single_mut();
     dolly_screen_positions.0.push(*cursor_position);
 
     let average_delta_device_pixels = get_average_delta(&dolly_screen_positions.0);
@@ -268,11 +262,7 @@ fn get_average_delta(
     last_positions: &ringbuffer::ConstGenericRingBuffer<Vec2, NUM_STORED_POSITIONS>,
 ) -> Vec2 {
     let size = (last_positions.len() - 1).max(1) as f32;
-    last_positions
-        .iter()
-        .zip(last_positions.iter().skip(1))
-        .fold(Vec2::ZERO, |acc, (p1, p2)| acc + (p2 - p1))
-        / size
+    (last_positions.back().unwrap() - last_positions.front().unwrap()) / size
 }
 
 pub fn trigger_camera_resize_on_window_change(
