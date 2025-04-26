@@ -117,6 +117,10 @@ impl Plugin for GameSystemsPlugin {
             )
             .add_systems(
                 OnExit(SelectorState::Clicked),
+                camera::reset_dolly_screen_positions,
+            )
+            .add_systems(
+                OnExit(SelectorState::Clicked),
                 level_selector::set_camera_target_to_closest_face,
             )
             .add_systems(OnExit(ControllerState::Solving), exit_solving_systems);
