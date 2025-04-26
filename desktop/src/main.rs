@@ -47,10 +47,7 @@ fn update_zoom(
     }
 }
 
-fn zoom(
-mut camera_target_query: Query<&mut CameraTarget>,
-amount: f32,
-    ) {
+fn zoom(mut camera_target_query: Query<&mut CameraTarget>, amount: f32) {
     let Ok(mut camera_target) = camera_target_query.get_single_mut() else {
         return;
     };
