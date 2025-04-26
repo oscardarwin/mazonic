@@ -82,17 +82,21 @@ pub fn spawn_level_data(
         return;
     };
 
-    let Ok(MazeLevelData {
+    let MazeLevelData {
         shape,
         nodes_per_edge,
         graph,
         solution,
         node_id_to_note,
         encrypted_melody,
-    }) = level_load_result else {
-        println!("Error loading remote level");
-        game_state.set(GameState::Selector);
-        return;
+    } = match level_load_result {
+        Ok(maze_level_data) => maze_level_data,
+        Err(err) => {
+            println!("Error loading remote level: {:?}", err);
+            loaded_levels.0.remove(puzzle_identifier);
+            game_state.set(GameState::Selector);
+            return;
+        }
     };
 
     let note_midi_handle = node_id_to_note

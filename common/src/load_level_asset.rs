@@ -11,6 +11,7 @@ use crate::game_state::PlayState;
 use crate::levels::LevelData;
 use crate::shape::loader::MazeLevelData;
 
+#[derive(Debug)]
 pub enum DailyLevelLoadError {
     StringParseError(std::io::Error),
     JsonParseError(serde_json::Error),
@@ -28,6 +29,7 @@ pub struct LoadedLevels(pub HashMap<PuzzleIdentifier, MazeSaveDataHandle>);
 
 const EASY_DAILY_LEVEL_TAG: &str = "easy";
 const HARD_DAILY_LEVEL_TAG: &str = "hard";
+const DAILY_LEVELS_URL: &str = "https://raw.githubusercontent.com/oscardarwin/mazonic_levels/main";
 
 pub fn setup(mut commands: Commands) {
     commands.init_resource::<LoadedLevels>();
@@ -35,7 +37,7 @@ pub fn setup(mut commands: Commands) {
 
 fn local_remote_daily_level(daily_level_id: &DailyLevelId, tag: &str) -> MazeSaveDataHandle {
     let thread_pool = IoTaskPool::get();
-    let url = format!("https://oscardarwin.github.io/mazonic_levels/{tag}/{daily_level_id}.json");
+    let url = format!("{DAILY_LEVELS_URL}/{tag}/{daily_level_id}.json");
 
     let task = thread_pool.spawn(async move {
         let res = ureq::get(&url).call().map_err(|e| DailyLevelLoadError::HttpError(e))?;
