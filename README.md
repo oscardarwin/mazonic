@@ -6,10 +6,6 @@
 ### Sort Out Selector
 Animation on selector screen after game state change
 Sort out selection with touch screen.
-Remove perfect score color / decide on colour scheme.
-
-
-
 
 ### Melodies
 
@@ -27,16 +23,9 @@ take away selector and replay buttons on first play of level.
 
 ### Daily Challenges
 
-Great Daily Github Action that writes 3 different level types to the
 Create Daily Logo
 Make Selector Screen Show 3 different Daily challenges.
-
-
-
 Social Media
-
-## Make Desktop Great Again
-Swap All Mouse Events to a custom event that is triggered by the mouse.
 
 ## Possible Polyhedra vertex numbers:
 
