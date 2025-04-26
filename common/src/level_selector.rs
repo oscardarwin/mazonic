@@ -73,10 +73,7 @@ pub fn load(
     )>,
     material_handles: Res<MaterialHandles>,
     mesh_handles: Res<MeshHandles>,
-    mut mouse_button_event_reader: EventReader<MouseButtonInput>,
 ) {
-    // TODO: Need to figure out why I put this here?
-    mouse_button_event_reader.clear();
 
     let (
         WorkingLevelIndex(completed_level_index),
