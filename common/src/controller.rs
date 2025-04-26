@@ -51,15 +51,22 @@ pub fn idle(
     mut next_controller_state: ResMut<NextState<ControllerState>>,
     mut mouse_button_event_reader: EventReader<MouseButtonInput>,
     controller_screen_position_query: Query<&ControllerScreenPosition>,
+    mut local_previous_cursor_position: Local<Option<ControllerScreenPosition>>,
 ) {
     let Ok(controller_screen_position) = controller_screen_position_query.get_single() else {
         return;
     };
 
-    let ControllerScreenPosition::Position(cursor_position) = controller_screen_position else {
+    let Some(previous_cursor_position) = &*local_previous_cursor_position else {
+        *local_previous_cursor_position = Some(controller_screen_position.clone());
         return;
     };
 
+    let (ControllerScreenPosition::None, ControllerScreenPosition::Position(cursor_position)) = (previous_cursor_position, controller_screen_position) else {
+        *local_previous_cursor_position = Some(controller_screen_position.clone());
+        return;
+    };
+    
     let (camera_global_transform, camera) = camera_query.single();
 
     let Some(ray) = camera
@@ -68,6 +75,8 @@ pub fn idle(
     else {
         return;
     };
+
+    *local_previous_cursor_position = None;
 
     if rapier_context_query
         .single()
