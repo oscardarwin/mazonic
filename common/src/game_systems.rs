@@ -37,6 +37,7 @@ impl Plugin for GameSystemsPlugin {
             maze::mesh::spawn,
             spawn_player,
             camera::update_distance.after(spawn_player),
+            camera::reset_dolly_screen_positions,
             ui::navigation::update_previous_level_button_visibility,
             ui::navigation::update_next_level_button_visibility,
         )
@@ -58,6 +59,7 @@ impl Plugin for GameSystemsPlugin {
         );
 
         let enter_victory_systems = (
+            camera::follow_player,
             update_working_level_on_victory,
             ui::navigation::update_next_level_button_visibility
                 .after(update_working_level_on_victory),
@@ -101,6 +103,7 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(OnEnter(PlayState::Loading), enter_loading_systems)
             .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
             .add_systems(OnEnter(PlayState::Victory), enter_victory_systems)
+            .add_systems(OnEnter(victory::VictoryState::Viewing), camera::reset_dolly_screen_positions)
             .add_systems(OnEnter(GameState::Playing), ui::navigation::spawn)
             .add_systems(OnExit(GameState::Playing), exit_play_systems)
             .add_systems(OnEnter(ControllerState::Solving), enter_solving_systems)
@@ -124,25 +127,31 @@ fn get_update_systems() -> SystemConfigs {
     let selector_systems = (
         level_selector::set_selector_state.run_if(in_state(GameState::Selector)),
         level_selector::update_interactables.run_if(in_state(GameState::Selector)),
-        level_selector::update_selection_overlay.run_if(in_state(GameState::Selector)),
-        camera::camera_rotate_to_target.run_if(in_state(SelectorState::Idle)),
-        camera::camera_zoom_to_target
-            .run_if(in_state(SelectorState::Idle).or(in_state(victory::VictoryState::Idle))),
+        level_selector::update_selection_overlay.run_if(in_state(GameState::Selector))
+    ).into_configs();
+
+    let camera_systems = (
         camera::camera_dolly.run_if(
             in_state(ControllerState::Viewing)
                 .or(in_state(victory::VictoryState::Viewing).or(in_state(SelectorState::Clicked))),
         ),
         camera::trigger_camera_resize_on_window_change,
-        camera::camera_rotate_to_target.run_if(in_state(ControllerState::IdlePostSolve)),
+        camera::camera_rotate_to_target.run_if(
+            in_state(ControllerState::IdlePostSolve)
+            .or(in_state(SelectorState::Idle))),
         camera::camera_zoom_to_target.run_if(
-            in_state(ControllerState::IdlePostSolve).or(in_state(ControllerState::IdlePostView)),
+            in_state(ControllerState::IdlePostSolve)
+            .or(in_state(ControllerState::IdlePostView))
+            .or(in_state(SelectorState::Idle))
+            .or(in_state(victory::VictoryState::Idle)),
         ),
         camera::update_dolly.run_if(
             in_state(ControllerState::Viewing)
                 .or(in_state(ControllerState::IdlePostView))
                 .or(in_state(PlayState::Victory))
-                .or(in_state(GameState::Selector)),
-        ),
+                .or(in_state(GameState::Selector))),
+
+        
     )
         .into_configs();
 
@@ -179,6 +188,7 @@ fn get_update_systems() -> SystemConfigs {
         update_node_arrival_particles,
         effects::musical_notes::spawn_notes,
         selector_systems,
+        camera_systems,
     )
         .into_configs()
 }
