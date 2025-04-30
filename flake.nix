@@ -59,6 +59,7 @@
               gradle
               nodejs_22
               xsel
+              rustfmt
 
               aapt # still needed?
               jdk # remove
