@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 bevy = { version = "0.15.0", features = ["bevy_dev_tools"] }
 mazonic = { path = "../common" }
+android-activity = "0.6.0"
+jni = "0.21.1"
 libc = "*"
 
 [lib]
