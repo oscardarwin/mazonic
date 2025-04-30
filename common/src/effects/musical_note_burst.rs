@@ -138,7 +138,6 @@ pub fn spawn(
 
     let melody_room_ids = discovered_melodies.get_room_ids_for_level(puzzle_identifier);
 
-    println!("spawning note burst");
     for (room, transform) in rooms_query
         .iter()
         .filter(|(room, _)| melody_room_ids.contains(&room.id))

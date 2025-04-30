@@ -114,11 +114,9 @@ pub struct MaterialHandles {
     pub player_halo_handle: Handle<ExtendedMaterial<StandardMaterial, PlayerHaloShader>>,
     pub player_handle: Handle<StandardMaterial>,
     pub line_handle: Handle<StandardMaterial>,
-    pub bright_pulsing_line_handle: Handle<ExtendedMaterial<StandardMaterial, PulsingShader>>,
+    pub bright_line_handle: Handle<StandardMaterial>,
     pub dashed_arrow_handle: Handle<ExtendedMaterial<StandardMaterial, DashedArrowShader>>,
     pub bright_dashed_arrow_handle: Handle<ExtendedMaterial<StandardMaterial, DashedArrowShader>>,
-    pub bright_pulsing_dashed_arrow_handle:
-        Handle<ExtendedMaterial<StandardMaterial, PulsingDashedArrowShader>>,
     pub face_handles: FaceMaterialHandles,
     pub selector: SelectorHandles,
     pub goal_handle: Handle<ExtendedMaterial<StandardMaterial, PulsingShader>>,
@@ -192,15 +190,7 @@ pub fn setup_materials(
         ..Default::default()
     };
 
-    let bright_pulsing_line_handle = pulsing_materials.add(ExtendedMaterial {
-        base: bright_line.clone(),
-        extension: PulsingShader {},
-    });
-
-    let bright_pulsing_dashed_arrow_handle = pulsing_dashed_materials.add(ExtendedMaterial {
-        base: bright_line.clone(),
-        extension: PulsingDashedArrowShader {},
-    });
+    let bright_line_handle = materials.add(bright_line.clone());
 
     let dashed_arrow_handle = dashed_arrow_materials.add(ExtendedMaterial {
         base: line_material.clone(),
@@ -300,10 +290,9 @@ pub fn setup_materials(
         player_halo_handle,
         player_handle,
         line_handle: materials.add(line_material),
-        bright_pulsing_line_handle,
+        bright_line_handle,
         dashed_arrow_handle,
         bright_dashed_arrow_handle,
-        bright_pulsing_dashed_arrow_handle,
         face_handles: FaceMaterialHandles { face_handles },
         selector: selector_handles,
         goal_handle,

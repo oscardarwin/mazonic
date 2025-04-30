@@ -52,7 +52,7 @@ pub fn spawn(
         return;
     };
 
-    let Ok(discovered_melodies) = discovered_melodies_query.get_single() else {
+    let Ok(DiscoveredMelodies(discovered_melodies)) = discovered_melodies_query.get_single() else {
         return;
     };
 
@@ -72,15 +72,21 @@ pub fn spawn(
     else {
         return;
     };
+    
+    let discovered_melody_room_ids = discovered_melodies
+        .get(puzzle_identifier)
+        .map(|discovered_melody| discovered_melody.room_ids.clone())
+        .unwrap_or_default();
 
-    let discovered_melody_rooms = discovered_melodies.get_room_ids_for_level(puzzle_identifier);
+    let discovered_melody_room_ids_set = discovered_melody_room_ids
+        .iter()
+        .collect::<HashSet<_>>();
 
     let distance_between_nodes = level.node_distance();
 
     let goal_node = solution.last().unwrap();
     for room in graph.nodes().filter(|room| is_junction(room, &graph)) {
         let is_goal_node = room == *goal_node;
-        let is_discovered_melody_room = discovered_melody_rooms.contains(&room.id);
 
         let transform = Transform::IDENTITY
             .looking_at(
@@ -92,9 +98,7 @@ pub fn spawn(
         let mut entity_commands =
             commands.spawn((transform, LevelData, room, Visibility::default()));
 
-        if is_discovered_melody_room {
-            entity_commands.insert(MusicalNoteMarker);
-        }
+        let is_discovered_melody_room = discovered_melody_room_ids_set.contains(&room.id);
 
         let mesh_handle = if room == *goal_node {
             mesh_handles.goal_room.clone()
@@ -113,7 +117,7 @@ pub fn spawn(
                 (true, _) => child_entity_commands
                     .insert(MeshMaterial3d(material_handles.goal_handle.clone())),
                 (false, true) => child_entity_commands.insert(MeshMaterial3d(
-                    material_handles.bright_pulsing_line_handle.clone(),
+                    material_handles.bright_line_handle.clone(),
                 )),
                 (false, false) => child_entity_commands
                     .insert(MeshMaterial3d(material_handles.line_handle.clone())),
@@ -122,7 +126,7 @@ pub fn spawn(
     }
 
     let discovered_melody_room_pairs =
-        make_room_pairs_from_discovered_melodies(puzzle_identifier, &discovered_melodies.0);
+        make_room_pairs_from_discovered_melodies(puzzle_identifier, &discovered_melodies);
 
     let maze_mesh_handles = match &level.shape {
         Shape::Tetrahedron => &mesh_handles.shape_maze_edge_mesh_handles.tetrahedron,
@@ -167,12 +171,12 @@ pub fn spawn(
 
                 match (bidirectional, is_discovered) {
                     (false, true) => entity_commands.insert(MeshMaterial3d(
-                        material_handles.bright_pulsing_dashed_arrow_handle.clone(),
+                        material_handles.bright_dashed_arrow_handle.clone(),
                     )),
                     (false, false) => entity_commands
                         .insert(MeshMaterial3d(material_handles.dashed_arrow_handle.clone())),
                     (true, true) => entity_commands.insert(MeshMaterial3d(
-                        material_handles.bright_pulsing_line_handle.clone(),
+                        material_handles.bright_line_handle.clone(),
                     )),
                     (true, false) => {
                         entity_commands.insert(MeshMaterial3d(material_handles.line_handle.clone()))

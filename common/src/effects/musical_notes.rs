@@ -143,6 +143,8 @@ pub fn spawn_notes(
         return;
     };
 
+    println!("Spawning notes");
+
     for (entity, transform) in musical_note_marker_query.iter() {
         let mut entity_commands = commands.entity(entity);
         let index = entity.index() as usize;
