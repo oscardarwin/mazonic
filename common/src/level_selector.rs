@@ -21,7 +21,7 @@ use crate::{
     controller_screen_position::ControllerScreenPosition,
     effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
     game_save::{
-        CurrentPuzzle, DiscoveredMelodies, LevelIndex, PuzzleIdentifier, WorkingLevelIndex
+        CompletedEasyDailies, CompletedHardDailies, CurrentPuzzle, DiscoveredMelodies, LevelIndex, PuzzleIdentifier, WorkingLevelIndex
     },
     game_settings::GameSettings,
     game_state::GameState,
@@ -36,50 +36,50 @@ const FACE_ORDER: [usize; 20] = [
 ];
 
 #[derive(Debug, Clone)]
-pub enum SelectorPuzzle {
+pub enum SelectorOption {
     Level(LevelIndex),
     EasyDaily,
     HardDaily,
 }
 
-impl SelectorPuzzle {
+impl SelectorOption {
     fn daily_level_filename() -> String {
         let date = Utc::now();
         date.format("%Y-%m-%d").to_string()
     }
 }
 
-impl Into<PuzzleIdentifier> for SelectorPuzzle {
+impl Into<PuzzleIdentifier> for SelectorOption {
     fn into(self) -> PuzzleIdentifier {
         match self {
-            SelectorPuzzle::Level(level_index) => PuzzleIdentifier::Level(level_index),
-            SelectorPuzzle::EasyDaily => PuzzleIdentifier::EasyDaily(Self::daily_level_filename()),
-            SelectorPuzzle::HardDaily => PuzzleIdentifier::HardDaily(Self::daily_level_filename()),
+            SelectorOption::Level(level_index) => PuzzleIdentifier::Level(level_index),
+            SelectorOption::EasyDaily => PuzzleIdentifier::EasyDaily(Self::daily_level_filename()),
+            SelectorOption::HardDaily => PuzzleIdentifier::HardDaily(Self::daily_level_filename()),
         }
     }
 }
 
-const SELECTOR_LEVELS: [SelectorPuzzle; 20] = [
-    SelectorPuzzle::Level(0),
-    SelectorPuzzle::Level(1),
-    SelectorPuzzle::Level(2),
-    SelectorPuzzle::Level(3),
-    SelectorPuzzle::Level(4),
-    SelectorPuzzle::Level(5),
-    SelectorPuzzle::Level(6),
-    SelectorPuzzle::EasyDaily,
-    SelectorPuzzle::Level(7),
-    SelectorPuzzle::Level(8),
-    SelectorPuzzle::Level(9),
-    SelectorPuzzle::Level(10),
-    SelectorPuzzle::Level(11),
-    SelectorPuzzle::Level(12),
-    SelectorPuzzle::Level(13),
-    SelectorPuzzle::Level(14),
-    SelectorPuzzle::HardDaily,
-    SelectorPuzzle::Level(15),
-    SelectorPuzzle::Level(16),
-    SelectorPuzzle::Level(17),
+const SELECTOR_OPTIONS: [SelectorOption; 20] = [
+    SelectorOption::Level(0),
+    SelectorOption::Level(1),
+    SelectorOption::Level(2),
+    SelectorOption::Level(3),
+    SelectorOption::Level(4),
+    SelectorOption::Level(5),
+    SelectorOption::Level(6),
+    SelectorOption::EasyDaily,
+    SelectorOption::Level(7),
+    SelectorOption::Level(8),
+    SelectorOption::Level(9),
+    SelectorOption::Level(10),
+    SelectorOption::Level(11),
+    SelectorOption::Level(12),
+    SelectorOption::Level(13),
+    SelectorOption::Level(14),
+    SelectorOption::HardDaily,
+    SelectorOption::Level(15),
+    SelectorOption::Level(16),
+    SelectorOption::Level(17),
 ];
 
 #[derive(SubStates, Hash, Eq, Clone, PartialEq, Debug, Default)]
@@ -94,7 +94,7 @@ pub enum SelectorState {
 pub struct SelectorEntity;
 
 #[derive(Component, Clone, Debug)]
-pub struct SelectableLevel(pub SelectorPuzzle);
+pub struct SelectableLevel(pub SelectorOption);
 
 #[derive(Component, Clone, Debug)]
 pub struct SelectedLevel(pub Option<usize>);
@@ -118,6 +118,8 @@ pub fn load(
     game_save_query: Query<(
         &WorkingLevelIndex,
         &DiscoveredMelodies,
+        &CompletedEasyDailies,
+        &CompletedHardDailies,
     )>,
     material_handles: Res<MaterialHandles>,
     mesh_handles: Res<MeshHandles>,
@@ -126,6 +128,8 @@ pub fn load(
     let (
         WorkingLevelIndex(completed_level_index),
         DiscoveredMelodies(discovered_melodies),
+        CompletedEasyDailies(completed_easy_dailies),
+        CompletedHardDailies(completed_hard_dailies)
     ) = game_save_query.single();
 
     let selector_material_handles = &material_handles.selector;
@@ -147,35 +151,37 @@ pub fn load(
 
     let daily_symbol_mesh_handle = meshes.add(coordinate_to_symbol_mesh(0, 4));
 
-    let face_local_transforms = (0..LEVELS.len())
+    let face_local_transforms = (0..SELECTOR_OPTIONS.len())
         .map(|level_index| compute_face_transform(level_index, &faces))
         .collect::<Vec<Transform>>();
 
-    for (level_index, selector_level) in SELECTOR_LEVELS.iter().enumerate() {
-        let face_material_handle = if level_index > *completed_level_index {
-            selector_material_handles.unavailable.clone()
-        } else if level_index == *completed_level_index {
-            selector_material_handles.incomplete_face_colors[level_index].clone()
-        } else {
-            selector_material_handles.completed.clone()
+    for (selector_option_index, selector_option) in SELECTOR_OPTIONS.iter().enumerate() {
+        let puzzle_identifier = selector_option.clone().into(); 
+
+        let face_material_handle = match puzzle_identifier {
+            PuzzleIdentifier::Level(level_index) if level_index == *completed_level_index => selector_material_handles.incomplete_face_colors[level_index].clone(),
+            PuzzleIdentifier::Level(level_index) if level_index < *completed_level_index => selector_material_handles.completed.clone(),
+            PuzzleIdentifier::EasyDaily(id) if completed_easy_dailies.contains(&id) => selector_material_handles.completed.clone(),
+            PuzzleIdentifier::HardDaily(id) if completed_hard_dailies.contains(&id) => selector_material_handles.completed.clone(),
+            _ => selector_material_handles.unavailable.clone(),
         };
 
-        let face_index = FACE_ORDER[level_index];
+        let face_index = FACE_ORDER[selector_option_index];
         let face_mesh_handle = mesh_handles.shape_mesh_handles.icosahedron[face_index].clone();
 
-        let transform = face_local_transforms[level_index];
+        let transform = face_local_transforms[selector_option_index];
         
 
-        let symbol_mesh_handle = match selector_level {
-            SelectorPuzzle::Level(level_index) => match LEVELS[*level_index].shape {
+        let symbol_mesh_handle = match selector_option {
+            SelectorOption::Level(level_index) => match LEVELS[*level_index].shape {
                 Shape::Tetrahedron => tetrahedron_symbol_mesh_handle.clone(),
                 Shape::Cube => cube_symbol_mesh_handle.clone(),
                 Shape::Octahedron => octahedron_symbol_mesh_handle.clone(),
                 Shape::Dodecahedron => dodecahedron_symbol_mesh_handle.clone(),
                 Shape::Icosahedron => icosahedron_symbol_mesh_handle.clone(),
             },
-            SelectorPuzzle::EasyDaily => daily_symbol_mesh_handle.clone(),
-            SelectorPuzzle::HardDaily => daily_symbol_mesh_handle.clone(),
+            SelectorOption::EasyDaily => daily_symbol_mesh_handle.clone(),
+            SelectorOption::HardDaily => daily_symbol_mesh_handle.clone(),
         };
 
 
@@ -194,54 +200,66 @@ pub fn load(
             MeshMaterial3d(selector_material_handles.selection_hover.clone()),
         );
 
-        let is_melody_discovered = discovered_melodies.contains_key(&PuzzleIdentifier::Level(level_index));
+        let is_melody_discovered = discovered_melodies.contains_key::<PuzzleIdentifier>(&selector_option.clone().into());
+
         commands
             .spawn(triangle_collider)
             .insert(face_object)
             .insert(SelectorEntity)
             .insert(SelectorOverlayState::None)
-            .insert(SelectableLevel(selector_level.clone()))
+            .insert(SelectableLevel(selector_option.clone()))
             .insert(CameraTargetTransform(transform.clone()))
             .insert(Visibility::default())
             .with_children(|parent| {
                 parent.spawn(transform).with_children(|parent| {
                     let mut symbol_entity_commands = parent.spawn(Mesh3d(symbol_mesh_handle));
-                    if is_melody_discovered {
-                        symbol_entity_commands.insert(MeshMaterial3d(
-                            selector_material_handles.melody_found_selector_face.clone(),
-                        ));
-                    } else if level_index > *completed_level_index {
-                        symbol_entity_commands.insert(MeshMaterial3d(
-                            selector_material_handles.unavailable_level_symbols.clone(),
-                        ));
-                    } else {
-                        symbol_entity_commands.insert(MeshMaterial3d(
-                            selector_material_handles.level_symbols.clone(),
-                        ));
-                    };
+                    
+                    match selector_option {
+                        SelectorOption::Level(level_index) => {
+                            if is_melody_discovered {
+                                symbol_entity_commands.insert(MeshMaterial3d(
+                                    selector_material_handles.melody_found_selector_face.clone(),
+                                ));
+                            } else if level_index > completed_level_index {
+                                symbol_entity_commands.insert(MeshMaterial3d(
+                                    selector_material_handles.unavailable_level_symbols.clone(),
+                                ));
+                            } else {
+                                symbol_entity_commands.insert(MeshMaterial3d(
+                                    selector_material_handles.level_symbols.clone(),
+                                ));
+                            };
 
-                    let SelectorPuzzle::Level(level_index) = selector_level else {
-                        return;
-                    };
+                            let number_mesh_handle =
+                                number_mesh_handles.get(&LEVELS[*level_index].nodes_per_edge).unwrap();
+                            let mut number_entity_commands =
+                                parent.spawn(Mesh3d(number_mesh_handle.clone()));
 
-                    let number_mesh_handle =
-                        number_mesh_handles.get(&LEVELS[*level_index].nodes_per_edge).unwrap();
-                    let mut number_entity_commands =
-                        parent.spawn(Mesh3d(number_mesh_handle.clone()));
-
-                    if is_melody_discovered {
-                        number_entity_commands.insert(MeshMaterial3d(
-                            selector_material_handles.melody_found_selector_face.clone(),
-                        ));
-                    } else if level_index > completed_level_index {
-                        number_entity_commands.insert(MeshMaterial3d(
-                            selector_material_handles.unavailable_level_symbols.clone(),
-                        ));
-                    } else {
-                        number_entity_commands.insert(MeshMaterial3d(
-                            selector_material_handles.level_symbols.clone(),
-                        ));
-                    };
+                            if is_melody_discovered {
+                                number_entity_commands.insert(MeshMaterial3d(
+                                    selector_material_handles.melody_found_selector_face.clone(),
+                                ));
+                            } else if level_index > completed_level_index {
+                                number_entity_commands.insert(MeshMaterial3d(
+                                    selector_material_handles.unavailable_level_symbols.clone(),
+                                ));
+                            } else {
+                                number_entity_commands.insert(MeshMaterial3d(
+                                    selector_material_handles.level_symbols.clone(),
+                                ));
+                            };
+                        }
+                        SelectorOption::EasyDaily | SelectorOption::HardDaily if is_melody_discovered => {
+                            symbol_entity_commands.insert(MeshMaterial3d(
+                                    selector_material_handles.melody_found_selector_face.clone(),
+                            ));
+                        }
+                        _ => {
+                            symbol_entity_commands.insert(MeshMaterial3d(
+                                selector_material_handles.level_symbols.clone(),
+                            ));
+                        }
+                    }
                 });
 
                 if is_melody_discovered {
@@ -264,7 +282,7 @@ pub fn load(
     let edge_mesh_handle = meshes.add(mesh_builder.one_way_cross_face_edge());
 
     for (from_level_index, to_level_index) in
-        (0..).zip(1..SELECTOR_LEVELS.len()).take(*completed_level_index)
+        (0..).zip(1..SELECTOR_OPTIONS.len()).take(*completed_level_index)
     {
         let from_transform = face_local_transforms[from_level_index];
         let to_transform = face_local_transforms[to_level_index];
@@ -436,9 +454,9 @@ pub fn update_interactables(
         let WorkingLevelIndex(working_level_index) = completed_level_index_query.single();
 
         let level_playable = match selector_puzzle { 
-            SelectorPuzzle::Level(level_index) => level_index <= working_level_index,
-            SelectorPuzzle::EasyDaily => *working_level_index > 6,
-            SelectorPuzzle::HardDaily => *working_level_index > 14,
+            SelectorOption::Level(level_index) => level_index <= working_level_index,
+            SelectorOption::EasyDaily => *working_level_index > 6,
+            SelectorOption::HardDaily => *working_level_index > 14,
         };
 
         let new_overlay_state = match (intersection, pressed) {
@@ -528,9 +546,9 @@ pub fn set_initial_camera_target(
         .iter()
         .filter(|(_, SelectableLevel(selector_level))| {
             match (selector_level, puzzle_identifier) {
-                (SelectorPuzzle::Level(selector_index), PuzzleIdentifier::Level(level_index)) => selector_index == level_index,
-                (SelectorPuzzle::EasyDaily, PuzzleIdentifier::EasyDaily(_)) => true,
-                (SelectorPuzzle::HardDaily, PuzzleIdentifier::HardDaily(_)) => true,
+                (SelectorOption::Level(selector_index), PuzzleIdentifier::Level(level_index)) => selector_index == level_index,
+                (SelectorOption::EasyDaily, PuzzleIdentifier::EasyDaily(_)) => true,
+                (SelectorOption::HardDaily, PuzzleIdentifier::HardDaily(_)) => true,
                 _ => false,
             }
             

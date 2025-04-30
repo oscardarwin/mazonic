@@ -93,7 +93,7 @@ impl GameLevel {
     }
 }
 
-pub const LEVELS: [GameLevel; 20] = [
+pub const LEVELS: [GameLevel; 18] = [
     GameLevel::tetrahedron(1),
     GameLevel::cube(2),
     GameLevel::octahedron(3),
@@ -111,7 +111,5 @@ pub const LEVELS: [GameLevel; 20] = [
     GameLevel::tetrahedron(9),
     GameLevel::icosahedron(4),
     GameLevel::cube(6),
-    GameLevel::octahedron(7),
-    GameLevel::cube(7),
     GameLevel::icosahedron(5),
 ];
