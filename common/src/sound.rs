@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
+use bevy::audio::PlaybackMode;
 use bevy::reflect::List;
 use bevy::{audio::AddAudioSource, prelude::*, utils::HashMap};
 use bevy_rustysynth::{MidiAudio, MidiNote};
@@ -26,13 +27,37 @@ use crate::{
     shape::loader::GraphComponent,
 };
 
-const CROTCHET_DURATION: f32 = 0.8;
+#[derive(Serialize, Deserialize, Clone, Debug, Hash)]
+pub enum NoteValue {
+    Semiquaver,
+    Quaver,
+    Crotchet,
+    DottedCrotchet,
+    Minim,
+    DottedMinim,
+    Semibreve,
+}
+
+impl NoteValue {
+    pub fn as_f32(&self) -> f32 {
+        match self {
+            NoteValue::Semiquaver => 0.25,
+            NoteValue::Quaver => 0.5,
+            NoteValue::Crotchet => 1.0,
+            NoteValue::DottedCrotchet => 1.5,
+            NoteValue::Minim => 2.0,
+            NoteValue::DottedMinim => 3.0,
+            NoteValue::Semibreve => 4.0,
+        }
+
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash)]
 pub struct Note {
     pub key: i32,
     pub velocity: i32,
-    pub duration: Duration,
+    pub value: NoteValue,
 }
 
 #[derive(Hash, Clone, Serialize, Deserialize, Debug)]
@@ -42,6 +67,7 @@ pub struct Notes(pub Vec<Note>);
 pub struct Melody {
     pub name: String,
     pub notes: Notes,
+    pub bpm: f32,
 }
 
 impl Default for Melody {
@@ -56,48 +82,46 @@ impl Default for Melody {
                 Note::crotchet(57),
                 Note::crotchet(60),
             ]),
+            bpm: 100.0
         }
     }
 }
 
 impl Note {
-    pub fn new(key: i32, duration: Duration) -> Self {
+    pub fn new(key: i32, value: NoteValue) -> Self {
         Note {
             key,
             velocity: 100,
-            duration,
+            value,
         }
+    }
+
+    pub fn semiquaver(key: i32) -> Self {
+        Self::new(key, NoteValue::Semiquaver)
     }
 
     pub fn quaver(key: i32) -> Self {
-        Self::new(key, Duration::from_secs_f32(CROTCHET_DURATION * 0.5))
+        Self::new(key, NoteValue::Quaver)
     }
 
     pub fn crotchet(key: i32) -> Self {
-        Self::new(key, Duration::from_secs_f32(CROTCHET_DURATION))
+        Self::new(key, NoteValue::Crotchet)
+    }
+
+    pub fn dotted_crotchet(key: i32) -> Self {
+        Self::new(key, NoteValue::DottedCrotchet)
     }
 
     pub fn minim(key: i32) -> Self {
-        Self::new(key, Duration::from_secs_f32(CROTCHET_DURATION * 2.0))
+        Self::new(key, NoteValue::Minim)
     }
 
     pub fn dotted_minim(key: i32) -> Self {
-        Self::new(key, Duration::from_secs_f32(CROTCHET_DURATION * 3.0))
+        Self::new(key, NoteValue::DottedMinim)
     }
 
     pub fn semibreve(key: i32) -> Self {
-        Self::new(key, Duration::from_secs_f32(CROTCHET_DURATION * 4.0))
-    }
-}
-
-impl Into<MidiNote> for Note {
-    fn into(self) -> MidiNote {
-        MidiNote {
-            key: self.key,
-            velocity: self.velocity,
-            duration: self.duration,
-            ..Default::default()
-        }
+        Self::new(key, NoteValue::Semibreve)
     }
 }
 
@@ -159,9 +183,10 @@ pub fn play_note(
 
             melody_tracker.room_ids.push_back(room.id);
         }
+
         commands.spawn(AudioSourceBundle {
             source: AudioPlayer(note_handle),
-            ..Default::default()
+            settings: get_playback_settings(1.0)
         });
     } else {
         play_winning_melody(
@@ -189,13 +214,12 @@ fn play_winning_melody(
         .into_iter()
         .enumerate()
         .map(|(index, note)| {
-            let duration = note.duration.as_secs_f32();
             let speedup = if index == num_notes - 1 {
                 1.0
             } else {
                 3.0 * 1.3_f32.powf(index as f32)
             };
-            let fast_note_duration = Duration::from_secs_f32(duration / speedup);
+            let fast_note_duration = Duration::from_secs_f32(note.value.as_f32() / speedup);
 
             MidiNote {
                 key: note.key,
@@ -210,8 +234,16 @@ fn play_winning_melody(
     let audio_handle = asset_server.add::<MidiAudio>(midi_audio);
     commands.spawn(AudioSourceBundle {
         source: AudioPlayer(audio_handle),
-        ..Default::default()
+        settings: get_playback_settings(1.0)
     });
+}
+
+fn get_playback_settings(speed: f32) -> PlaybackSettings {
+    PlaybackSettings {
+        mode: PlaybackMode::Despawn,
+        speed,
+        ..Default::default()
+    }
 }
 
 pub fn check_melody_solved(
@@ -272,7 +304,14 @@ pub fn play_melody(
     let discovered_melody = discovered_melodies.get(index).unwrap();
 
     let Notes(notes) = &discovered_melody.melody.notes;
-    let mut midi_notes = notes.iter().map(|note| note.clone().into()).collect_vec();
+
+    let seconds_per_note = 60.0 / discovered_melody.melody.bpm;
+    let mut midi_notes = notes.iter().map(|note| MidiNote {
+            key: note.key,
+            velocity: note.velocity,
+            duration: Duration::from_secs_f32(note.value.as_f32() * seconds_per_note),
+            ..Default::default()
+        }).collect_vec();
 
     let pause_note = MidiNote {
         velocity: 0,

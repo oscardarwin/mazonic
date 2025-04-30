@@ -4,11 +4,7 @@ use bevy::{
 use bevy_rustysynth::{MidiAudio, MidiNote};
 
 use std::{
-    collections::VecDeque,
-    f32::consts::FRAC_PI_2,
-    fs::{self, File},
-    hash::{DefaultHasher, Hash, Hasher},
-    usize,
+    collections::VecDeque, f32::consts::FRAC_PI_2, fs::{self, File}, hash::{DefaultHasher, Hash, Hasher}, time::Duration, usize
 };
 
 use petgraph::{graphmap::GraphMap, Directed};
@@ -102,7 +98,12 @@ pub fn spawn_level_data(
     let note_midi_handle = node_id_to_note
         .into_iter()
         .map(|(node_id, note)| {
-            let midi_note = note.clone().into();
+            let midi_note = MidiNote {
+                key: note.key,
+                velocity: note.velocity,
+                duration: Duration::from_secs_f32(note.value.as_f32()),
+                ..Default::default()
+            };
             let audio = MidiAudio::Sequence(vec![midi_note]);
             let audio_handle = asset_server.add::<MidiAudio>(audio);
             (node_id, (audio_handle, note.clone()))
