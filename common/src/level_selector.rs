@@ -439,7 +439,7 @@ pub fn update_interactables(
         return;
     };
 
-    let window_center_intersected_entity = rapier_context_query
+    let Some((window_center_entity, _)) = rapier_context_query
         .single()
         .cast_ray(
             ray.origin,
@@ -447,8 +447,9 @@ pub fn update_interactables(
             30.,
             true,
             QueryFilter::default(),
-        )
-        .map(|(entity, _)| entity);
+        ) else {
+        return;
+    };
 
 
     let touch_intersected_entity = match *controller_screen_position {
@@ -471,9 +472,9 @@ pub fn update_interactables(
         ControllerScreenPosition::None => None,
     };
 
-    let touch_matches_window_center_entity = match (touch_intersected_entity, window_center_intersected_entity) {
-        (Some(window_center_entity), Some(touch_entity)) => window_center_entity == touch_entity,
-        _ => false,
+    let touch_matches_window_center_entity = match touch_intersected_entity {
+        Some(touch_entity) => window_center_entity == touch_entity,
+        None => false,
     };
 
     *start_touch_entity = match (*previous_controller_screen_position, controller_screen_position) {
@@ -496,21 +497,20 @@ pub fn update_interactables(
         let interacted_and_matches_touch = *overlay_state != SelectorOverlayState::None 
             && selected_face_pressed;
 
-        let new_overlay_state = match window_center_intersected_entity {
-            Some(intersected_entity) if intersected_entity != entity => {
-                SelectorOverlayState::None
-            }
-            Some(intersected_entity) if intersected_entity == entity && selected_face_pressed => {
-                SelectorOverlayState::Pressed
-            }
-            Some(intersected_entity) if intersected_entity == entity && level_playable => {
-                SelectorOverlayState::Hovered
-            }
-            _ => SelectorOverlayState::None,
+        let new_overlay_state = if window_center_entity != entity {
+            SelectorOverlayState::None
+        }
+        else if window_center_entity == entity && selected_face_pressed {
+            SelectorOverlayState::Pressed
+        } else if window_center_entity == entity && level_playable {
+            SelectorOverlayState::Hovered
+        } else {
+            SelectorOverlayState::None 
         };
 
         if *overlay_state == SelectorOverlayState::Pressed
             && new_overlay_state == SelectorOverlayState::Hovered
+            && start_touch_entity.is_none()
         {
 
             *current_level_index_query.single_mut() = CurrentPuzzle(selector_puzzle.clone().into());
