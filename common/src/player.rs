@@ -6,7 +6,7 @@ use crate::{
     },
     effects::player_particles::{PlayerParticleEffect, PlayerParticlesHandle},
     game_settings::GameSettings,
-    levels::{GameLevel, LevelData},
+    levels::{GameLevel, PuzzleEntityMarker},
     room::Room,
     shape::loader::SolutionComponent,
     statistics::PlayerPath,
@@ -160,7 +160,7 @@ pub fn spawn_player(
             PlayerMazeState::Node(initial_node),
             PlayerPath::default(),
             Collider::ball(radius),
-            LevelData,
+            PuzzleEntityMarker,
         ))
         .with_children(|parent| {
             parent

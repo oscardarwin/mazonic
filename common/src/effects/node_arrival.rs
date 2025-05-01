@@ -7,7 +7,7 @@ use crate::{
     },
     game_settings::GameSettings,
     is_room_junction::is_junction,
-    levels::{GameLevel, LevelData},
+    levels::{GameLevel, PuzzleEntityMarker},
     player::PlayerMazeState,
     room::Room,
     shape::loader::{GraphComponent, SolutionComponent},
@@ -89,7 +89,7 @@ pub fn spawn_node_arrival_particles(
                 .with_scale(Vec3::ONE * 0.01),
             ..default()
         })
-        .insert(LevelData)
+        .insert(PuzzleEntityMarker)
         .insert(NodeArrivalEffectInstance {
             lifetime: 1.,
             birth_time: time.elapsed_secs(),

@@ -18,7 +18,7 @@ use crate::{
     game_save::{CurrentPuzzle, DiscoveredMelodies, DiscoveredMelody, PuzzleIdentifier},
     game_systems::SystemHandles,
     is_room_junction::is_junction,
-    levels::{GameLevel, LevelData, Shape},
+    levels::{GameLevel, PuzzleEntityMarker, Shape},
     maze::maze_mesh_builder::MazeMeshBuilder,
     room::Room,
     shape::loader::{GraphComponent, SolutionComponent},
@@ -98,7 +98,7 @@ pub fn spawn(
             .with_translation(room.position() + room.face().normal() * ROOM_HEIGHT);
 
         let mut entity_commands =
-            commands.spawn((transform, LevelData, room, Visibility::default()));
+            commands.spawn((transform, PuzzleEntityMarker, room, Visibility::default()));
 
         let discovered_melody_room = discovered_melody_room_ids_to_melody_index.get(&room.id);
 
@@ -163,7 +163,7 @@ pub fn spawn(
             || discovered_melody_room_pairs.contains(&(target_node.id, source_node.id));
 
         let mut entity_commands = commands
-            .spawn((transform.clone(), LevelData, Visibility::default()))
+            .spawn((transform.clone(), PuzzleEntityMarker, Visibility::default()))
             .with_children(|parent| {
                 let mut entity_commands = parent.spawn((
                     Mesh3d(mesh_handle),

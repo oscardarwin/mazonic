@@ -4,7 +4,7 @@ use bevy_hanabi::prelude::*;
 use crate::{
     game_save::{CurrentPuzzle, DiscoveredMelodies},
     game_settings::GameSettings,
-    levels::LevelData,
+    levels::PuzzleEntityMarker,
     room::Room,
     shape::loader::GraphComponent,
 };

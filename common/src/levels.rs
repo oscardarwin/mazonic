@@ -9,7 +9,13 @@ use crate::{
 };
 
 #[derive(Component)]
-pub struct LevelData;
+pub struct PuzzleEntityMarker;
+
+pub fn despawn_puzzle_entities(mut commands: Commands, level_entities: Query<Entity, With<PuzzleEntityMarker>>) {
+    for entity in level_entities.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Shape {

@@ -7,7 +7,7 @@ use crate::{
     game_state::GameState,
     game_systems::SystemHandles,
     level_selector::SelectableLevel,
-    levels::{GameLevel, LevelData, Shape},
+    levels::{GameLevel, PuzzleEntityMarker, Shape},
     player::{Player, PlayerMazeState},
 };
 use bevy::{
