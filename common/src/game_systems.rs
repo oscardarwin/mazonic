@@ -8,16 +8,14 @@ use crate::{
     assets::{material_handles::setup_materials, mesh_handles::setup_mesh_handles}, camera, controller::{idle, solve, view, ControllerState}, controller_screen_position, effects::{
         self,
         node_arrival::{spawn_node_arrival_particles, update_node_arrival_particles},
-    }, game_save::{setup_save_data, update_save_data}, game_state::{
+    }, game_save, game_state::{
         update_working_level_on_victory, victory_transition,
         GameState, PlayState,
-    }, level_selector::{self, SelectorState}, light::{light_follow_camera, setup_light}, load_level_asset, maze::{self, mesh::update_on_melody_discovered}, menu, player::{
+    }, level_selector::{self, SelectorState}, levels, light::{light_follow_camera, setup_light}, load_level_asset, maze::{self, mesh::update_on_melody_discovered}, menu, player::{
         move_player, spawn_player, turn_off_player_halo, turn_on_player_halo,
         update_halo_follow_player,
-    }, shape::{
-        self,
-        loader::{despawn_level_data, spawn_level_data},
-    }, sound::{self, check_melody_solved, play_note}, statistics::update_player_path, ui, victory
+    }, shape,
+    sound::{self, check_melody_solved, play_note}, statistics::update_player_path, ui, victory
 };
 
 #[derive(Default)]
@@ -33,19 +31,20 @@ impl Plugin for GameSystemsPlugin {
         app.init_resource::<SystemHandles>();
 
         let enter_play_systems = (
-            shape::loader::spawn_mesh,
+            shape::spawn,
             maze::mesh::spawn,
             spawn_player,
             camera::update_distance.after(spawn_player),
             camera::reset_dolly_screen_positions,
             ui::navigation::update_previous_level_button_visibility,
             ui::navigation::update_next_level_button_visibility,
+            ui::navigation::update_selector_and_replay_button_visibility,
         )
             .into_configs();
 
         let exit_play_systems = (
             ui::navigation::despawn_level_navigation_ui,
-            despawn_level_data,
+            levels::despawn_puzzle_entities,
         )
             .into_configs();
 
@@ -72,8 +71,7 @@ impl Plugin for GameSystemsPlugin {
             .into_configs();
 
         let enter_loading_systems = (
-            despawn_level_data,
-            load_level_asset::load.after(despawn_level_data),
+            levels::despawn_puzzle_entities,
         )
             .into_configs();
 
@@ -81,7 +79,7 @@ impl Plugin for GameSystemsPlugin {
             camera::setup,
             setup_light,
             setup_materials,
-            setup_save_data,
+            game_save::setup,
             setup_mesh_handles,
             effects::player_particles::setup,
             effects::musical_notes::setup,
@@ -89,13 +87,13 @@ impl Plugin for GameSystemsPlugin {
             controller_screen_position::setup,
             load_level_asset::setup,
             ui::message::spawn,
+            menu::setup.after(game_save::setup)
         );
 
         let update_systems = get_update_systems();
 
         app.add_systems(Startup, startup_systems)
             .add_systems(Update, update_systems)
-            .add_systems(OnEnter(GameState::Setup), menu::setup)
             .add_systems(OnEnter(GameState::Selector), enter_selector_init_systems)
             .add_systems(
                 OnExit(PlayState::Loading),
@@ -105,7 +103,7 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
             .add_systems(OnEnter(PlayState::Victory), enter_victory_systems)
             .add_systems(OnEnter(victory::VictoryState::Viewing), camera::reset_dolly_screen_positions)
-            .add_systems(OnExit(PlayState::Loading), ui::navigation::spawn)
+            .add_systems(OnEnter(GameState::Playing), ui::navigation::spawn)
             .add_systems(OnExit(GameState::Playing), exit_play_systems)
             .add_systems(OnEnter(ControllerState::Solving), enter_solving_systems)
             .add_systems(
@@ -163,7 +161,7 @@ fn get_update_systems() -> SystemConfigs {
     (
         (
             move_player,
-            update_save_data,
+            game_save::update,
             update_halo_follow_player,
             effects::player_particles::update_player_particles,
         )
@@ -181,7 +179,7 @@ fn get_update_systems() -> SystemConfigs {
         update_player_path.run_if(in_state(PlayState::Playing)),
         play_note.run_if(in_state(PlayState::Playing)),
         check_melody_solved.run_if(in_state(PlayState::Playing)),
-        shape::loader::spawn_level_data.run_if(in_state(PlayState::Loading)),
+        load_level_asset::spawn_level_data.run_if(in_state(PlayState::Loading)),
         solve.run_if(in_state(ControllerState::Solving)),
         spawn_node_arrival_particles,
         idle.run_if(
@@ -195,6 +193,7 @@ fn get_update_systems() -> SystemConfigs {
         selector_systems,
         camera_systems,
         ui::message::update,
+        load_level_asset::wait_until_loaded.run_if(in_state(GameState::LoadingRemoteLevel))
     )
         .into_configs()
 }

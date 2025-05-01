@@ -408,7 +408,7 @@ pub fn update_interactables(
     camera_query: Query<(&GlobalTransform, &Camera), With<MainCamera>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mut overlay_states_query: Query<(Entity, &mut SelectorOverlayState, &SelectableLevel)>,
-    mut next_game_state: ResMut<NextState<GameState>>,
+    mut game_state: ResMut<NextState<GameState>>,
     mut selector_state: Res<State<SelectorState>>,
     mut current_level_index_query: Query<&mut CurrentPuzzle>,
     completed_level_index_query: Query<&WorkingLevelIndex>,
@@ -514,7 +514,12 @@ pub fn update_interactables(
         {
 
             *current_level_index_query.single_mut() = CurrentPuzzle(selector_puzzle.clone().into());
-            next_game_state.set(GameState::Playing);
+            let next_game_state = match selector_puzzle {
+                SelectorOption::Level(level_index) => GameState::Playing,
+                SelectorOption::EasyDaily | SelectorOption::HardDaily => GameState::LoadingRemoteLevel,
+            };
+            game_state.set(next_game_state);
+            break;
         }
 
         if *overlay_state != new_overlay_state {

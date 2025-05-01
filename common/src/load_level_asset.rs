@@ -1,15 +1,31 @@
+use std::collections::VecDeque;
+use std::time::Duration;
+
 use bevy::prelude::*;
+use bevy::tasks::block_on;
+use bevy::tasks::futures_lite::future;
 use bevy::tasks::IoTaskPool;
 use bevy::tasks::Task;
 use bevy::utils::HashMap;
+use bevy_rustysynth::MidiAudio;
+use bevy_rustysynth::MidiNote;
 
 use crate::game_save::CurrentPuzzle;
 use crate::game_save::DailyLevelId;
 use crate::game_save::LevelIndex;
 use crate::game_save::PuzzleIdentifier;
+use crate::game_state::GameState;
 use crate::game_state::PlayState;
-use crate::levels::LevelData;
+use crate::levels::GameLevel;
+use crate::levels::PuzzleEntityMarker;
+use crate::shape::loader::EncryptedMelody;
+use crate::shape::loader::GraphComponent;
 use crate::shape::loader::MazeLevelData;
+use crate::shape::loader::SolutionComponent;
+use crate::sound::MelodyPuzzleTracker;
+use crate::sound::Note;
+use crate::sound::NoteMapping;
+use crate::ui::message::MessagePopup;
 
 #[derive(Debug)]
 pub enum DailyLevelLoadError {
@@ -21,9 +37,11 @@ pub enum DailyLevelLoadError {
 #[derive(Component)]
 pub enum MazeSaveDataHandle {
     LocalLevel(Handle<MazeLevelData>),
-    LoadingRemoteLevel(Task<Result<MazeLevelData, DailyLevelLoadError>>),
     LoadedRemoteLevel(MazeLevelData),
 }
+
+#[derive(Resource, Default)]
+pub struct LoadingRemoteLevels(pub HashMap<PuzzleIdentifier, Task<Result<MazeLevelData, DailyLevelLoadError>>>);
 
 #[derive(Resource, Default)]
 pub struct LoadedLevels(pub HashMap<PuzzleIdentifier, MazeSaveDataHandle>);
@@ -34,45 +52,149 @@ const DAILY_LEVELS_URL: &str = "https://raw.githubusercontent.com/oscardarwin/ma
 
 pub fn setup(mut commands: Commands) {
     commands.init_resource::<LoadedLevels>();
+    commands.init_resource::<LoadingRemoteLevels>();
 }
 
-fn local_remote_daily_level(daily_level_id: &DailyLevelId, tag: &str) -> MazeSaveDataHandle {
+fn start_remote_daily_level_download(daily_level_id: &DailyLevelId, tag: &str) -> Task<Result<MazeLevelData, DailyLevelLoadError>> {
     let thread_pool = IoTaskPool::get();
     let url = format!("{DAILY_LEVELS_URL}/{tag}/{daily_level_id}.json");
 
-    let task = thread_pool.spawn(async move {
+    thread_pool.spawn(async move {
         let res = ureq::get(&url).call().map_err(|e| DailyLevelLoadError::HttpError(e))?;
         let body = res.into_string().map_err(|e| DailyLevelLoadError::StringParseError(e))?;
         let parsed: MazeLevelData = serde_json::from_str(&body).map_err(|e| DailyLevelLoadError::JsonParseError(e))?;
         Ok(parsed)
-    });
-    
-    MazeSaveDataHandle::LoadingRemoteLevel(task)
+    })
 }
 
-fn load_local_level(level_index: LevelIndex, asset_server: Res<AssetServer>) -> MazeSaveDataHandle {
+fn load_local_level(level_index: LevelIndex, asset_server: &AssetServer) -> Handle<MazeLevelData> {
     let file_path = format!("levels/{}.json", level_index);
-    let maze_save_data_handle = asset_server.load::<MazeLevelData>(file_path);
-    MazeSaveDataHandle::LocalLevel(maze_save_data_handle)
+    asset_server.load::<MazeLevelData>(file_path)
 }
 
-pub fn load(
+pub fn wait_until_loaded(
     current_level_index_query: Query<&CurrentPuzzle>,
-    mut game_state: ResMut<NextState<PlayState>>,
-    asset_server: Res<AssetServer>,
     mut loaded_levels: ResMut<LoadedLevels>,
+    mut loading_remote_levels: ResMut<LoadingRemoteLevels>,
+    mut message_popup: ResMut<MessagePopup>,
+    mut game_state: ResMut<NextState<GameState>>,
 ) {
     let CurrentPuzzle(puzzle_identifier) = current_level_index_query.single();
-    
+
     if loaded_levels.0.contains_key(puzzle_identifier) {
+        game_state.set(GameState::Playing);
         return;
     }
 
-    let maze_save_data_handle = match puzzle_identifier {
-        PuzzleIdentifier::Level(index) => load_local_level(*index, asset_server),
-        PuzzleIdentifier::EasyDaily(id) => local_remote_daily_level(&id, EASY_DAILY_LEVEL_TAG),
-        PuzzleIdentifier::HardDaily(id) => local_remote_daily_level(&id, HARD_DAILY_LEVEL_TAG),
+    let task = loading_remote_levels.0.entry(puzzle_identifier.clone()).or_insert_with(||
+        match puzzle_identifier {
+            PuzzleIdentifier::EasyDaily(id) => start_remote_daily_level_download(&id, EASY_DAILY_LEVEL_TAG),
+            PuzzleIdentifier::HardDaily(id) => start_remote_daily_level_download(&id, HARD_DAILY_LEVEL_TAG),
+            _ => panic!("Not a remote level")
+        }
+    );
+
+    let Some(load_result) = block_on(future::poll_once(task)) else {
+        return;
     };
 
-    loaded_levels.0.insert(puzzle_identifier.clone(), maze_save_data_handle);
+    loading_remote_levels.0.remove(puzzle_identifier);
+    
+    let next_game_state = match load_result {
+        Ok(level) => {
+            loaded_levels.0.insert(puzzle_identifier.clone(), MazeSaveDataHandle::LoadedRemoteLevel(level));
+            GameState::Playing
+        },
+        Err(err) => {
+            let message = match err {
+                DailyLevelLoadError::JsonParseError(_) => "failed to parse json",
+                DailyLevelLoadError::HttpError(_) => "could not fetch level from web",
+                DailyLevelLoadError::StringParseError(_) => "failed to parse level data",
+            }.to_string();
+
+            *message_popup = MessagePopup(message);
+
+            GameState::Selector
+        }
+    };
+
+    game_state.set(next_game_state);
+}
+
+pub fn spawn_level_data(
+    current_level_index_query: Query<&CurrentPuzzle>,
+    mut commands: Commands,
+    mut play_state: ResMut<NextState<PlayState>>,
+    mut game_state: ResMut<NextState<GameState>>,
+    maze_save_data_assets: Res<Assets<MazeLevelData>>,
+    mut loaded_levels: ResMut<LoadedLevels>,
+    asset_server: Res<AssetServer>,
+) {
+    let CurrentPuzzle(puzzle_identifier) = current_level_index_query.single();
+    
+    println!("Loaded levels: {:?}, trying with pi: {:?}", loaded_levels.0.keys().collect::<Vec<_>>(), puzzle_identifier);
+
+    let maze_save_data_handle = loaded_levels.0.entry(puzzle_identifier.clone()).or_insert_with(||
+        match puzzle_identifier {
+            PuzzleIdentifier::Level(index) => MazeSaveDataHandle::LocalLevel(load_local_level(*index, &asset_server)),
+            _ => panic!("Not a local level")
+        }
+    );
+
+    let MazeLevelData {
+        shape,
+        nodes_per_edge,
+        graph,
+        solution,
+        node_id_to_note,
+        encrypted_melody,
+    } = match maze_save_data_handle {
+        MazeSaveDataHandle::LocalLevel(handle) => match maze_save_data_assets.get(handle) {
+            Some(level) => level.clone(),
+            None => return,
+        },
+        MazeSaveDataHandle::LoadedRemoteLevel(level) => level.clone(),
+    };
+
+    let note_midi_handle = node_id_to_note
+        .into_iter()
+        .map(|(node_id, note)| {
+            let midi_note = MidiNote {
+                key: note.key,
+                velocity: note.velocity,
+                duration: Duration::from_secs_f32(note.value.as_f32()),
+                ..Default::default()
+            };
+            let audio = MidiAudio::Sequence(vec![midi_note]);
+            let audio_handle = asset_server.add::<MidiAudio>(audio);
+            (node_id, (audio_handle, note.clone()))
+        })
+        .collect::<HashMap<u64, (Handle<MidiAudio>, Note)>>();
+
+    if let Some(EncryptedMelody {
+        encrypted_melody_bytes,
+        melody_length,
+    }) = encrypted_melody
+    {
+        let room_ids = VecDeque::with_capacity(melody_length);
+        commands.spawn((
+            MelodyPuzzleTracker {
+                room_ids,
+                encrypted_melody_bytes: encrypted_melody_bytes.clone(),
+            },
+            PuzzleEntityMarker,
+        ));
+    }
+
+    commands.spawn((
+        PuzzleEntityMarker,
+        GameLevel {
+            shape,
+            nodes_per_edge,
+        },
+        GraphComponent(graph),
+        SolutionComponent(solution),
+        NoteMapping(note_midi_handle),
+    ));
+    play_state.set(PlayState::Playing);
 }

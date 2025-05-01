@@ -12,6 +12,7 @@ pub enum GameState {
     Setup,
     Selector,
     Menu,
+    LoadingRemoteLevel,
     Playing,
 }
 
