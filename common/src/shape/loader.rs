@@ -69,15 +69,6 @@ pub fn spawn_level_data(
         return;
     };
 
-    let level_load_state: Option<Result<MazeLevelData, DailyLevelLoadError>> = match maze_save_data_handle {
-        MazeSaveDataHandle::LocalLevel(handle) => maze_save_data_assets.get(handle).cloned().map(|val| Ok(val)),
-        MazeSaveDataHandle::RemoteLevel(task) => block_on(future::poll_once(task)),
-    };
-
-    let Some(level_load_result) = level_load_state else {
-        return;
-    };
-
     let MazeLevelData {
         shape,
         nodes_per_edge,
@@ -85,14 +76,29 @@ pub fn spawn_level_data(
         solution,
         node_id_to_note,
         encrypted_melody,
-    } = match level_load_result {
-        Ok(maze_level_data) => maze_level_data,
-        Err(err) => {
-            println!("Error loading remote level: {:?}", err);
-            loaded_levels.0.remove(puzzle_identifier);
-            game_state.set(GameState::Selector);
-            return;
-        }
+    } = match maze_save_data_handle {
+        MazeSaveDataHandle::LocalLevel(handle) => match maze_save_data_assets.get(handle) {
+            Some(level) => level.clone(),
+            None => return,
+        },
+        MazeSaveDataHandle::LoadingRemoteLevel(task) => {
+
+            match block_on(future::poll_once(task)) {
+                None => return,
+                Some(Ok(level)) => {
+                    loaded_levels.0.insert(puzzle_identifier.clone(), MazeSaveDataHandle::LoadedRemoteLevel(level.clone()));
+                    level
+                }
+                Some(Err(err)) => {
+                    println!("Error loading remote level: {:?}", err);
+                    loaded_levels.0.remove(puzzle_identifier);
+                    game_state.set(GameState::Selector);
+                    return;
+                }
+            }
+
+        },
+        MazeSaveDataHandle::LoadedRemoteLevel(level) => level.clone(),
     };
 
     let note_midi_handle = node_id_to_note
@@ -125,16 +131,14 @@ pub fn spawn_level_data(
         ));
     }
 
-    let shape = shape.clone();
-    // TODO: perhaps think about how not to duplicate the data here.
     commands.spawn((
         LevelData,
         GameLevel {
             shape,
             nodes_per_edge,
         },
-        GraphComponent(graph.clone()),
-        SolutionComponent(solution.clone()),
+        GraphComponent(graph),
+        SolutionComponent(solution),
         NoteMapping(note_midi_handle),
     ));
     play_state.set(PlayState::Playing);
