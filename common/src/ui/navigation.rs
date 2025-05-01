@@ -4,12 +4,11 @@ use bevy::{
 };
 
 use crate::{
-    game_save::{CurrentPuzzle, GameSave, PuzzleIdentifier, WorkingLevelIndex},
-    game_state::{GameState, PlayState},
-    levels::LEVELS,
-    shape::loader::{GraphComponent, SolutionComponent},
-    statistics::PlayerPath,
+    constants::{FONT_PATH, TEXT_COLOR, TRANSPARENCY}, game_save::{CurrentPuzzle, GameSave, PuzzleIdentifier, WorkingLevelIndex}, game_state::{GameState, PlayState}, levels::LEVELS, shape::loader::{GraphComponent, SolutionComponent}, statistics::PlayerPath
 };
+
+#[derive(Component)]
+pub struct NavigationUI;
 
 #[derive(Component)]
 pub struct PreviousLevelButton;
@@ -23,26 +22,23 @@ pub struct NextLevelButton;
 #[derive(Component)]
 pub struct LevelSelectorButton;
 
-const FONT_PATH: &str = "fonts/Slimamifbold.ttf";
-
-const TRANSPARENCY: f32 = 0.99;
 const NORMAL_BUTTON: Color = Color::srgba(0.15, 0.15, 0.15, TRANSPARENCY);
 const HOVERED_BUTTON: Color = Color::srgba(0.25, 0.25, 0.25, TRANSPARENCY);
 const PRESSED_BUTTON: Color = Color::srgba(0.65, 0.65, 0.65, TRANSPARENCY);
 const BUTTON_BACKGROUND_COLOR: Color = Color::srgba(0.1, 0.1, 0.1, TRANSPARENCY);
 const PRESSED_BUTTON_BORDER_COLOR: Color = Color::srgba(0.9, 0.9, 0.9, TRANSPARENCY);
-const TEXT_COLOR: Color = Color::srgba(0.9, 0.9, 0.9, TRANSPARENCY);
+const FONT_SIZE: f32 = 50.0;
+
 
 pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load(FONT_PATH);
-    let font_size = 50.0;
 
     let get_text_node = |text: &str| {
         (
             Text::new(text),
             TextFont {
                 font: font.clone(),
-                font_size: font_size.clone(),
+                font_size: FONT_SIZE,
                 ..default()
             },
             TextColor(TEXT_COLOR),
@@ -97,6 +93,7 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
             border: UiRect::all(Val::Px(10.)),
             ..default()
         })
+        .insert(NavigationUI)
         .insert(PickingBehavior::IGNORE)
         .with_children(|parent| {
             parent.spawn(side_bar_node.clone()).with_children(|parent| {
@@ -132,10 +129,9 @@ pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 }
 
-pub fn despawn_level_navigation_ui(mut commands: Commands, ui_entities: Query<Entity, With<Node>>) {
-    println!("despawn_level_complete_ui");
+pub fn despawn_level_navigation_ui(mut commands: Commands, ui_entities: Query<Entity, With<NavigationUI>>) {
     for entity in ui_entities.iter() {
-        commands.entity(entity).despawn();
+        commands.entity(entity).despawn_recursive();
     }
 }
 

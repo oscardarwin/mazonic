@@ -306,7 +306,7 @@ pub fn load(
     commands.spawn(SelectedLevel(None)).insert(SelectorEntity);
 }
 
-pub fn despawn_selector_entities(
+pub fn despawn(
     mut commands: Commands,
     selector_entities: Query<Entity, With<SelectorEntity>>,
 ) {

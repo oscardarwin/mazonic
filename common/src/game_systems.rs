@@ -88,6 +88,7 @@ impl Plugin for GameSystemsPlugin {
             effects::musical_note_burst::setup,
             controller_screen_position::setup,
             load_level_asset::setup,
+            ui::message::spawn,
         );
 
         let update_systems = get_update_systems();
@@ -97,14 +98,14 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(OnEnter(GameState::Setup), menu::setup)
             .add_systems(OnEnter(GameState::Selector), enter_selector_init_systems)
             .add_systems(
-                OnExit(GameState::Selector),
-                level_selector::despawn_selector_entities,
+                OnExit(PlayState::Loading),
+                level_selector::despawn,
             )
             .add_systems(OnEnter(PlayState::Loading), enter_loading_systems)
             .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
             .add_systems(OnEnter(PlayState::Victory), enter_victory_systems)
             .add_systems(OnEnter(victory::VictoryState::Viewing), camera::reset_dolly_screen_positions)
-            .add_systems(OnEnter(GameState::Playing), ui::navigation::spawn)
+            .add_systems(OnExit(PlayState::Loading), ui::navigation::spawn)
             .add_systems(OnExit(GameState::Playing), exit_play_systems)
             .add_systems(OnEnter(ControllerState::Solving), enter_solving_systems)
             .add_systems(
@@ -193,6 +194,7 @@ fn get_update_systems() -> SystemConfigs {
         effects::musical_notes::spawn_notes,
         selector_systems,
         camera_systems,
+        ui::message::update,
     )
         .into_configs()
 }

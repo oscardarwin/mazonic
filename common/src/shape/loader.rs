@@ -18,7 +18,7 @@ use crate::{
         },
         mesh_handles::MeshHandles,
         shaders::GlobalShader,
-    }, constants::{SQRT_3, TAN_27}, game_save::CurrentPuzzle, game_settings::{FaceColorPalette, GameSettings}, game_state::{GameState, PlayState}, is_room_junction::is_junction, levels::{GameLevel, LevelData, Shape}, load_level_asset::{DailyLevelLoadError, LoadedLevels, MazeSaveDataHandle}, maze::{border_type::BorderType, mesh}, player::{Player, PlayerMazeState}, room::{Edge, Face, Room}, sound::{MelodyPuzzleTracker, Note, NoteMapping}
+    }, constants::{SQRT_3, TAN_27}, game_save::CurrentPuzzle, game_settings::{FaceColorPalette, GameSettings}, game_state::{GameState, PlayState}, is_room_junction::is_junction, levels::{GameLevel, LevelData, Shape}, load_level_asset::{DailyLevelLoadError, LoadedLevels, MazeSaveDataHandle}, maze::{border_type::BorderType, mesh}, player::{Player, PlayerMazeState}, room::{Edge, Face, Room}, sound::{MelodyPuzzleTracker, Note, NoteMapping}, ui::message::MessagePopup
 };
 
 use super::{cube, dodecahedron, icosahedron, octahedron, tetrahedron};
@@ -62,6 +62,7 @@ pub fn spawn_level_data(
     maze_save_data_assets: Res<Assets<MazeLevelData>>,
     mut loaded_levels: ResMut<LoadedLevels>,
     asset_server: Res<AssetServer>,
+    mut message_popup: ResMut<MessagePopup>,
 ) {
     let CurrentPuzzle(puzzle_identifier) = current_level_index_query.single();
 
@@ -90,7 +91,14 @@ pub fn spawn_level_data(
                     level
                 }
                 Some(Err(err)) => {
-                    println!("Error loading remote level: {:?}", err);
+                    let message = match err {
+                        DailyLevelLoadError::JsonParseError(_) => "failed to parse json",
+                        DailyLevelLoadError::HttpError(_) => "could not fetch level from internet",
+                        DailyLevelLoadError::StringParseError(_) => "failed to parse level data",
+                    }.to_string();
+
+                    *message_popup = MessagePopup(message);
+                    
                     loaded_levels.0.remove(puzzle_identifier);
                     game_state.set(GameState::Selector);
                     return;
