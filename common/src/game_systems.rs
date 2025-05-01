@@ -73,7 +73,7 @@ impl Plugin for GameSystemsPlugin {
 
         let enter_loading_systems = (
             despawn_level_data,
-            load_level_asset::load_.after(despawn_level_data),
+            load_level_asset::load.after(despawn_level_data),
         )
             .into_configs();
 

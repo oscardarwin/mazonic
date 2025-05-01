@@ -21,7 +21,8 @@ pub enum DailyLevelLoadError {
 #[derive(Component)]
 pub enum MazeSaveDataHandle {
     LocalLevel(Handle<MazeLevelData>),
-    RemoteLevel(Task<Result<MazeLevelData, DailyLevelLoadError>>),
+    LoadingRemoteLevel(Task<Result<MazeLevelData, DailyLevelLoadError>>),
+    LoadedRemoteLevel(MazeLevelData),
 }
 
 #[derive(Resource, Default)]
@@ -46,7 +47,7 @@ fn local_remote_daily_level(daily_level_id: &DailyLevelId, tag: &str) -> MazeSav
         Ok(parsed)
     });
     
-    MazeSaveDataHandle::RemoteLevel(task)
+    MazeSaveDataHandle::LoadingRemoteLevel(task)
 }
 
 fn load_local_level(level_index: LevelIndex, asset_server: Res<AssetServer>) -> MazeSaveDataHandle {
@@ -55,7 +56,7 @@ fn load_local_level(level_index: LevelIndex, asset_server: Res<AssetServer>) -> 
     MazeSaveDataHandle::LocalLevel(maze_save_data_handle)
 }
 
-pub fn load_(
+pub fn load(
     current_level_index_query: Query<&CurrentPuzzle>,
     mut game_state: ResMut<NextState<PlayState>>,
     asset_server: Res<AssetServer>,
