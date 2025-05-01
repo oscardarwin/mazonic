@@ -22,6 +22,7 @@ use crate::game_save::{CurrentPuzzle, DiscoveredMelodies, DiscoveredMelody};
 use crate::game_systems::SystemHandles;
 use crate::maze::mesh::MazeMarker;
 use crate::shape::loader::SolutionComponent;
+use crate::ui::message::MessagePopup;
 use crate::{
     is_room_junction::is_junction, player::PlayerMazeState, room::Room,
     shape::loader::GraphComponent,
@@ -254,6 +255,7 @@ pub fn check_melody_solved(
     system_handles: Res<SystemHandles>,
     mut commands: Commands,
     maze_entities_query: Query<Entity, With<MazeMarker>>,
+    mut message_popup: ResMut<MessagePopup>,
 ) {
     let Ok(melody_tracker) = melody_tracker_query.get_single() else {
         return;
@@ -277,6 +279,8 @@ pub fn check_melody_solved(
     let Some(melody) = try_decrypt_melody(&notes, &melody_tracker.encrypted_melody_bytes) else {
         return;
     };
+    
+    message_popup.0 = melody.name.clone();
 
     let discovered_melody = DiscoveredMelody {
         melody,

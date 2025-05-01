@@ -191,7 +191,7 @@ fn get_update_systems() -> SystemConfigs {
         victory::update_state.run_if(in_state(PlayState::Victory)),
         light_follow_camera,
         update_node_arrival_particles,
-        effects::musical_notes::spawn_notes,
+        effects::musical_notes::spawn,
         selector_systems,
         camera_systems,
         ui::message::update,

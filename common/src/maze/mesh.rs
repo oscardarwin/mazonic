@@ -250,6 +250,6 @@ pub fn update_on_melody_discovered(
 ) {
     commands.run_system(system_handles.spawn_maze);
     for maze_entity in maze_entities_query.iter() {
-        commands.entity(maze_entity).despawn();
+        commands.entity(maze_entity).despawn_recursive();
     }
 }

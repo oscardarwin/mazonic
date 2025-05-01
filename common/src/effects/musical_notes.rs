@@ -119,7 +119,7 @@ fn create_note_effect(
         .render(ColorOverLifetimeModifier { gradient })
 }
 
-pub fn spawn_notes(
+pub fn spawn(
     mut commands: Commands,
     musical_note_effect_handle: Query<&MusicalNoteEffectHandle>,
     musical_note_image_handle_query: Query<&MusicalNoteImageHandles>,
