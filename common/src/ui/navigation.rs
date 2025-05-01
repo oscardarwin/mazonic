@@ -202,10 +202,32 @@ pub fn update_next_level_button_visibility(
         PuzzleIdentifier::Level(level_index) if level_index < working_level_index && *level_index < max_level_index => Visibility::Visible,
         _ => Visibility::Hidden,
         
-    }
+    };
+}
 
+pub fn update_selector_and_replay_button_visibility(
+    mut selector_button_query: Query<&mut Visibility, With<LevelSelectorButton>>,
+    mut replay_level_button_query: Query<&mut Visibility, (With<ReplayLevelButton>, Without<LevelSelectorButton>)>,
+    working_level_index_query: Query<&WorkingLevelIndex>,
+) {
+    let Ok(WorkingLevelIndex(working_level_index)) = working_level_index_query.get_single() else {
+        return;
+    };
 
+    let Ok(mut replay_level_button_visibility) = replay_level_button_query.get_single_mut()
+    else {
+        return;
+    };
 
+    let Ok(mut selector_button_visibility) = selector_button_query.get_single_mut()
+    else {
+        return;
+    };
+
+    let visibility = if *working_level_index > 0 { Visibility::Visible } else { Visibility::Hidden };
+
+    *replay_level_button_visibility = visibility;
+    *selector_button_visibility = visibility;
 }
 
 pub fn previous_level(
@@ -234,7 +256,6 @@ pub fn previous_level(
 
 
     if *interaction == Interaction::Pressed && current_level_index > 0 {
-        println!("previous level");
         *current_puzzle = CurrentPuzzle(PuzzleIdentifier::Level(current_level_index - 1));
 
         play_state.set(PlayState::Loading);
@@ -253,7 +274,6 @@ pub fn replay_level(
     };
 
     if *interaction == Interaction::Pressed {
-        println!("replay level");
         play_state.set(PlayState::Loading);
     }
 }
@@ -263,10 +283,10 @@ pub fn next_level(
         &Interaction,
         (Changed<Interaction>, With<Button>, With<NextLevelButton>),
     >,
-    mut current_level_index_query: Query<&mut CurrentPuzzle>,
+    mut current_puzzle_query: Query<&mut CurrentPuzzle>,
     mut play_state: ResMut<NextState<PlayState>>,
 ) {
-    let Ok(mut current_puzzle) = current_level_index_query.get_single_mut() else {
+    let Ok(mut current_puzzle) = current_puzzle_query.get_single_mut() else {
         return;
     };
 
@@ -279,8 +299,6 @@ pub fn next_level(
     };
 
     if *interaction == Interaction::Pressed && current_level_index < LEVELS.len() - 1 {
-        println!("next level");
-
         *current_puzzle  = CurrentPuzzle(PuzzleIdentifier::Level(current_level_index + 1));
         play_state.set(PlayState::Loading);
     }
@@ -302,8 +320,6 @@ pub fn level_selector(
     };
 
     if *interaction == Interaction::Pressed {
-        println!("next level");
-
         game_state.set(GameState::Selector);
     }
 }
