@@ -268,7 +268,7 @@ pub fn load(
                         .looking_at(-face_center, face_center.any_orthogonal_vector())
                         .with_translation(face_center * 1.05);
 
-                    parent.spawn((spawner_transform, MusicalNoteMarker));
+                    parent.spawn((spawner_transform, MusicalNoteMarker(selector_option_index)));
                 }
                 parent
                     .spawn(Transform::from_translation(transform.translation * 0.00001))

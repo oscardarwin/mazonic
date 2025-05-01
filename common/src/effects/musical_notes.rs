@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
 use itertools::repeat_n;
 
-use crate::game_settings::GameSettings;
+use crate::{game_save::{CurrentPuzzle, DiscoveredMelodies}, game_settings::GameSettings};
 
 #[derive(Component, Debug, Clone)]
 pub struct MusicalNoteEffectHandle {
@@ -16,7 +16,7 @@ pub struct MusicalNoteImageHandles {
 }
 
 #[derive(Component, Debug, Clone)]
-pub struct MusicalNoteMarker;
+pub struct MusicalNoteMarker(pub usize);
 
 pub fn setup(
     mut effects: ResMut<Assets<EffectAsset>>,
@@ -123,7 +123,7 @@ pub fn spawn_notes(
     mut commands: Commands,
     musical_note_effect_handle: Query<&MusicalNoteEffectHandle>,
     musical_note_image_handle_query: Query<&MusicalNoteImageHandles>,
-    musical_note_marker_query: Query<(Entity, &Transform), Added<MusicalNoteMarker>>,
+    musical_note_marker_query: Query<(Entity, &Transform, &MusicalNoteMarker), Added<MusicalNoteMarker>>,
 ) {
     if musical_note_marker_query.is_empty() {
         return;
@@ -143,14 +143,12 @@ pub fn spawn_notes(
         return;
     };
 
-    println!("Spawning notes");
-
-    for (entity, transform) in musical_note_marker_query.iter() {
+    for (entity, transform, MusicalNoteMarker(melody_index)) in musical_note_marker_query.iter() {
         let mut entity_commands = commands.entity(entity);
         let index = entity.index() as usize;
 
-        let crotchet_effect_handle_index = index % num_effect_handles;
-        let quaver_effect_handle_index = (index + num_effect_handles / 2) % num_effect_handles;
+        let crotchet_effect_handle_index = melody_index % num_effect_handles;
+        let quaver_effect_handle_index = (melody_index + num_effect_handles / 2) % num_effect_handles;
 
         let particle_effect_entity = entity_commands.with_children(|parent| {
             parent

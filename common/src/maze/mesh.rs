@@ -2,7 +2,7 @@ use bevy::{
     math::NormedVectorSpace,
     pbr::ExtendedMaterial,
     prelude::*,
-    utils::{HashMap, HashSet},
+    utils::{hashbrown::HashMap, HashSet},
 };
 use bevy_hanabi::prelude::*;
 use rand::{seq::IteratorRandom, SeedableRng};
@@ -78,9 +78,11 @@ pub fn spawn(
         .map(|discovered_melody| discovered_melody.room_ids.clone())
         .unwrap_or_default();
 
-    let discovered_melody_room_ids_set = discovered_melody_room_ids
+    let discovered_melody_room_ids_to_melody_index = discovered_melody_room_ids
         .iter()
-        .collect::<HashSet<_>>();
+        .enumerate()
+        .map(|(melody_index, room_id)| (room_id, melody_index))
+        .collect::<HashMap<_, _>>();
 
     let distance_between_nodes = level.node_distance();
 
@@ -98,7 +100,7 @@ pub fn spawn(
         let mut entity_commands =
             commands.spawn((transform, LevelData, room, Visibility::default()));
 
-        let is_discovered_melody_room = discovered_melody_room_ids_set.contains(&room.id);
+        let discovered_melody_room = discovered_melody_room_ids_to_melody_index.get(&room.id);
 
         let mesh_handle = if room == *goal_node {
             mesh_handles.goal_room.clone()
@@ -113,13 +115,13 @@ pub fn spawn(
                 MazeMarker,
             ));
 
-            let material_handle = match (is_goal_node, is_discovered_melody_room) {
+            let material_handle = match (is_goal_node, discovered_melody_room) {
                 (true, _) => child_entity_commands
                     .insert(MeshMaterial3d(material_handles.goal_handle.clone())),
-                (false, true) => child_entity_commands.insert(MeshMaterial3d(
+                (false, Some(melody_index)) => child_entity_commands.insert((MeshMaterial3d(
                     material_handles.bright_line_handle.clone(),
-                )),
-                (false, false) => child_entity_commands
+                ), MusicalNoteMarker(*melody_index))),
+                (false, None) => child_entity_commands
                     .insert(MeshMaterial3d(material_handles.line_handle.clone())),
             };
         });
