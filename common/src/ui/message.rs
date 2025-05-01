@@ -41,7 +41,7 @@ pub fn spawn(
     mut commands: Commands,
     asset_server: Res<AssetServer>
 ) {
-    commands.insert_resource(MessagePopup("TEST2".to_string()));
+    commands.insert_resource(MessagePopup::default());
 
     let font = asset_server.load(FONT_PATH);
     commands
@@ -55,7 +55,7 @@ pub fn spawn(
         .insert(PickingBehavior::IGNORE)
         .with_child(
             (
-                Text::new("TEST".to_string()),
+                Text::new("".to_string()),
                 TextFont {
                     font: font.clone(),
                     font_size: FONT_SIZE,
