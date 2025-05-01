@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
-#[derive(Component, Clone, Debug)]
+#[derive(Component, Clone, Debug, Default, Copy)]
 pub enum ControllerScreenPosition {
     Position(Vec2),
+    #[default]
     None,
 }
 

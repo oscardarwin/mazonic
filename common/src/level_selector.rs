@@ -3,7 +3,7 @@ use bevy::{
     pbr::ExtendedMaterial,
     prelude::*,
     utils::{hashbrown::HashSet, HashMap},
-    window::PrimaryWindow,
+    window::PrimaryWindow, winit::CreateWindowParams,
 };
 use bevy_hanabi::{EffectMaterial, ParticleEffectBundle};
 use bevy_rapier3d::prelude::*;
@@ -413,6 +413,8 @@ pub fn update_interactables(
     mut current_level_index_query: Query<&mut CurrentPuzzle>,
     completed_level_index_query: Query<&WorkingLevelIndex>,
     controller_screen_position_query: Query<&ControllerScreenPosition>,
+    mut start_touch_entity: Local<Option<Entity>>,
+    mut previous_controller_screen_position: Local<ControllerScreenPosition>,
 ) {
     let Ok(controller_screen_position) = controller_screen_position_query.get_single() else {
         return;
@@ -422,9 +424,13 @@ pub fn update_interactables(
         return;
     };
 
-    let window_center_position = window.size() / 2.0;
+
+    let Ok(WorkingLevelIndex(working_level_index)) = completed_level_index_query.get_single() else {
+        return;
+    };
 
     let (camera_global_transform, camera) = camera_query.single();
+    let window_center_position = window.size() / 2.0;
 
     let Some(ray) = camera
         .viewport_to_world(camera_global_transform, window_center_position)
@@ -433,7 +439,7 @@ pub fn update_interactables(
         return;
     };
 
-    let intersection = rapier_context_query
+    let window_center_intersected_entity = rapier_context_query
         .single()
         .cast_ray(
             ray.origin,
@@ -444,14 +450,42 @@ pub fn update_interactables(
         )
         .map(|(entity, _)| entity);
 
-    let pressed = match *controller_screen_position {
-        ControllerScreenPosition::Position(_) => true,
-        ControllerScreenPosition::None => false,
+
+    let touch_intersected_entity = match *controller_screen_position {
+        ControllerScreenPosition::Position(position) => {
+            camera.viewport_to_world(camera_global_transform, position)
+                .ok()
+                .map(|ray| rapier_context_query
+                    .single()
+                    .cast_ray(
+                        ray.origin,
+                        ray.direction.into(),
+                        30.,
+                        true,
+                        QueryFilter::default(),
+                    )
+                    .map(|(entity, _)| entity)
+                )
+                .flatten()
+        },
+        ControllerScreenPosition::None => None,
     };
+
+    let touch_matches_window_center_entity = match (touch_intersected_entity, window_center_intersected_entity) {
+        (Some(window_center_entity), Some(touch_entity)) => window_center_entity == touch_entity,
+        _ => false,
+    };
+
+    *start_touch_entity = match (*previous_controller_screen_position, controller_screen_position) {
+        (ControllerScreenPosition::None, _) if touch_matches_window_center_entity => touch_intersected_entity,
+        (_, ControllerScreenPosition::None) => None,
+        _ => *start_touch_entity,
+    };
+
+    let selected_face_pressed = touch_intersected_entity == *start_touch_entity && touch_matches_window_center_entity;
 
     for (entity, mut overlay_state, SelectableLevel(selector_puzzle)) in overlay_states_query.iter_mut()
     {
-        let WorkingLevelIndex(working_level_index) = completed_level_index_query.single();
 
         let level_playable = match selector_puzzle { 
             SelectorOption::Level(level_index) => level_index <= working_level_index,
@@ -459,16 +493,17 @@ pub fn update_interactables(
             SelectorOption::HardDaily => *working_level_index > 14,
         };
 
-        let new_overlay_state = match (intersection, pressed) {
-            (Some(intersected_entity), _) if intersected_entity != entity => {
+        let interacted_and_matches_touch = *overlay_state != SelectorOverlayState::None 
+            && selected_face_pressed;
+
+        let new_overlay_state = match window_center_intersected_entity {
+            Some(intersected_entity) if intersected_entity != entity => {
                 SelectorOverlayState::None
             }
-            (Some(intersected_entity), true)
-                if intersected_entity == entity && *overlay_state != SelectorOverlayState::None =>
-            {
+            Some(intersected_entity) if intersected_entity == entity && selected_face_pressed => {
                 SelectorOverlayState::Pressed
             }
-            (Some(intersected_entity), false) if intersected_entity == entity && level_playable => {
+            Some(intersected_entity) if intersected_entity == entity && level_playable => {
                 SelectorOverlayState::Hovered
             }
             _ => SelectorOverlayState::None,
@@ -486,6 +521,8 @@ pub fn update_interactables(
             *overlay_state = new_overlay_state;
         }
     }
+    
+    *previous_controller_screen_position = *controller_screen_position;
 }
 
 pub fn update_selection_overlay(
