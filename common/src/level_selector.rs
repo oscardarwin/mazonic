@@ -35,6 +35,9 @@ const FACE_ORDER: [usize; 20] = [
     0, 2, 1, 4, 3, 11, 12, 5, 6, 7, 8, 19, 17, 16, 15, 14, 13, 10, 9, 18,
 ];
 
+const EASY_DAILY_POSITION: usize = 7;
+const HARD_DAILY_POSITION: usize = 15;
+
 #[derive(Debug, Clone)]
 pub enum SelectorOption {
     Level(LevelIndex),
@@ -163,6 +166,8 @@ pub fn load(
             PuzzleIdentifier::Level(level_index) if level_index < *completed_level_index => selector_material_handles.completed.clone(),
             PuzzleIdentifier::EasyDaily(id) if completed_easy_dailies.contains(&id) => selector_material_handles.completed.clone(),
             PuzzleIdentifier::HardDaily(id) if completed_hard_dailies.contains(&id) => selector_material_handles.completed.clone(),
+            PuzzleIdentifier::EasyDaily(_) if *completed_level_index >= EASY_DAILY_POSITION => selector_material_handles.incomplete_face_colors[EASY_DAILY_POSITION].clone(),
+            PuzzleIdentifier::HardDaily(_) if *completed_level_index >= HARD_DAILY_POSITION => selector_material_handles.incomplete_face_colors[HARD_DAILY_POSITION].clone(),
             _ => selector_material_handles.unavailable.clone(),
         };
 
@@ -254,9 +259,19 @@ pub fn load(
                                     selector_material_handles.melody_found_selector_face.clone(),
                             ));
                         }
-                        _ => {
+                        SelectorOption::EasyDaily if *completed_level_index >= EASY_DAILY_POSITION => {
                             symbol_entity_commands.insert(MeshMaterial3d(
                                 selector_material_handles.level_symbols.clone(),
+                            ));
+                        }
+                        SelectorOption::HardDaily if *completed_level_index >= HARD_DAILY_POSITION => {
+                            symbol_entity_commands.insert(MeshMaterial3d(
+                                selector_material_handles.level_symbols.clone(),
+                            ));
+                        }
+                        _ => {
+                            symbol_entity_commands.insert(MeshMaterial3d(
+                                selector_material_handles.unavailable_level_symbols.clone(),
                             ));
                         }
                     }
@@ -281,8 +296,18 @@ pub fn load(
     let mesh_builder = MazeMeshBuilder::level_selector();
     let edge_mesh_handle = meshes.add(mesh_builder.one_way_cross_face_edge());
 
+    let total_path_size = *completed_level_index + if *completed_level_index >= HARD_DAILY_POSITION { 
+        2
+    } else if *completed_level_index >= EASY_DAILY_POSITION { 
+        1
+    } else { 
+        0
+    };
+
+    println!("total path size: {}", total_path_size);
+
     for (from_level_index, to_level_index) in
-        (0..).zip(1..SELECTOR_OPTIONS.len()).take(*completed_level_index)
+        (0..).zip(1..SELECTOR_OPTIONS.len()).take(total_path_size)
     {
         let from_transform = face_local_transforms[from_level_index];
         let to_transform = face_local_transforms[to_level_index];
@@ -490,8 +515,8 @@ pub fn update_interactables(
 
         let level_playable = match selector_puzzle { 
             SelectorOption::Level(level_index) => level_index <= working_level_index,
-            SelectorOption::EasyDaily => *working_level_index > 6,
-            SelectorOption::HardDaily => *working_level_index > 14,
+            SelectorOption::EasyDaily => *working_level_index >= EASY_DAILY_POSITION,
+            SelectorOption::HardDaily => *working_level_index >= HARD_DAILY_POSITION,
         };
 
         let interacted_and_matches_touch = *overlay_state != SelectorOverlayState::None 
