@@ -19,7 +19,7 @@ use crate::{
     camera::{CameraTarget, MainCamera},
     constants::{SQRT_3, SYMBOL_TEXTURE_DIMENSIONS},
     controller_screen_position::ControllerScreenPosition,
-    effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
+    effects::musical_notes::{MusicalNoteEffectColor, MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
     game_save::{
         CompletedEasyDailies, CompletedHardDailies, CurrentPuzzle, DiscoveredMelodies, LevelIndex, PuzzleIdentifier, WorkingLevelIndex
     },
@@ -283,7 +283,7 @@ pub fn load(
                         .looking_at(-face_center, face_center.any_orthogonal_vector())
                         .with_translation(face_center * 1.05);
 
-                    parent.spawn((spawner_transform, MusicalNoteMarker(selector_option_index)));
+                    parent.spawn((spawner_transform, MusicalNoteMarker(selector_option_index, MusicalNoteEffectColor::Player)));
                 }
                 parent
                     .spawn(Transform::from_translation(transform.translation * 0.00001))

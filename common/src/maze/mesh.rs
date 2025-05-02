@@ -14,7 +14,7 @@ use crate::{
         mesh_handles::MeshHandles,
         shaders::{DashedArrowShader, PulsingShader},
     },
-    effects::musical_notes::{MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
+    effects::musical_notes::{MusicalNoteEffectColor, MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
     game_save::{CurrentPuzzle, DiscoveredMelodies, DiscoveredMelody, PuzzleIdentifier},
     game_systems::SystemHandles,
     is_room_junction::is_junction,
@@ -60,19 +60,6 @@ pub fn spawn(
         return;
     };
 
-    let Ok(MusicalNoteEffectHandle { effect_handles }) = musical_note_effect_handle.get_single()
-    else {
-        return;
-    };
-
-    let Ok(MusicalNoteImageHandles {
-        crotchet_handle,
-        quaver_handle,
-    }) = musical_note_image_handle_query.get_single()
-    else {
-        return;
-    };
-    
     let discovered_melody_room_ids = discovered_melodies
         .get(puzzle_identifier)
         .map(|discovered_melody| discovered_melody.room_ids.clone())
@@ -120,7 +107,7 @@ pub fn spawn(
                     .insert(MeshMaterial3d(material_handles.goal_handle.clone())),
                 (false, Some(melody_index)) => child_entity_commands.insert((MeshMaterial3d(
                     material_handles.bright_line_handle.clone(),
-                ), MusicalNoteMarker(*melody_index))),
+                ), MusicalNoteMarker(*melody_index, MusicalNoteEffectColor::Line))),
                 (false, None) => child_entity_commands
                     .insert(MeshMaterial3d(material_handles.line_handle.clone())),
             };

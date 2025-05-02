@@ -5,8 +5,15 @@ use itertools::repeat_n;
 use crate::{game_save::{CurrentPuzzle, DiscoveredMelodies}, game_settings::GameSettings};
 
 #[derive(Component, Debug, Clone)]
+pub enum MusicalNoteEffectColor {
+    Player,
+    Line,
+}
+
+#[derive(Component, Debug, Clone)]
 pub struct MusicalNoteEffectHandle {
-    pub effect_handles: Vec<Handle<EffectAsset>>,
+    pub player_color_effect_handles: Vec<Handle<EffectAsset>>,
+    pub line_color_effect_handles: Vec<Handle<EffectAsset>>,
 }
 
 #[derive(Component, Debug, Clone)]
@@ -16,7 +23,7 @@ pub struct MusicalNoteImageHandles {
 }
 
 #[derive(Component, Debug, Clone)]
-pub struct MusicalNoteMarker(pub usize);
+pub struct MusicalNoteMarker(pub usize, pub MusicalNoteEffectColor);
 
 pub fn setup(
     mut effects: ResMut<Assets<EffectAsset>>,
@@ -27,38 +34,38 @@ pub fn setup(
     let crotchet_handle = assets.load("sprites/crotchet.png");
     let quaver_handle = assets.load("sprites/quaver.png");
 
-    let num_effects = 8;
-    let effect_handles = (0..8)
-        .map(|index| {
-            let effect = create_note_effect(&game_settings, num_effects, index);
-
-            effects.add(effect.with_name(format!("Note {index}")))
-        })
-        .collect();
-
-    commands.spawn(MusicalNoteEffectHandle { effect_handles });
-
+    let line_color_effect_handles = create_note_effects_for_color(&mut effects, game_settings.palette.line_color);
+    let player_color_effect_handles = create_note_effects_for_color(&mut effects, game_settings.palette.player_color);
+    
+    commands.spawn(MusicalNoteEffectHandle { player_color_effect_handles, line_color_effect_handles });
     commands.spawn(MusicalNoteImageHandles {
         crotchet_handle,
         quaver_handle,
     });
 }
 
+fn create_note_effects_for_color(mut effects: &mut Assets<EffectAsset>, color: Color) -> Vec<Handle<EffectAsset>> {
+    let num_effects = 8;
+    (0..num_effects)
+        .map(|index| {
+            let effect = create_note_effect(color, num_effects, index);
+
+            effects.add(effect.with_name(format!("Note {index}")))
+        })
+        .collect()
+}
+
 fn create_note_effect(
-    game_settings: &GameSettings,
+    color: Color,
     num_effects: usize,
     effect_index: usize,
 ) -> EffectAsset {
     let mut gradient = Gradient::new();
-    let end_color = game_settings
-        .palette
-        .line_color
+    let end_color = color
         .to_linear()
         .with_alpha(0.9)
         .to_vec4();
-    let start_color = game_settings
-        .palette
-        .line_color
+    let start_color = color
         .to_linear()
         .with_alpha(0.0)
         .to_vec4();
@@ -129,11 +136,11 @@ pub fn spawn(
         return;
     }
 
-    let Ok(MusicalNoteEffectHandle { effect_handles }) = musical_note_effect_handle.get_single()
+    let Ok(MusicalNoteEffectHandle { player_color_effect_handles, line_color_effect_handles }) = musical_note_effect_handle.get_single()
     else {
         return;
     };
-    let num_effect_handles = effect_handles.len();
+    let num_effect_handles = player_color_effect_handles.len();
 
     let Ok(MusicalNoteImageHandles {
         crotchet_handle,
@@ -143,12 +150,17 @@ pub fn spawn(
         return;
     };
 
-    for (entity, transform, MusicalNoteMarker(melody_index)) in musical_note_marker_query.iter() {
+    for (entity, transform, MusicalNoteMarker(melody_index, color)) in musical_note_marker_query.iter() {
         let mut entity_commands = commands.entity(entity);
         let index = entity.index() as usize;
 
         let crotchet_effect_handle_index = melody_index % num_effect_handles;
         let quaver_effect_handle_index = (melody_index + num_effect_handles / 2) % num_effect_handles;
+        
+        let effect_handles = match color {
+            MusicalNoteEffectColor::Player => &player_color_effect_handles,
+            MusicalNoteEffectColor::Line => &line_color_effect_handles,
+        };
 
         let particle_effect_entity = entity_commands.with_children(|parent| {
             parent
