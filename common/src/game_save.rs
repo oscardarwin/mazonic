@@ -76,7 +76,7 @@ impl Default for GameSave {
 
 const SAVE_DATA_KEY: &str = "save_data";
 
-pub fn setup_save_data(mut commands: Commands, save_location: Option<Res<SaveLocation>>) {
+pub fn setup(mut commands: Commands, save_location: Option<Res<SaveLocation>>) {
     let pkv_store = match save_location {
         None => PkvStore::new("hallayus", "mazonic"),
         Some(save_location) => PkvStore::new_in_dir(save_location.0.clone()),
@@ -98,7 +98,7 @@ pub fn setup_save_data(mut commands: Commands, save_location: Option<Res<SaveLoc
     commands.insert_resource(pkv_store);
 }
 
-pub fn update_save_data(
+pub fn update(
     current_level_index_query: Query<Ref<CurrentPuzzle>>,
     working_level_index_query: Query<Ref<WorkingLevelIndex>>,
     discovered_melodies_query: Query<Ref<DiscoveredMelodies>>,
