@@ -2,30 +2,21 @@
 ## Fix backlinks making the level too easy.
 
 ## TO RELEASE:
-
-### Sort Out Selector
-Animation on selector screen after game state change
-Sort out selection with touch screen.
-
-### Melodies
-
-better sounding marimba
-reverb?
-move melody speed to melody generation
-add remaining hidden melodies.
-Some notes are being skipped when moving fast?
-Remove pulsing from melody line
+Display level time if available.
 
 ### Other
-
 Better color picking for non Icosahedron
-take away selector and replay buttons on first play of level.
+
+## TO RELEASE ANDROID TEST:
+Some notes are being skipped when moving fast?
 
 ### Daily Challenges
-
-Create Daily Logo
-Make Selector Screen Show 3 different Daily challenges.
 Social Media
+
+
+## LATER:
+Animation on selector screen after game state change
+
 
 ## Possible Polyhedra vertex numbers:
 
