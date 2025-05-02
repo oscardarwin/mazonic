@@ -37,6 +37,7 @@ pub enum NoteValue {
     Minim,
     DottedMinim,
     Semibreve,
+    SemibreveAndCrotchet,
 }
 
 impl NoteValue {
@@ -49,6 +50,7 @@ impl NoteValue {
             NoteValue::Minim => 2.0,
             NoteValue::DottedMinim => 3.0,
             NoteValue::Semibreve => 4.0,
+            NoteValue::SemibreveAndCrotchet => 5.0,
         }
 
     }
@@ -123,6 +125,10 @@ impl Note {
 
     pub fn semibreve(key: i32) -> Self {
         Self::new(key, NoteValue::Semibreve)
+    }
+
+    pub fn semibreve_and_crotchet(key: i32) -> Self {
+        Self::new(key, NoteValue::SemibreveAndCrotchet)
     }
 }
 
