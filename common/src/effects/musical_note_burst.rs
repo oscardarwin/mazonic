@@ -1,12 +1,8 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::hashbrown::HashSet};
 use bevy_hanabi::prelude::*;
 
 use crate::{
-    game_save::{CurrentPuzzle, DiscoveredMelodies},
-    game_settings::GameSettings,
-    levels::PuzzleEntityMarker,
-    room::Room,
-    shape::loader::GraphComponent,
+    game_save::CurrentPuzzle, game_settings::GameSettings, levels::PuzzleEntityMarker, play_statistics::PlayStatistics, room::Room, shape::loader::GraphComponent
 };
 
 use super::musical_notes::MusicalNoteImageHandles;
@@ -106,7 +102,7 @@ pub fn clear_up_effects(
 
 pub fn spawn(
     rooms_query: Query<(&Room, &Transform)>,
-    discovered_melodies: Query<&DiscoveredMelodies>,
+    play_statistics: Res<PlayStatistics>,
     current_puzzle: Query<&CurrentPuzzle>,
     game_settings: Res<GameSettings>,
     keys: Res<ButtonInput<KeyCode>>,
@@ -116,10 +112,6 @@ pub fn spawn(
     time: Res<Time>,
 ) {
     let Ok(CurrentPuzzle(puzzle_identifier)) = current_puzzle.get_single() else {
-        return;
-    };
-
-    let Ok(discovered_melodies) = discovered_melodies.get_single() else {
         return;
     };
 
@@ -135,12 +127,13 @@ pub fn spawn(
     else {
         return;
     };
-
-    let melody_room_ids = discovered_melodies.get_room_ids_for_level(puzzle_identifier);
+    
+    let melody_room_ids = play_statistics.get_melody_room_ids(puzzle_identifier);
+    let melody_room_ids_set = melody_room_ids.iter().collect::<HashSet<_>>();
 
     for (room, transform) in rooms_query
         .iter()
-        .filter(|(room, _)| melody_room_ids.contains(&room.id))
+        .filter(|(room, _)| melody_room_ids_set.contains(&room.id))
     {
         let texture_handle = if room.id % 2 == 0 {
             crotchet_handle.clone()

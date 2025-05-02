@@ -9,7 +9,7 @@ use crate::{
     levels::{GameLevel, PuzzleEntityMarker},
     room::Room,
     shape::loader::SolutionComponent,
-    statistics::PlayerPath,
+    player_path::PlayerPath,
 };
 use bevy::{math::NormedVectorSpace, pbr::ExtendedMaterial, prelude::*};
 
@@ -27,7 +27,7 @@ pub enum PlayerMazeState {
     Edge(Room, Room, Vec3),
 }
 
-pub fn move_player(
+pub fn update(
     mut player_query: Query<(&mut Transform, &PlayerMazeState, &Player)>,
     time: Res<Time>,
     settings: Res<GameSettings>,
@@ -70,7 +70,7 @@ pub fn turn_off_player_halo(mut player_halo_query: Query<&mut PlayerHalo>) {
     }
 }
 
-pub fn update_halo_follow_player(
+pub fn update_halo(
     mut player_halo_query: Query<&PlayerHalo>,
     player_query: Query<&Transform, (With<Player>, Without<PlayerHalo>)>,
     mut player_halo_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, PlayerHaloShader>>>,
@@ -126,7 +126,7 @@ pub fn get_player_radius(node_distance: f32) -> f32 {
     0.031 + 0.19 * node_distance
 }
 
-pub fn spawn_player(
+pub fn spawn(
     mut commands: Commands,
     mesh_handles: Res<MeshHandles>,
     solution_query: Query<&SolutionComponent>,

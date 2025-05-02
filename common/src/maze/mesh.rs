@@ -13,15 +13,7 @@ use crate::{
         material_handles::MaterialHandles,
         mesh_handles::MeshHandles,
         shaders::{DashedArrowShader, PulsingShader},
-    },
-    effects::musical_notes::{MusicalNoteEffectColor, MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
-    game_save::{CurrentPuzzle, DiscoveredMelodies, DiscoveredMelody, PuzzleIdentifier},
-    game_systems::SystemHandles,
-    is_room_junction::is_junction,
-    levels::{GameLevel, PuzzleEntityMarker, Shape},
-    maze::maze_mesh_builder::MazeMeshBuilder,
-    room::Room,
-    shape::loader::{GraphComponent, SolutionComponent},
+    }, effects::musical_notes::{MusicalNoteEffectColor, MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker}, game_save::{CurrentPuzzle, DiscoveredMelody, PuzzleIdentifier}, game_systems::SystemHandles, is_room_junction::is_junction, levels::{GameLevel, PuzzleEntityMarker, Shape}, maze::maze_mesh_builder::MazeMeshBuilder, play_statistics::PlayStatistics, room::Room, shape::loader::{GraphComponent, SolutionComponent}
 };
 
 use super::border_type::BorderType;
@@ -39,7 +31,7 @@ pub fn spawn(
     maze_query: Query<(&GraphComponent, &SolutionComponent)>,
     mesh_handles: Res<MeshHandles>,
     material_handles: Res<MaterialHandles>,
-    discovered_melodies_query: Query<&DiscoveredMelodies>,
+    play_statistics: Res<PlayStatistics>,
     current_puzzle_query: Query<&CurrentPuzzle>,
     musical_note_effect_handle: Query<&MusicalNoteEffectHandle>,
     musical_note_image_handle_query: Query<&MusicalNoteImageHandles>,
@@ -52,18 +44,11 @@ pub fn spawn(
         return;
     };
 
-    let Ok(DiscoveredMelodies(discovered_melodies)) = discovered_melodies_query.get_single() else {
-        return;
-    };
-
     let Ok(CurrentPuzzle(puzzle_identifier)) = current_puzzle_query.get_single() else {
         return;
     };
 
-    let discovered_melody_room_ids = discovered_melodies
-        .get(puzzle_identifier)
-        .map(|discovered_melody| discovered_melody.room_ids.clone())
-        .unwrap_or_default();
+    let discovered_melody_room_ids = play_statistics.get_melody_room_ids(puzzle_identifier);
 
     let discovered_melody_room_ids_to_melody_index = discovered_melody_room_ids
         .iter()
@@ -115,7 +100,7 @@ pub fn spawn(
     }
 
     let discovered_melody_room_pairs =
-        make_room_pairs_from_discovered_melodies(puzzle_identifier, &discovered_melodies);
+        make_room_pairs_from_discovered_melodies(puzzle_identifier, &discovered_melody_room_ids);
 
     let maze_mesh_handles = match &level.shape {
         Shape::Tetrahedron => &mesh_handles.shape_maze_edge_mesh_handles.tetrahedron,
@@ -214,16 +199,11 @@ pub fn get_cross_face_edge_transform(
 
 pub fn make_room_pairs_from_discovered_melodies(
     current_puzzle_identifier: &PuzzleIdentifier,
-    discovered_melodies: &HashMap<PuzzleIdentifier, DiscoveredMelody>,
+    melody_room_ids: &Vec<u64>,
 ) -> HashSet<(u64, u64)> {
     let mut room_pairs = HashSet::new();
 
-    let Some(DiscoveredMelody { room_ids, .. }) = discovered_melodies.get(current_puzzle_identifier)
-    else {
-        return room_pairs;
-    };
-
-    for (from, to) in room_ids.iter().zip(room_ids.iter().skip(1)) {
+    for (from, to) in melody_room_ids.iter().zip(melody_room_ids.iter().skip(1)) {
         room_pairs.insert((*from, *to));
     }
 

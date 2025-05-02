@@ -15,20 +15,9 @@ use crate::{
         mesh_generators::{FaceMeshGenerator, TriangleFaceMeshGenerator},
         mesh_handles::MeshHandles,
         shaders::{MenuSelectionHoverShader, PulsingShader},
-    },
-    camera::{CameraTarget, MainCamera},
-    constants::{SQRT_3, SYMBOL_TEXTURE_DIMENSIONS},
-    controller_screen_position::ControllerScreenPosition,
-    effects::musical_notes::{MusicalNoteEffectColor, MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker},
-    game_save::{
-        CompletedEasyDailies, CompletedHardDailies, CurrentPuzzle, DiscoveredMelodies, LevelIndex, PuzzleIdentifier, WorkingLevelIndex
-    },
-    game_settings::GameSettings,
-    game_state::GameState,
-    levels::{Shape, LEVELS},
-    maze::{maze_mesh_builder::MazeMeshBuilder, mesh::get_cross_face_edge_transform},
-    shape::{icosahedron, shape_utils::compute_face_normal},
-    sound::Melody,
+    }, camera::{CameraTarget, MainCamera}, constants::{SQRT_3, SYMBOL_TEXTURE_DIMENSIONS}, controller_screen_position::ControllerScreenPosition, effects::musical_notes::{MusicalNoteEffectColor, MusicalNoteEffectHandle, MusicalNoteImageHandles, MusicalNoteMarker}, game_save::{
+        CurrentPuzzle, LevelIndex, PuzzleIdentifier, WorkingLevelIndex
+    }, game_settings::GameSettings, game_state::GameState, levels::{Shape, LEVELS}, maze::{maze_mesh_builder::MazeMeshBuilder, mesh::get_cross_face_edge_transform}, play_statistics::PlayStatistics, shape::{icosahedron, shape_utils::compute_face_normal}, sound::Melody
 };
 
 const FACE_ORDER: [usize; 20] = [
@@ -118,22 +107,17 @@ pub struct SelectionOverlay;
 pub fn load(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    game_save_query: Query<(
-        &WorkingLevelIndex,
-        &DiscoveredMelodies,
-        &CompletedEasyDailies,
-        &CompletedHardDailies,
-    )>,
+    play_statistics: Res<PlayStatistics>,
     material_handles: Res<MaterialHandles>,
     mesh_handles: Res<MeshHandles>,
 ) {
-
-    let (
-        WorkingLevelIndex(completed_level_index),
-        DiscoveredMelodies(discovered_melodies),
-        CompletedEasyDailies(completed_easy_dailies),
-        CompletedHardDailies(completed_hard_dailies)
-    ) = game_save_query.single();
+    let working_level_index = play_statistics.get_working_level();
+    let completed_puzzles = play_statistics.0
+        .iter()
+        .filter(|(_, puzzle_statistics)| puzzle_statistics.completed)
+        .map(|(puzzle_identifier, _)| puzzle_identifier)
+        .cloned()
+        .collect::<HashSet<PuzzleIdentifier>>();
 
     let selector_material_handles = &material_handles.selector;
     let faces = icosahedron::faces();
@@ -162,12 +146,10 @@ pub fn load(
         let puzzle_identifier = selector_option.clone().into(); 
 
         let face_material_handle = match puzzle_identifier {
-            PuzzleIdentifier::Level(level_index) if level_index == *completed_level_index => selector_material_handles.incomplete_face_colors[level_index].clone(),
-            PuzzleIdentifier::Level(level_index) if level_index < *completed_level_index => selector_material_handles.completed.clone(),
-            PuzzleIdentifier::EasyDaily(id) if completed_easy_dailies.contains(&id) => selector_material_handles.completed.clone(),
-            PuzzleIdentifier::HardDaily(id) if completed_hard_dailies.contains(&id) => selector_material_handles.completed.clone(),
-            PuzzleIdentifier::EasyDaily(_) if *completed_level_index >= EASY_DAILY_POSITION => selector_material_handles.incomplete_face_colors[EASY_DAILY_POSITION].clone(),
-            PuzzleIdentifier::HardDaily(_) if *completed_level_index >= HARD_DAILY_POSITION => selector_material_handles.incomplete_face_colors[HARD_DAILY_POSITION].clone(),
+            _ if completed_puzzles.contains(&puzzle_identifier) => selector_material_handles.completed.clone(),
+            PuzzleIdentifier::Level(level_index) if level_index == working_level_index => selector_material_handles.incomplete_face_colors[level_index].clone(),
+            PuzzleIdentifier::EasyDaily(_) if working_level_index >= EASY_DAILY_POSITION => selector_material_handles.incomplete_face_colors[EASY_DAILY_POSITION].clone(),
+            PuzzleIdentifier::HardDaily(_) if working_level_index >= HARD_DAILY_POSITION => selector_material_handles.incomplete_face_colors[HARD_DAILY_POSITION].clone(),
             _ => selector_material_handles.unavailable.clone(),
         };
 
@@ -204,8 +186,10 @@ pub fn load(
             Mesh3d(face_mesh_handle.clone()),
             MeshMaterial3d(selector_material_handles.selection_hover.clone()),
         );
-
-        let is_melody_discovered = discovered_melodies.contains_key::<PuzzleIdentifier>(&selector_option.clone().into());
+        
+        let is_melody_discovered = play_statistics.0
+            .get(&puzzle_identifier)
+            .map_or(false, |puzzle_statistics| puzzle_statistics.discovered_melody.is_some());
 
         commands
             .spawn(triangle_collider)
@@ -225,7 +209,7 @@ pub fn load(
                                 symbol_entity_commands.insert(MeshMaterial3d(
                                     selector_material_handles.melody_found_selector_face.clone(),
                                 ));
-                            } else if level_index > completed_level_index {
+                            } else if *level_index > working_level_index {
                                 symbol_entity_commands.insert(MeshMaterial3d(
                                     selector_material_handles.unavailable_level_symbols.clone(),
                                 ));
@@ -244,7 +228,7 @@ pub fn load(
                                 number_entity_commands.insert(MeshMaterial3d(
                                     selector_material_handles.melody_found_selector_face.clone(),
                                 ));
-                            } else if level_index > completed_level_index {
+                            } else if *level_index > working_level_index {
                                 number_entity_commands.insert(MeshMaterial3d(
                                     selector_material_handles.unavailable_level_symbols.clone(),
                                 ));
@@ -259,12 +243,12 @@ pub fn load(
                                     selector_material_handles.melody_found_selector_face.clone(),
                             ));
                         }
-                        SelectorOption::EasyDaily if *completed_level_index >= EASY_DAILY_POSITION => {
+                        SelectorOption::EasyDaily if working_level_index >= EASY_DAILY_POSITION => {
                             symbol_entity_commands.insert(MeshMaterial3d(
                                 selector_material_handles.level_symbols.clone(),
                             ));
                         }
-                        SelectorOption::HardDaily if *completed_level_index >= HARD_DAILY_POSITION => {
+                        SelectorOption::HardDaily if working_level_index >= HARD_DAILY_POSITION => {
                             symbol_entity_commands.insert(MeshMaterial3d(
                                 selector_material_handles.level_symbols.clone(),
                             ));
@@ -296,9 +280,9 @@ pub fn load(
     let mesh_builder = MazeMeshBuilder::level_selector();
     let edge_mesh_handle = meshes.add(mesh_builder.one_way_cross_face_edge());
 
-    let total_path_size = *completed_level_index + if *completed_level_index >= HARD_DAILY_POSITION { 
+    let total_path_size = working_level_index + if working_level_index >= HARD_DAILY_POSITION { 
         2
-    } else if *completed_level_index >= EASY_DAILY_POSITION { 
+    } else if working_level_index >= EASY_DAILY_POSITION { 
         1
     } else { 
         0
@@ -449,7 +433,6 @@ pub fn update_interactables(
         return;
     };
 
-
     let Ok(WorkingLevelIndex(working_level_index)) = completed_level_index_query.get_single() else {
         return;
     };
@@ -540,7 +523,7 @@ pub fn update_interactables(
 
             *current_level_index_query.single_mut() = CurrentPuzzle(selector_puzzle.clone().into());
             let next_game_state = match selector_puzzle {
-                SelectorOption::Level(level_index) => GameState::Playing,
+                SelectorOption::Level(level_index) => GameState::Puzzle,
                 SelectorOption::EasyDaily | SelectorOption::HardDaily => GameState::LoadingRemoteLevel,
             };
             game_state.set(next_game_state);

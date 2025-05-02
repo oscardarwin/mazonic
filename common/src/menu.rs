@@ -8,7 +8,7 @@ pub fn setup(mut next_game_state: ResMut<NextState<GameState>>, working_level_in
     if *index > 0 {
         next_game_state.set(GameState::Selector)
     } else {
-        next_game_state.set(GameState::Playing)
+        next_game_state.set(GameState::Puzzle)
     }
 
 }

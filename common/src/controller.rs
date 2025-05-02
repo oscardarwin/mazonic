@@ -2,7 +2,7 @@ use crate::{
     camera::MainCamera,
     controller_screen_position::ControllerScreenPosition,
     game_settings::GameSettings,
-    game_state::PlayState,
+    game_state::PuzzleState,
     levels::GameLevel,
     maze::border_type::BorderType,
     player::{Player, PlayerMazeState},
@@ -26,7 +26,7 @@ use bevy_rapier3d::{pipeline::QueryFilter, plugin::RapierContext};
 use petgraph::{graphmap::GraphMap, Directed};
 
 #[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
-#[source(PlayState = PlayState::Playing)]
+#[source(PuzzleState = PuzzleState::Playing)]
 pub enum ControllerState {
     #[default]
     IdlePostSolve,

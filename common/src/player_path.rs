@@ -11,7 +11,7 @@ impl Default for PlayerPath {
     }
 }
 
-pub fn update_player_path(
+pub fn update(
     mut player_path_query: Query<&mut PlayerPath>,
     player_query: Query<&PlayerMazeState, Changed<PlayerMazeState>>,
 ) {

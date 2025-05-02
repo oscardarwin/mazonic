@@ -5,17 +5,13 @@ use bevy::{
 };
 
 use crate::{
-    assets::{material_handles::setup_materials, mesh_handles::setup_mesh_handles}, camera, controller::{idle, solve, view, ControllerState}, controller_screen_position, effects::{
+    assets::{material_handles::setup_materials, mesh_handles::setup_mesh_handles}, camera, controller::{self, idle, solve, view, ControllerState}, controller_screen_position, effects::{
         self,
         node_arrival::{spawn_node_arrival_particles, update_node_arrival_particles},
     }, game_save, game_state::{
-        update_working_level_on_victory, victory_transition,
-        GameState, PlayState,
-    }, level_selector::{self, SelectorState}, levels, light::{light_follow_camera, setup_light}, load_level_asset, maze::{self, mesh::update_on_melody_discovered}, menu, player::{
-        move_player, spawn_player, turn_off_player_halo, turn_on_player_halo,
-        update_halo_follow_player,
-    }, shape,
-    sound::{self, check_melody_solved, play_note}, statistics::update_player_path, ui, victory
+        victory_transition,
+        GameState, PuzzleState,
+    }, level_selector::{self, SelectorState}, levels, light, load_level_asset, maze::{self, mesh::update_on_melody_discovered}, menu, play_statistics, player, player_path, shape, sound::{self, check_melody_solved, play_note}, ui, victory
 };
 
 #[derive(Default)]
@@ -24,7 +20,7 @@ pub struct GameSystemsPlugin;
 impl Plugin for GameSystemsPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
-            .add_sub_state::<PlayState>()
+            .add_sub_state::<PuzzleState>()
             .add_sub_state::<SelectorState>()
             .add_sub_state::<victory::VictoryState>();
 
@@ -33,8 +29,9 @@ impl Plugin for GameSystemsPlugin {
         let enter_play_systems = (
             shape::spawn,
             maze::mesh::spawn,
-            spawn_player,
-            camera::update_distance.after(spawn_player),
+            player::spawn,
+            camera::update_distance.after(player::spawn),
+            play_statistics::on_play,
             camera::reset_dolly_screen_positions,
             ui::navigation::update_previous_level_button_visibility,
             ui::navigation::update_next_level_button_visibility,
@@ -42,26 +39,27 @@ impl Plugin for GameSystemsPlugin {
         )
             .into_configs();
 
-        let exit_play_systems = (
+        let exit_puzzle_systems = (
             ui::navigation::despawn_level_navigation_ui,
             levels::despawn_puzzle_entities,
+            ui::message::exit_puzzle_state,
         )
             .into_configs();
 
         let enter_solving_systems = (
-            turn_off_player_halo,
+            player::turn_off_player_halo,
             effects::player_particles::turn_off_player_particles,
         );
         let exit_solving_systems = (
-            turn_on_player_halo,
+            player::turn_on_player_halo,
             effects::player_particles::turn_on_player_particles,
         );
 
         let enter_victory_systems = (
             camera::follow_player,
-            update_working_level_on_victory,
+            play_statistics::on_victory,
             ui::navigation::update_next_level_button_visibility
-                .after(update_working_level_on_victory),
+                .after(play_statistics::on_victory),
         );
 
         let enter_selector_init_systems = (
@@ -77,7 +75,7 @@ impl Plugin for GameSystemsPlugin {
 
         let startup_systems = (
             camera::setup,
-            setup_light,
+            light::setup,
             setup_materials,
             game_save::setup,
             setup_mesh_handles,
@@ -87,7 +85,8 @@ impl Plugin for GameSystemsPlugin {
             controller_screen_position::setup,
             load_level_asset::setup,
             ui::message::spawn,
-            menu::setup.after(game_save::setup)
+            menu::setup.after(game_save::setup),
+            play_statistics::setup,
         );
 
         let update_systems = get_update_systems();
@@ -96,15 +95,16 @@ impl Plugin for GameSystemsPlugin {
             .add_systems(Update, update_systems)
             .add_systems(OnEnter(GameState::Selector), enter_selector_init_systems)
             .add_systems(
-                OnExit(PlayState::Loading),
+                OnExit(PuzzleState::Loading),
                 level_selector::despawn,
             )
-            .add_systems(OnEnter(PlayState::Loading), enter_loading_systems)
-            .add_systems(OnEnter(PlayState::Playing), enter_play_systems)
-            .add_systems(OnEnter(PlayState::Victory), enter_victory_systems)
+            .add_systems(OnEnter(PuzzleState::Loading), enter_loading_systems)
+            .add_systems(OnEnter(PuzzleState::Playing), enter_play_systems)
+            .add_systems(OnExit(PuzzleState::Playing), play_statistics::exit_play)
+            .add_systems(OnEnter(PuzzleState::Victory), enter_victory_systems)
             .add_systems(OnEnter(victory::VictoryState::Viewing), camera::reset_dolly_screen_positions)
-            .add_systems(OnEnter(GameState::Playing), ui::navigation::spawn)
-            .add_systems(OnExit(GameState::Playing), exit_play_systems)
+            .add_systems(OnEnter(GameState::Puzzle), ui::navigation::spawn)
+            .add_systems(OnExit(GameState::Puzzle), exit_puzzle_systems)
             .add_systems(OnEnter(ControllerState::Solving), enter_solving_systems)
             .add_systems(
                 OnEnter(ControllerState::IdlePostSolve),
@@ -151,7 +151,7 @@ fn get_update_systems() -> SystemConfigs {
         camera::update_dolly.run_if(
             in_state(ControllerState::Viewing)
                 .or(in_state(ControllerState::IdlePostView))
-                .or(in_state(PlayState::Victory))
+                .or(in_state(PuzzleState::Victory))
                 .or(in_state(GameState::Selector))),
 
         
@@ -160,12 +160,12 @@ fn get_update_systems() -> SystemConfigs {
 
     (
         (
-            move_player,
+            player::update,
             game_save::update,
-            update_halo_follow_player,
+            player::update_halo,
             effects::player_particles::update_player_particles,
         )
-            .run_if(in_state(GameState::Playing)),
+            .run_if(in_state(GameState::Puzzle)),
         (
             ui::navigation::update_level_complete_ui,
             ui::navigation::next_level,
@@ -173,26 +173,34 @@ fn get_update_systems() -> SystemConfigs {
             ui::navigation::previous_level,
             ui::navigation::level_selector,
             effects::musical_note_burst::clear_up_effects,
+            ui::message::update_lower_during_puzzle_state,
         )
-            .run_if(in_state(GameState::Playing)),
-        victory_transition.run_if(in_state(PlayState::Playing)),
-        update_player_path.run_if(in_state(PlayState::Playing)),
-        play_note.run_if(in_state(PlayState::Playing)),
-        check_melody_solved.run_if(in_state(PlayState::Playing)),
-        load_level_asset::spawn_level_data.run_if(in_state(PlayState::Loading)),
-        solve.run_if(in_state(ControllerState::Solving)),
-        spawn_node_arrival_particles,
-        idle.run_if(
-            in_state(ControllerState::IdlePostSolve).or(in_state(ControllerState::IdlePostView)),
+            .run_if(in_state(GameState::Puzzle)),
+        victory_transition.run_if(in_state(PuzzleState::Playing)),
+        player_path::update.run_if(in_state(PuzzleState::Playing)),
+        sound::play_note.run_if(in_state(PuzzleState::Playing)),
+        sound::check_melody_solved.run_if(in_state(PuzzleState::Playing)),
+        load_level_asset::spawn_level_data.run_if(in_state(PuzzleState::Loading)),
+        (
+            effects::node_arrival::update_node_arrival_particles,
+            effects::node_arrival::spawn_node_arrival_particles,
         ),
-        view.run_if(in_state(ControllerState::Viewing)),
-        victory::update_state.run_if(in_state(PlayState::Victory)),
-        light_follow_camera,
-        update_node_arrival_particles,
+        (
+            controller::solve.run_if(in_state(ControllerState::Solving)),
+            controller::idle.run_if(
+                in_state(ControllerState::IdlePostSolve).or(in_state(ControllerState::IdlePostView)),
+            ),
+            controller::view.run_if(in_state(ControllerState::Viewing)),
+        ),
+        victory::update_state.run_if(in_state(PuzzleState::Victory)),
+        light::follow_camera,
+        play_statistics::during_play.run_if(in_state(PuzzleState::Playing)),
         effects::musical_notes::spawn,
         selector_systems,
         camera_systems,
-        ui::message::update,
+        ui::message::update_upper,
+        ui::message::on_change,
+        game_save::update_working_level,
         load_level_asset::wait_until_loaded.run_if(in_state(GameState::LoadingRemoteLevel))
     )
         .into_configs()

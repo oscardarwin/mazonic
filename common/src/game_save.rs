@@ -6,6 +6,7 @@ use bevy_pkv::PkvStore;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
+use crate::play_statistics::{PlayStatistics, PuzzleStatistics};
 use crate::sound::Melody;
 
 pub type LevelIndex = usize;
@@ -24,26 +25,6 @@ pub struct CurrentPuzzle(pub PuzzleIdentifier);
 #[derive(Component, Debug, Clone)]
 pub struct WorkingLevelIndex(pub LevelIndex);
 
-#[derive(Component, Debug, Clone)]
-pub struct CompletedEasyDailies(pub HashSet<DailyLevelId>);
-
-#[derive(Component, Debug, Clone)]
-pub struct CompletedHardDailies(pub HashSet<DailyLevelId>);
-
-#[derive(Component, Debug, Clone)]
-pub struct DiscoveredMelodies(pub HashMap<PuzzleIdentifier, DiscoveredMelody>);
-
-
-impl DiscoveredMelodies {
-    pub fn get_room_ids_for_level(&self, puzzle_identifier: &PuzzleIdentifier) -> HashSet<u64> {
-        if let Some(DiscoveredMelody { room_ids, .. }) = self.0.get(puzzle_identifier) {
-            room_ids.iter().cloned().collect()
-        } else {
-            HashSet::new()
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscoveredMelody {
     pub melody: Melody,
@@ -53,10 +34,7 @@ pub struct DiscoveredMelody {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameSave {
     pub current_index: PuzzleIdentifier,
-    pub completed_index: LevelIndex,
-    pub completed_easy_dailies: HashSet<DailyLevelId>,
-    pub completed_hard_dailies: HashSet<DailyLevelId>,
-    pub discovered_melodies: HashMap<PuzzleIdentifier, DiscoveredMelody>,
+    pub play_statistics: HashMap<PuzzleIdentifier, PuzzleStatistics>,
 }
 
 #[derive(Resource, Clone)]
@@ -66,10 +44,7 @@ impl Default for GameSave {
     fn default() -> Self {
         GameSave {
             current_index: PuzzleIdentifier::Level(0),
-            completed_index: 0,
-            completed_easy_dailies: HashSet::new(),
-            completed_hard_dailies: HashSet::new(),
-            discovered_melodies: HashMap::new(),
+            play_statistics: HashMap::new(),
         }
     }
 }
@@ -87,48 +62,47 @@ pub fn setup(mut commands: Commands, save_location: Option<Res<SaveLocation>>) {
         Err(_) => GameSave::default(),
     };
 
+    let play_statistics = PlayStatistics(save_data.play_statistics);
+
     commands.spawn((
         CurrentPuzzle(save_data.current_index),
-        WorkingLevelIndex(save_data.completed_index),
-        DiscoveredMelodies(save_data.discovered_melodies),
-        CompletedEasyDailies(save_data.completed_easy_dailies),
-        CompletedHardDailies(save_data.completed_hard_dailies),
+        WorkingLevelIndex(play_statistics.get_working_level()),
     ));
 
+    commands.insert_resource(play_statistics);
     commands.insert_resource(pkv_store);
 }
 
 pub fn update(
     current_level_index_query: Query<Ref<CurrentPuzzle>>,
     working_level_index_query: Query<Ref<WorkingLevelIndex>>,
-    discovered_melodies_query: Query<Ref<DiscoveredMelodies>>,
-    completed_easy_dailies_query: Query<Ref<CompletedEasyDailies>>,
-    completed_hard_dailies_query: Query<Ref<CompletedHardDailies>>,
+    play_statistics: Res<PlayStatistics>,
     mut pkv_store: ResMut<PkvStore>,
 ) {
     let current_level_index = current_level_index_query.single();
-    let working_level_index = working_level_index_query.single();
-    let completed_easy_dailies = completed_easy_dailies_query.single();
-    let completed_hard_dailies = completed_hard_dailies_query.single();
-    let discovered_melodies = discovered_melodies_query.single();
     
 
     if current_level_index.is_changed()
-        || working_level_index.is_changed()
-        || discovered_melodies.is_changed()
-        || completed_easy_dailies.is_changed()
-        || completed_hard_dailies.is_changed()
+        || play_statistics.is_changed()
     {
         println!("Saving Game");
 
         let game_save = GameSave {
             current_index: current_level_index.0.clone(),
-            completed_index: working_level_index.0,
-            completed_easy_dailies: completed_easy_dailies.0.clone(),
-            completed_hard_dailies: completed_hard_dailies.0.clone(),
-            discovered_melodies: discovered_melodies.0.clone(),
+            play_statistics: play_statistics.0.clone(),
         };
 
         pkv_store.set(SAVE_DATA_KEY, &game_save);
+    }
+}
+
+pub fn update_working_level(
+    mut working_level_index_query: Query<&mut WorkingLevelIndex>,
+    play_statistics: Res<PlayStatistics>,
+) {
+    if play_statistics.is_changed() {
+        let level_index = play_statistics.get_working_level();
+
+        working_level_index_query.single_mut().0 = level_index;
     }
 }

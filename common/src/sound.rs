@@ -18,11 +18,12 @@ use serde::{Deserialize, Serialize};
 use sha2::digest::typenum::Pow;
 use sha2::{Digest, Sha256};
 
-use crate::game_save::{CurrentPuzzle, DiscoveredMelodies, DiscoveredMelody};
+use crate::game_save::{CurrentPuzzle, DiscoveredMelody};
 use crate::game_systems::SystemHandles;
 use crate::maze::mesh::MazeMarker;
+use crate::play_statistics::PlayStatistics;
 use crate::shape::loader::SolutionComponent;
-use crate::ui::message::MessagePopup;
+use crate::ui::message::{MessagePopup, MessagePopupUpperMarker};
 use crate::{
     is_room_junction::is_junction, player::PlayerMazeState, room::Room,
     shape::loader::GraphComponent,
@@ -256,12 +257,12 @@ fn get_playback_settings(speed: f32) -> PlaybackSettings {
 pub fn check_melody_solved(
     melody_tracker_query: Query<&MelodyPuzzleTracker, Changed<MelodyPuzzleTracker>>,
     room_id_note_mapping_query: Query<&NoteMapping>,
-    mut discovered_melodies_query: Query<&mut DiscoveredMelodies>,
+    mut play_statistics: ResMut<PlayStatistics>,
     current_level_index_query: Query<&CurrentPuzzle>,
     system_handles: Res<SystemHandles>,
     mut commands: Commands,
     maze_entities_query: Query<Entity, With<MazeMarker>>,
-    mut message_popup: ResMut<MessagePopup>,
+    mut message_popup_query: Query<&mut MessagePopup, With<MessagePopupUpperMarker>>,
 ) {
     let Ok(melody_tracker) = melody_tracker_query.get_single() else {
         return;
@@ -286,7 +287,7 @@ pub fn check_melody_solved(
         return;
     };
     
-    message_popup.0 = format!("~ {} ~", melody.name);
+    message_popup_query.single_mut().0 = format!("~ {} ~", melody.name);
 
     let discovered_melody = DiscoveredMelody {
         melody,
@@ -294,9 +295,8 @@ pub fn check_melody_solved(
     };
 
     let CurrentPuzzle(puzzle_identifier) = current_level_index_query.single();
-    let DiscoveredMelodies(discovered_melodies) =
-        discovered_melodies_query.single_mut().into_inner();
-    discovered_melodies.insert(puzzle_identifier.clone(), discovered_melody);
+
+    play_statistics.0.entry(puzzle_identifier.clone()).and_modify(|play_statistics| play_statistics.discovered_melody = Some(discovered_melody));
 
     commands.run_system(system_handles.update_on_melody_discovered);
     commands.run_system(system_handles.note_burst);
@@ -305,13 +305,15 @@ pub fn check_melody_solved(
 
 pub fn play_melody(
     current_level_index_query: Query<&CurrentPuzzle>,
-    discovered_melodies_query: Query<&DiscoveredMelodies>,
+    play_statistics: Res<PlayStatistics>,
     asset_server: ResMut<AssetServer>,
     mut commands: Commands,
 ) {
-    let CurrentPuzzle(index) = current_level_index_query.single();
-    let DiscoveredMelodies(discovered_melodies) = discovered_melodies_query.single();
-    let discovered_melody = discovered_melodies.get(index).unwrap();
+    let CurrentPuzzle(puzzle_identifier) = current_level_index_query.single();
+
+    let Some(discovered_melody) = play_statistics.0.get(puzzle_identifier).and_then(|statistics| statistics.discovered_melody.clone()) else {
+        return;
+    };
 
     let Notes(notes) = &discovered_melody.melody.notes;
 

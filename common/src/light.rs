@@ -8,7 +8,7 @@ const CAMERA_OFFSET_FACTOR: f32 = 1.2;
 #[derive(Component)]
 pub struct MainLight;
 
-pub fn setup_light(mut commands: Commands) {
+pub fn setup(mut commands: Commands) {
     commands
         .spawn(DirectionalLight {
             illuminance: 8_000.,
@@ -18,7 +18,7 @@ pub fn setup_light(mut commands: Commands) {
         .insert(MainLight);
 }
 
-pub fn light_follow_camera(
+pub fn follow_camera(
     mut camera_query: Query<&Transform, With<MainCamera>>,
     mut light_query: Query<&mut Transform, (With<MainLight>, Without<MainCamera>)>,
 ) {

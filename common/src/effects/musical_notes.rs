@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
 use itertools::repeat_n;
 
-use crate::{game_save::{CurrentPuzzle, DiscoveredMelodies}, game_settings::GameSettings};
+use crate::{game_save::CurrentPuzzle, game_settings::GameSettings};
 
 #[derive(Component, Debug, Clone)]
 pub enum MusicalNoteEffectColor {

@@ -5,12 +5,12 @@ use bevy::{
 
 use crate::{
     controller_screen_position::ControllerScreenPosition,
-    game_state::PlayState,
+    game_state::PuzzleState,
     shape::loader::{GraphComponent, SolutionComponent},
 };
 
 #[derive(SubStates, Default, Debug, Clone, PartialEq, Eq, Hash)]
-#[source(PlayState = PlayState::Victory)]
+#[source(PuzzleState = PuzzleState::Victory)]
 pub enum VictoryState {
     #[default]
     Idle,

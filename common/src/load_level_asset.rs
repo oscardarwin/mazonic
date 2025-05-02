@@ -15,7 +15,7 @@ use crate::game_save::DailyLevelId;
 use crate::game_save::LevelIndex;
 use crate::game_save::PuzzleIdentifier;
 use crate::game_state::GameState;
-use crate::game_state::PlayState;
+use crate::game_state::PuzzleState;
 use crate::levels::GameLevel;
 use crate::levels::PuzzleEntityMarker;
 use crate::shape::loader::EncryptedMelody;
@@ -26,6 +26,7 @@ use crate::sound::MelodyPuzzleTracker;
 use crate::sound::Note;
 use crate::sound::NoteMapping;
 use crate::ui::message::MessagePopup;
+use crate::ui::message::MessagePopupUpperMarker;
 
 #[derive(Debug)]
 pub enum DailyLevelLoadError {
@@ -76,13 +77,13 @@ pub fn wait_until_loaded(
     current_level_index_query: Query<&CurrentPuzzle>,
     mut loaded_levels: ResMut<LoadedLevels>,
     mut loading_remote_levels: ResMut<LoadingRemoteLevels>,
-    mut message_popup: ResMut<MessagePopup>,
+    mut message_popup: Query<&mut MessagePopup, With<MessagePopupUpperMarker>>,
     mut game_state: ResMut<NextState<GameState>>,
 ) {
     let CurrentPuzzle(puzzle_identifier) = current_level_index_query.single();
 
     if loaded_levels.0.contains_key(puzzle_identifier) {
-        game_state.set(GameState::Playing);
+        game_state.set(GameState::Puzzle);
         return;
     }
 
@@ -103,7 +104,7 @@ pub fn wait_until_loaded(
     let next_game_state = match load_result {
         Ok(level) => {
             loaded_levels.0.insert(puzzle_identifier.clone(), MazeSaveDataHandle::LoadedRemoteLevel(level));
-            GameState::Playing
+            GameState::Puzzle
         },
         Err(err) => {
             let message = match err {
@@ -112,7 +113,7 @@ pub fn wait_until_loaded(
                 DailyLevelLoadError::StringParseError(_) => "failed to parse level data",
             }.to_string();
 
-            *message_popup = MessagePopup(message);
+            message_popup.single_mut().0 = message;
 
             GameState::Selector
         }
@@ -124,7 +125,7 @@ pub fn wait_until_loaded(
 pub fn spawn_level_data(
     current_level_index_query: Query<&CurrentPuzzle>,
     mut commands: Commands,
-    mut play_state: ResMut<NextState<PlayState>>,
+    mut play_state: ResMut<NextState<PuzzleState>>,
     mut game_state: ResMut<NextState<GameState>>,
     maze_save_data_assets: Res<Assets<MazeLevelData>>,
     mut loaded_levels: ResMut<LoadedLevels>,
@@ -196,5 +197,5 @@ pub fn spawn_level_data(
         SolutionComponent(solution),
         NoteMapping(note_midi_handle),
     ));
-    play_state.set(PlayState::Playing);
+    play_state.set(PuzzleState::Playing);
 }
