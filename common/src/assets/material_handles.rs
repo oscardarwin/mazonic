@@ -14,86 +14,32 @@ pub struct FaceMaterialHandles {
 }
 
 impl FaceMaterialHandles {
-    fn get_material(
+    fn get_materials<const N: usize>(
         &self,
-        index: usize,
-    ) -> Handle<ExtendedMaterial<StandardMaterial, GlobalShader>> {
-        self.face_handles[index].clone()
+        indices: [usize; N],
+        permutation: &[u8; 5],
+    ) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; N] {
+        indices.map(|color_id| self.face_handles[permutation[color_id] as usize].clone())
     }
 
-    pub fn tetrahedron(&self) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 4] {
-        [
-            self.get_material(0),
-            self.get_material(1),
-            self.get_material(2),
-            self.get_material(3),
-        ]
+    pub fn tetrahedron(&self, permutation: &[u8; 5]) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 4] {
+        self.get_materials([0, 1, 2, 3], permutation)
     }
 
-    pub fn cube(&self) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 6] {
-        [
-            self.get_material(0),
-            self.get_material(1),
-            self.get_material(1),
-            self.get_material(2),
-            self.get_material(2),
-            self.get_material(0),
-        ]
+    pub fn cube(&self, permutation: &[u8; 5]) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 6] {
+        self.get_materials([0, 1, 1, 2, 2, 0], permutation)
     }
 
-    pub fn octahedron(&self) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 8] {
-        [
-            self.get_material(0),
-            self.get_material(1),
-            self.get_material(2),
-            self.get_material(3),
-            self.get_material(2),
-            self.get_material(3),
-            self.get_material(0),
-            self.get_material(1),
-        ]
+    pub fn octahedron(&self, permutation: &[u8; 5]) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 8] {
+        self.get_materials([0, 1, 2, 3, 2, 3, 0, 1], permutation)
     }
 
     pub fn dodecahedron(&self) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 12] {
-        [
-            self.get_material(1),
-            self.get_material(3),
-            self.get_material(0),
-            self.get_material(1),
-            self.get_material(2),
-            self.get_material(3),
-            self.get_material(0),
-            self.get_material(3),
-            self.get_material(1),
-            self.get_material(2),
-            self.get_material(2),
-            self.get_material(0),
-        ]
+        self.get_materials([1, 3, 0, 1, 2, 3, 0, 3, 1, 2, 2, 0], &[0, 1, 2, 3, 4])
     }
 
     pub fn icosahedron(&self) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 20] {
-        [
-            self.get_material(0),
-            self.get_material(1),
-            self.get_material(2),
-            self.get_material(3),
-            self.get_material(4),
-            self.get_material(1),
-            self.get_material(3),
-            self.get_material(4),
-            self.get_material(0),
-            self.get_material(1),
-            self.get_material(2),
-            self.get_material(2),
-            self.get_material(4),
-            self.get_material(0),
-            self.get_material(3),
-            self.get_material(1),
-            self.get_material(0),
-            self.get_material(2),
-            self.get_material(4),
-            self.get_material(3),
-        ]
+        self.get_materials([0, 1, 2, 3, 4, 1, 3, 4, 0, 1, 2, 2, 4, 0, 3, 1, 0, 2, 4, 3], &[0, 1, 2, 3, 4])
     }
 }
 

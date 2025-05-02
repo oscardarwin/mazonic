@@ -145,6 +145,7 @@ pub fn spawn_level_data(
     let MazeLevelData {
         shape,
         nodes_per_edge,
+        face_color_permutation,
         graph,
         solution,
         node_id_to_note,
@@ -192,6 +193,7 @@ pub fn spawn_level_data(
         GameLevel {
             shape,
             nodes_per_edge,
+            face_color_permutation,
         },
         GraphComponent(graph),
         SolutionComponent(solution),

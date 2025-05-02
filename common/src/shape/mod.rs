@@ -25,9 +25,9 @@ pub fn spawn(
 
     let materials: Vec<Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>> =
         match &level.shape {
-            Shape::Cube => face_materials_handles.cube().into_iter().collect(),
-            Shape::Tetrahedron => face_materials_handles.tetrahedron().into_iter().collect(),
-            Shape::Octahedron => face_materials_handles.octahedron().into_iter().collect(),
+            Shape::Cube => face_materials_handles.cube(&level.face_color_permutation).into_iter().collect(),
+            Shape::Tetrahedron => face_materials_handles.tetrahedron(&level.face_color_permutation).into_iter().collect(),
+            Shape::Octahedron => face_materials_handles.octahedron(&level.face_color_permutation).into_iter().collect(),
             Shape::Dodecahedron => face_materials_handles.dodecahedron().into_iter().collect(),
             Shape::Icosahedron => face_materials_handles.icosahedron().into_iter().collect(),
         };

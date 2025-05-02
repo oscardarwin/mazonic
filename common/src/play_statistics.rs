@@ -12,6 +12,16 @@ pub struct PuzzleStatistics {
     pub discovered_melody: Option<DiscoveredMelody>,
 }
 
+impl PuzzleStatistics {
+    pub fn completed() -> Self {
+        Self {
+            completed: true,
+            time_spent: Duration::from_secs(0),
+            discovered_melody: None,
+        }
+    }
+}
+
 #[derive(Resource, Debug, Clone)]
 pub struct PlayStatistics(pub HashMap<PuzzleIdentifier, PuzzleStatistics>);
 

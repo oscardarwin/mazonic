@@ -26,17 +26,21 @@ pub enum Shape {
     Dodecahedron,
 }
 
+pub struct FaceColorPermutation<const N: usize>();
+
 #[derive(Component, Clone, Debug)]
 pub struct GameLevel {
     pub shape: Shape,
     pub nodes_per_edge: u8,
+    pub face_color_permutation: [u8; 5],
 }
 
 impl GameLevel {
-    pub const fn new(shape: Shape, nodes_per_edge: u8) -> Self {
+    pub const fn new(shape: Shape, nodes_per_edge: u8, face_color_permutation: [u8; 5]) -> Self {
         GameLevel {
             shape,
             nodes_per_edge,
+            face_color_permutation,
         }
     }
 
@@ -73,49 +77,49 @@ impl GameLevel {
         }
     }
 
- pub const fn tetrahedron(nodes_per_edge: u8) -> GameLevel {
+ pub const fn tetrahedron(nodes_per_edge: u8, face_color_permutation: [u8; 5]) -> GameLevel {
         let shape = Shape::Tetrahedron;
-        GameLevel::new(shape, nodes_per_edge)
+        GameLevel::new(shape, nodes_per_edge, face_color_permutation)
     }
 
-    pub const fn cube(nodes_per_edge: u8) -> GameLevel {
+    pub const fn cube(nodes_per_edge: u8, face_color_permutation: [u8; 5]) -> GameLevel {
         let shape = Shape::Cube;
-        GameLevel::new(shape, nodes_per_edge)
+        GameLevel::new(shape, nodes_per_edge, face_color_permutation)
     }
 
-    pub const fn octahedron(nodes_per_edge: u8) -> GameLevel {
+    pub const fn octahedron(nodes_per_edge: u8, face_color_permutation: [u8; 5]) -> GameLevel {
         let shape = Shape::Octahedron;
-        GameLevel::new(shape, nodes_per_edge)
+        GameLevel::new(shape, nodes_per_edge, face_color_permutation)
     }
 
     pub const fn dodecahedron() -> GameLevel {
         let shape = Shape::Dodecahedron;
-        GameLevel::new(shape, 1)
+        GameLevel::new(shape, 1, [0, 1, 2, 3, 4])
     }
 
     pub const fn icosahedron(nodes_per_edge: u8) -> GameLevel {
         let shape = Shape::Icosahedron;
-        GameLevel::new(shape, nodes_per_edge)
+        GameLevel::new(shape, nodes_per_edge, [0, 1, 2, 3, 4])
     }
 }
 
 pub const LEVELS: [GameLevel; 18] = [
-    GameLevel::tetrahedron(1),
-    GameLevel::cube(2),
-    GameLevel::octahedron(3),
+    GameLevel::tetrahedron(1, [0, 1, 2, 3, 4]),
+    GameLevel::cube(2, [2, 3, 4, 0, 1]),
+    GameLevel::octahedron(3, [0, 1, 2, 4, 3]),
     GameLevel::dodecahedron(),
     GameLevel::icosahedron(2),
-    GameLevel::octahedron(4),
-    GameLevel::tetrahedron(6),
-    GameLevel::cube(4),
-    GameLevel::tetrahedron(7),
-    GameLevel::octahedron(5),
+    GameLevel::octahedron(4, [4, 2, 3, 0, 1]),
+    GameLevel::tetrahedron(6, [0, 1, 3, 4, 2]),
+    GameLevel::cube(4, [2, 0, 1, 3, 4]),
+    GameLevel::tetrahedron(7, [1, 2, 3, 4, 0]),
+    GameLevel::octahedron(5, [0, 0, 3, 3, 0]),
     GameLevel::icosahedron(3),
-    GameLevel::tetrahedron(8),
-    GameLevel::cube(5),
-    GameLevel::octahedron(6),
-    GameLevel::tetrahedron(9),
+    GameLevel::tetrahedron(8, [1, 2, 1, 2, 0]),
+    GameLevel::cube(5, [3, 4, 3, 0, 0]),
+    GameLevel::octahedron(6, [2, 2, 2, 2, 2]),
+    GameLevel::tetrahedron(9, [0, 0, 0, 0, 0]),
     GameLevel::icosahedron(4),
-    GameLevel::cube(6),
+    GameLevel::cube(6, [4, 4, 4, 4, 4]),
     GameLevel::icosahedron(5),
 ];
