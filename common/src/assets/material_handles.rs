@@ -217,8 +217,8 @@ pub fn setup_materials(
 
     let selection_hover = menu_selection_hover_materials.add(ExtendedMaterial {
         base: StandardMaterial {
-            base_color: line_color.with_alpha(0.75),
-            emissive: LinearRgba::from_vec3(line_color_vec * 20.0),
+            base_color: line_color.with_alpha(0.55),
+            emissive: LinearRgba::from_vec3(line_color_vec * 2.0),
             alpha_mode: ALPHA_MODE,
             ..Default::default()
         },
@@ -226,8 +226,8 @@ pub fn setup_materials(
     });
     let selection_pressed = menu_selection_hover_materials.add(ExtendedMaterial {
         base: StandardMaterial {
-            base_color: line_color.with_alpha(0.9),
-            emissive: LinearRgba::from_vec3(line_color_vec * 50.0),
+            base_color: line_color.with_alpha(0.99),
+            emissive: LinearRgba::from_vec3(line_color_vec * 5.0),
             alpha_mode: ALPHA_MODE,
             ..Default::default()
         },
