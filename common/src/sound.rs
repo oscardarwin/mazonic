@@ -280,7 +280,7 @@ pub fn check_melody_solved(
         return;
     };
     
-    message_popup.0 = melody.name.clone();
+    message_popup.0 = format!("~ {} ~", melody.name);
 
     let discovered_melody = DiscoveredMelody {
         melody,
