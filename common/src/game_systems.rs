@@ -64,6 +64,7 @@ impl Plugin for GameSystemsPlugin {
 
         let enter_selector_init_systems = (
             level_selector::load,
+            camera::reset_dolly_screen_positions,
             level_selector::set_initial_camera_target.after(level_selector::load),
         )
             .into_configs();

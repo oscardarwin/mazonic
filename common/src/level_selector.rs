@@ -397,19 +397,26 @@ pub fn set_selector_state(
     >,
     mut mouse_button_event_reader: EventReader<MouseButtonInput>,
     mut next_selector_state: ResMut<NextState<SelectorState>>,
+    mut previous_cursor_positions: Local<(ControllerScreenPosition, ControllerScreenPosition)>,
 ) {
     let Ok(controller_screen_position) = controller_screen_position_query.get_single() else {
         return;
     };
 
-    match controller_screen_position {
-        ControllerScreenPosition::Position(_) => {
+    let (penultimate_position, last_position) = *previous_cursor_positions;
+
+    match (penultimate_position, last_position, controller_screen_position) {
+        (ControllerScreenPosition::None, ControllerScreenPosition::None, ControllerScreenPosition::Position(_)) => {
             next_selector_state.set(SelectorState::Clicked);
         }
-        ControllerScreenPosition::None => {
+
+        (_, _, ControllerScreenPosition::None) => {
             next_selector_state.set(SelectorState::Idle);
         }
+        _ => {}
     }
+
+    *previous_cursor_positions = (last_position, controller_screen_position.clone());
 }
 
 pub fn update_interactables(
@@ -632,7 +639,7 @@ pub fn set_camera_target_to_closest_face(
         return;
     };
 
-    println!("Setting selector camera target: {closest_face_transform:?}");
+    println!("Setting selector camera target to closest face");
 
     camera_target.translation_dir = -closest_face_transform.forward().normalize();
     camera_target.translation_norm = game_settings.camera_distance;
