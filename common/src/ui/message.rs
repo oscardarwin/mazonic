@@ -74,7 +74,7 @@ pub fn spawn(
                 },
                 TextColor(TEXT_COLOR),
                 MessagePopupUpperMarker,
-                MessagePopup("HELLO UPPER".to_string()),
+                MessagePopup("".to_string()),
                 MessagePopupStopwatch(Stopwatch::new()),
             )
         )
@@ -88,7 +88,7 @@ pub fn spawn(
                 },
                 TextColor(TEXT_COLOR),
                 MessagePopupLowerMarker,
-                MessagePopup("HELLO LOWER".to_string()),
+                MessagePopup("".to_string()),
             )
         );
 }
