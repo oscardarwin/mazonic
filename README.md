@@ -1,22 +1,10 @@
 # TODO:
-## Fix backlinks making the level too easy.
-
-## TO RELEASE:
-Display level time if available.
-
-### Other
-Better color picking for non Icosahedron
-
 ## TO RELEASE ANDROID TEST:
 Some notes are being skipped when moving fast?
 
-### Daily Challenges
-Social Media
-
-
 ## LATER:
 Animation on selector screen after game state change
-
+Social Media
 
 ## Possible Polyhedra vertex numbers:
 
