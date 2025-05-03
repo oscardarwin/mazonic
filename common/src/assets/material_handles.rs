@@ -41,8 +41,8 @@ impl FaceMaterialHandles {
     pub fn octahedron(&self, coloring: &octahedron::Coloring) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 8] {
         match coloring {
             octahedron::Coloring::Full(permutation) => self.get_materials([0, 1, 2, 3, 2, 3, 0, 1], permutation),
-            octahedron::Coloring::Stripes(permutation) => self.get_materials([0, 1, 2, 3, 2, 3, 0, 1], permutation),
-            octahedron::Coloring::CrissCross(permutation) => self.get_materials([0, 1, 2, 3, 2, 3, 0, 1], permutation),
+            octahedron::Coloring::Stripes(permutation) => self.get_materials([0, 1, 2, 3, 0, 1, 2, 3], permutation),
+            octahedron::Coloring::CrissCross(permutation) => self.get_materials([0, 1, 0, 1, 0, 1, 0, 1], permutation),
             octahedron::Coloring::Dual(permutation) => self.get_materials([0, 0, 0, 0, 1, 1, 1, 1], permutation),
             octahedron::Coloring::Mono(color_id) => self.get_materials([0; 8], &[*color_id])
         }
@@ -58,8 +58,8 @@ impl FaceMaterialHandles {
     pub fn icosahedron(&self, coloring: &icosahedron::Coloring) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 20] {
         match coloring {
             icosahedron::Coloring::Full(permutation) => self.get_materials([0, 1, 2, 3, 4, 1, 3, 4, 0, 1, 2, 2, 4, 0, 3, 1, 0, 2, 4, 3], permutation),
-            icosahedron::Coloring::Tri(permutation) => self.get_materials([0, 1, 2, 3, 4, 1, 3, 4, 0, 1, 2, 2, 4, 0, 3, 1, 0, 2, 4, 3], permutation),
-            icosahedron::Coloring::Dual(permutation) => self.get_materials([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], permutation),
+            icosahedron::Coloring::Tri(permutation) => self.get_materials([0, 2, 1, 2, 0, 1, 0, 2, 0, 1, 2, 0, 2, 0, 1, 2, 1, 2, 0, 1], permutation),
+            icosahedron::Coloring::Dual(permutation) => self.get_materials([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], permutation),
             icosahedron::Coloring::Mono(color_id) => self.get_materials([0; 20], &[*color_id])
         }
     }
