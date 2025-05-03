@@ -68,8 +68,7 @@ pub fn setup(mut commands: Commands, save_location: Option<Res<SaveLocation>>) {
     };
 
     let save_data = match pkv_store.get::<GameSave>(SAVE_DATA_KEY) {
-        //Ok(game_save) => game_save,
-        Ok(game_save) => GameSave::completed(18),
+        Ok(game_save) => GameSave::completed(5),
         Err(_) => GameSave::default(),
     };
 
