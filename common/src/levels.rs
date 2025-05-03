@@ -19,28 +19,24 @@ pub fn despawn_puzzle_entities(mut commands: Commands, level_entities: Query<Ent
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Shape {
-    Cube,
-    Tetrahedron,
-    Icosahedron,
-    Octahedron,
-    Dodecahedron,
+    Tetrahedron(tetrahedron::Coloring),
+    Cube(cube::Coloring),
+    Octahedron(octahedron::Coloring),
+    Dodecahedron(dodecahedron::Coloring),
+    Icosahedron(icosahedron::Coloring),
 }
-
-pub struct FaceColorPermutation<const N: usize>();
 
 #[derive(Component, Clone, Debug)]
 pub struct GameLevel {
     pub shape: Shape,
     pub nodes_per_edge: u8,
-    pub face_color_permutation: [u8; 5],
 }
 
 impl GameLevel {
-    pub const fn new(shape: Shape, nodes_per_edge: u8, face_color_permutation: [u8; 5]) -> Self {
+    pub const fn new(shape: Shape, nodes_per_edge: u8) -> Self {
         GameLevel {
             shape,
             nodes_per_edge,
-            face_color_permutation,
         }
     }
 
@@ -57,11 +53,11 @@ impl GameLevel {
 
     fn get_face_indices(&self, face: &Face) -> HashSet<usize> {
         let indices = match self.shape {
-            Shape::Tetrahedron => tetrahedron::FACE_INDICES[face.id()].to_vec(),
-            Shape::Cube => cube::FACE_INDICES[face.id()].to_vec(),
-            Shape::Octahedron => octahedron::FACE_INDICES[face.id()].to_vec(),
-            Shape::Dodecahedron => dodecahedron::FACE_INDICES[face.id()].to_vec(),
-            Shape::Icosahedron => icosahedron::FACE_INDICES[face.id()].to_vec(),
+            Shape::Tetrahedron(_) => tetrahedron::FACE_INDICES[face.id()].to_vec(),
+            Shape::Cube(_) => cube::FACE_INDICES[face.id()].to_vec(),
+            Shape::Octahedron(_) => octahedron::FACE_INDICES[face.id()].to_vec(),
+            Shape::Dodecahedron(_) => dodecahedron::FACE_INDICES[face.id()].to_vec(),
+            Shape::Icosahedron(_) => icosahedron::FACE_INDICES[face.id()].to_vec(),
         };
 
         indices.into_iter().collect()
@@ -69,57 +65,57 @@ impl GameLevel {
 
     pub fn node_distance(&self) -> f32 {
         match &self.shape {
-            Shape::Tetrahedron | Shape::Octahedron | Shape::Icosahedron => {
+            Shape::Tetrahedron(_) | Shape::Octahedron(_) | Shape::Icosahedron(_) => {
                 1.0 / (self.nodes_per_edge as f32 - 1.0 + SQRT_3)
             }
-            Shape::Cube => 1.0 / (self.nodes_per_edge as f32),
-            Shape::Dodecahedron => TAN_27,
+            Shape::Cube(_) => 1.0 / (self.nodes_per_edge as f32),
+            Shape::Dodecahedron(_) => TAN_27,
         }
     }
 
- pub const fn tetrahedron(nodes_per_edge: u8, face_color_permutation: [u8; 5]) -> GameLevel {
-        let shape = Shape::Tetrahedron;
-        GameLevel::new(shape, nodes_per_edge, face_color_permutation)
+    pub const fn tetrahedron(nodes_per_edge: u8, coloring: tetrahedron::Coloring) -> GameLevel {
+        let shape = Shape::Tetrahedron(coloring);
+        GameLevel::new(shape, nodes_per_edge)
     }
 
-    pub const fn cube(nodes_per_edge: u8, face_color_permutation: [u8; 5]) -> GameLevel {
-        let shape = Shape::Cube;
-        GameLevel::new(shape, nodes_per_edge, face_color_permutation)
+    pub const fn cube(nodes_per_edge: u8, coloring: cube::Coloring) -> GameLevel {
+        let shape = Shape::Cube(coloring);
+        GameLevel::new(shape, nodes_per_edge)
     }
 
-    pub const fn octahedron(nodes_per_edge: u8, face_color_permutation: [u8; 5]) -> GameLevel {
-        let shape = Shape::Octahedron;
-        GameLevel::new(shape, nodes_per_edge, face_color_permutation)
+    pub const fn octahedron(nodes_per_edge: u8, coloring: octahedron::Coloring) -> GameLevel {
+        let shape = Shape::Octahedron(coloring);
+        GameLevel::new(shape, nodes_per_edge)
     }
 
-    pub const fn dodecahedron() -> GameLevel {
-        let shape = Shape::Dodecahedron;
-        GameLevel::new(shape, 1, [0, 1, 2, 3, 4])
+    pub const fn dodecahedron(coloring: dodecahedron::Coloring) -> GameLevel {
+        let shape = Shape::Dodecahedron(coloring);
+        GameLevel::new(shape, 1)
     }
 
-    pub const fn icosahedron(nodes_per_edge: u8) -> GameLevel {
-        let shape = Shape::Icosahedron;
-        GameLevel::new(shape, nodes_per_edge, [0, 1, 2, 3, 4])
+    pub const fn icosahedron(nodes_per_edge: u8, coloring: icosahedron::Coloring) -> GameLevel {
+        let shape = Shape::Icosahedron(coloring);
+        GameLevel::new(shape, nodes_per_edge)
     }
 }
 
 pub const LEVELS: [GameLevel; 18] = [
-    GameLevel::tetrahedron(1, [0, 1, 2, 3, 4]),
-    GameLevel::cube(2, [2, 3, 4, 0, 1]),
-    GameLevel::octahedron(3, [0, 1, 2, 4, 3]),
-    GameLevel::dodecahedron(),
-    GameLevel::icosahedron(2),
-    GameLevel::octahedron(4, [4, 2, 3, 0, 1]),
-    GameLevel::tetrahedron(6, [0, 1, 3, 4, 2]),
-    GameLevel::cube(4, [2, 0, 1, 3, 4]),
-    GameLevel::tetrahedron(7, [1, 2, 3, 4, 0]),
-    GameLevel::octahedron(5, [0, 0, 3, 3, 0]),
-    GameLevel::icosahedron(3),
-    GameLevel::tetrahedron(8, [1, 2, 1, 2, 0]),
-    GameLevel::cube(5, [3, 4, 3, 0, 0]),
-    GameLevel::octahedron(6, [2, 2, 2, 2, 2]),
-    GameLevel::tetrahedron(9, [0, 0, 0, 0, 0]),
-    GameLevel::icosahedron(4),
-    GameLevel::cube(6, [4, 4, 4, 4, 4]),
-    GameLevel::icosahedron(5),
+    GameLevel::tetrahedron(1, tetrahedron::Coloring::Full([0, 1, 2, 3])),
+    GameLevel::cube(2, cube::Coloring::Full([2, 3, 4])),
+    GameLevel::octahedron(3, octahedron::Coloring::Full([0, 1, 2, 4])),
+    GameLevel::dodecahedron(dodecahedron::Coloring::Full([0, 1, 2, 3])),
+    GameLevel::icosahedron(2, icosahedron::Coloring::Full([0, 1, 2, 3, 4])),
+    GameLevel::octahedron(4, octahedron::Coloring::Stripes([4, 2, 3, 0])),
+    GameLevel::tetrahedron(6, tetrahedron::Coloring::Full([0, 1, 3, 4])),
+    GameLevel::cube(4, cube::Coloring::Full([2, 0, 1])),
+    GameLevel::tetrahedron(7, tetrahedron::Coloring::Full([1, 2, 3, 4])),
+    GameLevel::octahedron(5, octahedron::Coloring::CrissCross([0, 3])),
+    GameLevel::icosahedron(3, icosahedron::Coloring::Tri([0, 1, 2])),
+    GameLevel::tetrahedron(8, tetrahedron::Coloring::Dual([1, 2])),
+    GameLevel::cube(5, cube::Coloring::Dual([3, 4])),
+    GameLevel::octahedron(6, octahedron::Coloring::Dual([2, 2])),
+    GameLevel::tetrahedron(9, tetrahedron::Coloring::Mono(3)),
+    GameLevel::icosahedron(4, icosahedron::Coloring::Dual([1, 1])),
+    GameLevel::cube(6, cube::Coloring::Mono(2)),
+    GameLevel::icosahedron(5, icosahedron::Coloring::Mono(4)),
 ];

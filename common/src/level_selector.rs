@@ -161,11 +161,11 @@ pub fn load(
 
         let symbol_mesh_handle = match selector_option {
             SelectorOption::Level(level_index) => match LEVELS[*level_index].shape {
-                Shape::Tetrahedron => tetrahedron_symbol_mesh_handle.clone(),
-                Shape::Cube => cube_symbol_mesh_handle.clone(),
-                Shape::Octahedron => octahedron_symbol_mesh_handle.clone(),
-                Shape::Dodecahedron => dodecahedron_symbol_mesh_handle.clone(),
-                Shape::Icosahedron => icosahedron_symbol_mesh_handle.clone(),
+                Shape::Tetrahedron(_) => tetrahedron_symbol_mesh_handle.clone(),
+                Shape::Cube(_) => cube_symbol_mesh_handle.clone(),
+                Shape::Octahedron(_) => octahedron_symbol_mesh_handle.clone(),
+                Shape::Dodecahedron(_) => dodecahedron_symbol_mesh_handle.clone(),
+                Shape::Icosahedron(_) => icosahedron_symbol_mesh_handle.clone(),
             },
             SelectorOption::EasyDaily => daily_symbol_mesh_handle.clone(),
             SelectorOption::HardDaily => daily_symbol_mesh_handle.clone(),

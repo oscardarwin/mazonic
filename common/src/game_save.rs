@@ -37,6 +37,16 @@ pub struct GameSave {
     pub play_statistics: HashMap<PuzzleIdentifier, PuzzleStatistics>,
 }
 
+impl GameSave {
+    pub fn completed(highest_level: usize) -> Self {
+        let play_statistics = (0..highest_level).map(|level_index| (PuzzleIdentifier::Level(level_index), PuzzleStatistics::completed())).collect();
+        Self {
+            current_index: PuzzleIdentifier::Level(0),
+            play_statistics,
+        }
+    }
+}
+
 #[derive(Resource, Clone)]
 pub struct SaveLocation(pub PathBuf);
 
@@ -58,7 +68,8 @@ pub fn setup(mut commands: Commands, save_location: Option<Res<SaveLocation>>) {
     };
 
     let save_data = match pkv_store.get::<GameSave>(SAVE_DATA_KEY) {
-        Ok(game_save) => game_save,
+        //Ok(game_save) => game_save,
+        Ok(game_save) => GameSave::completed(18),
         Err(_) => GameSave::default(),
     };
 

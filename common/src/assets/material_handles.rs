@@ -1,4 +1,4 @@
-use crate::{game_settings::GameSettings, levels::LEVELS};
+use crate::{game_settings::GameSettings, levels::LEVELS, shape::{cube, dodecahedron, icosahedron, octahedron, tetrahedron}};
 use bevy::{
     pbr::{ExtendedMaterial, MaterialExtension},
     prelude::*,
@@ -14,32 +14,54 @@ pub struct FaceMaterialHandles {
 }
 
 impl FaceMaterialHandles {
-    fn get_materials<const N: usize>(
+    fn get_materials<const N: usize, const M: usize>(
         &self,
         indices: [usize; N],
-        permutation: &[u8; 5],
+        permutation: &[u8; M],
     ) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; N] {
         indices.map(|color_id| self.face_handles[permutation[color_id] as usize].clone())
     }
 
-    pub fn tetrahedron(&self, permutation: &[u8; 5]) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 4] {
-        self.get_materials([0, 1, 2, 3], permutation)
+    pub fn tetrahedron(&self, coloring: &tetrahedron::Coloring) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 4] {
+        match coloring {
+            tetrahedron::Coloring::Full(permutation) => self.get_materials([0, 1, 2, 3], permutation),
+            tetrahedron::Coloring::Dual(permutation) => self.get_materials([0, 0, 1, 1], permutation),
+            tetrahedron::Coloring::Mono(color_id) => self.get_materials([0; 4], &[*color_id])
+        }
     }
 
-    pub fn cube(&self, permutation: &[u8; 5]) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 6] {
-        self.get_materials([0, 1, 1, 2, 2, 0], permutation)
+    pub fn cube(&self, coloring: &cube::Coloring) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 6] {
+        match coloring {
+            cube::Coloring::Full(permutation) => self.get_materials([0, 1, 1, 2, 2, 0], permutation),
+            cube::Coloring::Dual(permutation) => self.get_materials([0, 0, 1, 0, 1, 1], permutation),
+            cube::Coloring::Mono(color_id) => self.get_materials([0; 6], &[*color_id])
+        }
     }
 
-    pub fn octahedron(&self, permutation: &[u8; 5]) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 8] {
-        self.get_materials([0, 1, 2, 3, 2, 3, 0, 1], permutation)
+    pub fn octahedron(&self, coloring: &octahedron::Coloring) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 8] {
+        match coloring {
+            octahedron::Coloring::Full(permutation) => self.get_materials([0, 1, 2, 3, 2, 3, 0, 1], permutation),
+            octahedron::Coloring::Stripes(permutation) => self.get_materials([0, 1, 2, 3, 2, 3, 0, 1], permutation),
+            octahedron::Coloring::CrissCross(permutation) => self.get_materials([0, 1, 2, 3, 2, 3, 0, 1], permutation),
+            octahedron::Coloring::Dual(permutation) => self.get_materials([0, 0, 0, 0, 1, 1, 1, 1], permutation),
+            octahedron::Coloring::Mono(color_id) => self.get_materials([0; 8], &[*color_id])
+        }
     }
 
-    pub fn dodecahedron(&self) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 12] {
-        self.get_materials([1, 3, 0, 1, 2, 3, 0, 3, 1, 2, 2, 0], &[0, 1, 2, 3, 4])
+    pub fn dodecahedron(&self, coloring: &dodecahedron::Coloring) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 12] {
+        match coloring {
+            dodecahedron::Coloring::Full(permutation) => self.get_materials([1, 3, 0, 1, 2, 3, 0, 3, 1, 2, 2, 0], permutation),
+            dodecahedron::Coloring::Mono(color_id) => self.get_materials([0; 12], &[*color_id])
+        }
     }
 
-    pub fn icosahedron(&self) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 20] {
-        self.get_materials([0, 1, 2, 3, 4, 1, 3, 4, 0, 1, 2, 2, 4, 0, 3, 1, 0, 2, 4, 3], &[0, 1, 2, 3, 4])
+    pub fn icosahedron(&self, coloring: &icosahedron::Coloring) -> [Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>; 20] {
+        match coloring {
+            icosahedron::Coloring::Full(permutation) => self.get_materials([0, 1, 2, 3, 4, 1, 3, 4, 0, 1, 2, 2, 4, 0, 3, 1, 0, 2, 4, 3], permutation),
+            icosahedron::Coloring::Tri(permutation) => self.get_materials([0, 1, 2, 3, 4, 1, 3, 4, 0, 1, 2, 2, 4, 0, 3, 1, 0, 2, 4, 3], permutation),
+            icosahedron::Coloring::Dual(permutation) => self.get_materials([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], permutation),
+            icosahedron::Coloring::Mono(color_id) => self.get_materials([0; 20], &[*color_id])
+        }
     }
 }
 

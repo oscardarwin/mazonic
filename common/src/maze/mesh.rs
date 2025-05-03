@@ -103,11 +103,11 @@ pub fn spawn(
         make_room_pairs_from_discovered_melodies(puzzle_identifier, &discovered_melody_room_ids);
 
     let maze_mesh_handles = match &level.shape {
-        Shape::Tetrahedron => &mesh_handles.shape_maze_edge_mesh_handles.tetrahedron,
-        Shape::Cube => &mesh_handles.shape_maze_edge_mesh_handles.cube,
-        Shape::Octahedron => &mesh_handles.shape_maze_edge_mesh_handles.octahedron,
-        Shape::Dodecahedron => &mesh_handles.shape_maze_edge_mesh_handles.dodecahedron,
-        Shape::Icosahedron => &mesh_handles.shape_maze_edge_mesh_handles.icosahedron,
+        Shape::Tetrahedron(_) => &mesh_handles.shape_maze_edge_mesh_handles.tetrahedron,
+        Shape::Cube(_) => &mesh_handles.shape_maze_edge_mesh_handles.cube,
+        Shape::Octahedron(_) => &mesh_handles.shape_maze_edge_mesh_handles.octahedron,
+        Shape::Dodecahedron(_) => &mesh_handles.shape_maze_edge_mesh_handles.dodecahedron,
+        Shape::Icosahedron(_) => &mesh_handles.shape_maze_edge_mesh_handles.icosahedron,
     };
 
     for (source_node, target_node, _) in graph.all_edges() {

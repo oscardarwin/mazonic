@@ -42,7 +42,6 @@ pub struct EncryptedMelody {
 pub struct MazeLevelData {
     pub shape: Shape,
     pub nodes_per_edge: u8,
-    pub face_color_permutation: [u8; 5],
     pub graph: GraphMap<Room, Edge, Directed>,
     pub solution: Vec<Room>,
     pub node_id_to_note: HashMap<u64, Note>,

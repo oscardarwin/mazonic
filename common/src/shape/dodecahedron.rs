@@ -13,6 +13,7 @@ use bevy::{
 };
 
 use itertools::repeat_n;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::{PHI, TAN_27},
@@ -67,4 +68,10 @@ fn vertices() -> [Vec3; 20] {
 
 pub fn faces() -> [[Vec3; 5]; 12] {
     face_indices_to_vertices(FACE_INDICES, &vertices())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Coloring {
+    Full([u8; 4]),
+    Mono(u8),
 }

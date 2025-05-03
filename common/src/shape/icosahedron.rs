@@ -6,6 +6,7 @@ use bevy::{
     reflect::Array,
     render::mesh::Mesh,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::{PHI, SQRT_3},
@@ -60,4 +61,12 @@ pub fn vertices() -> [Vec3; 12] {
 
 pub fn faces() -> [[Vec3; 3]; 20] {
     face_indices_to_vertices(FACE_INDICES, &vertices())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Coloring {
+    Full([u8; 5]),
+    Tri([u8; 3]),
+    Dual([u8; 2]),
+    Mono(u8),
 }

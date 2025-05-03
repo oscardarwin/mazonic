@@ -25,19 +25,19 @@ pub fn spawn(
 
     let materials: Vec<Handle<ExtendedMaterial<StandardMaterial, GlobalShader>>> =
         match &level.shape {
-            Shape::Cube => face_materials_handles.cube(&level.face_color_permutation).into_iter().collect(),
-            Shape::Tetrahedron => face_materials_handles.tetrahedron(&level.face_color_permutation).into_iter().collect(),
-            Shape::Octahedron => face_materials_handles.octahedron(&level.face_color_permutation).into_iter().collect(),
-            Shape::Dodecahedron => face_materials_handles.dodecahedron().into_iter().collect(),
-            Shape::Icosahedron => face_materials_handles.icosahedron().into_iter().collect(),
+            Shape::Cube(coloring) => face_materials_handles.cube(&coloring).into_iter().collect(),
+            Shape::Tetrahedron(coloring) => face_materials_handles.tetrahedron(&coloring).into_iter().collect(),
+            Shape::Octahedron(coloring) => face_materials_handles.octahedron(&coloring).into_iter().collect(),
+            Shape::Dodecahedron(coloring) => face_materials_handles.dodecahedron(&coloring).into_iter().collect(),
+            Shape::Icosahedron(coloring) => face_materials_handles.icosahedron(&coloring).into_iter().collect(),
         };
 
     let face_mesh_handles = match &level.shape {
-        Shape::Tetrahedron => mesh_handles.shape_mesh_handles.tetrahedron.to_vec(),
-        Shape::Cube => mesh_handles.shape_mesh_handles.cube.to_vec(),
-        Shape::Octahedron => mesh_handles.shape_mesh_handles.octahedron.to_vec(),
-        Shape::Dodecahedron => mesh_handles.shape_mesh_handles.dodecahedron.to_vec(),
-        Shape::Icosahedron => mesh_handles.shape_mesh_handles.icosahedron.to_vec(),
+        Shape::Tetrahedron(_) => mesh_handles.shape_mesh_handles.tetrahedron.to_vec(),
+        Shape::Cube(_) => mesh_handles.shape_mesh_handles.cube.to_vec(),
+        Shape::Octahedron(_) => mesh_handles.shape_mesh_handles.octahedron.to_vec(),
+        Shape::Dodecahedron(_) => mesh_handles.shape_mesh_handles.dodecahedron.to_vec(),
+        Shape::Icosahedron(_) => mesh_handles.shape_mesh_handles.icosahedron.to_vec(),
     };
 
     for (face_mesh_handle, face_material_handle) in

@@ -10,6 +10,7 @@ use bevy::{
     render::mesh::{Indices, Mesh, PrimitiveTopology},
 };
 use itertools::{iproduct, repeat_n};
+use serde::{Deserialize, Serialize};
 
 use crate::room::{Face, Room};
 
@@ -43,4 +44,11 @@ fn vertices() -> [Vec3; 8] {
 
 pub fn faces() -> [[Vec3; 4]; 6] {
     face_indices_to_vertices(FACE_INDICES, &vertices())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Coloring {
+    Full([u8; 3]),
+    Dual([u8; 2]),
+    Mono(u8),
 }

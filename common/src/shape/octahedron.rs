@@ -5,6 +5,7 @@ use bevy::{
     math::Vec3,
     render::mesh::Mesh,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::SQRT_3,
@@ -41,4 +42,13 @@ fn vertices() -> [Vec3; 6] {
 
 pub fn faces() -> [[Vec3; 3]; 8] {
     face_indices_to_vertices(FACE_INDICES, &vertices())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Coloring {
+    Full([u8; 4]),
+    Stripes([u8; 4]),
+    CrissCross([u8; 2]),
+    Dual([u8; 2]),
+    Mono(u8),
 }
