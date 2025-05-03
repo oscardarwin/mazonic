@@ -508,7 +508,7 @@ pub fn update_interactables(
         let new_overlay_state = if window_center_entity != entity {
             SelectorOverlayState::None
         }
-        else if window_center_entity == entity && selected_face_pressed {
+        else if window_center_entity == entity && selected_face_pressed && level_playable {
             SelectorOverlayState::Pressed
         } else if window_center_entity == entity && level_playable {
             SelectorOverlayState::Hovered
