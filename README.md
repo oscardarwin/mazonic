@@ -57,7 +57,7 @@ rustup target add aarch64-linux-android
 
 cd mazonic_android
 
-cargo ndk -t arm64-v8a -o app/src/main/jniLibs build --package mazonic_android
+cargo ndk -t arm64-v8a -o app/src/main/jniLibs build --package android
 
 gradle wrapper
 
