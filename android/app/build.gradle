@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId "org.hallayus.mazonic_android"
         minSdk 31
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
         // need this otherwise it won't insert libc++_shared.so
